@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: ${OAKPAY_DB_URL:jdbc:postgresql://localhost:5432/oakpay}
+    username: ${OAKPAY_DB_USERNAME:oakpay}
+    password: ${OAKPAY_DB_PASSWORD:oakpay_dev_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+
+  data:
+    redis:
+      host: ${OAKPAY_REDIS_HOST:localhost}
+      port: ${OAKPAY_REDIS_PORT:6379}
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+oakpay:
+  jwt:
+    secret: ${OAKPAY_JWT_SECRET:oakpay-development-secret-change-before-production-2026}
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
