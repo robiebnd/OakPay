@@ -3,7 +3,7 @@ spring:
     name: auth-service
 
   datasource:
-    url: ${OAKPAY_DB_URL:jdbc:postgresql://localhost:5432/oakpay}
+    url: ${OAKPAY_DB_URL:jdbc:postgresql://127.0.0.1:5432/oakpay}
     username: ${OAKPAY_DB_USERNAME:oakpay}
     password: ${OAKPAY_DB_PASSWORD:oakpay_dev_password}
     driver-class-name: org.postgresql.Driver
@@ -22,7 +22,7 @@ spring:
 
   data:
     redis:
-      host: ${OAKPAY_REDIS_HOST:localhost}
+      host: ${OAKPAY_REDIS_HOST:127.0.0.1}
       port: ${OAKPAY_REDIS_PORT:6379}
 
 server:
