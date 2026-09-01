@@ -92,6 +92,11 @@ public class AuthService {
         return issueTokens(principal);
     }
 
+    public void logout(AuthDtos.RefreshRequest request) {
+        String tokenHash = sha256(request.refreshToken());
+        redisTemplate.delete(REFRESH_KEY_PREFIX + tokenHash);
+    }
+
     private AuthDtos.TokenResponse issueTokens(UserPrincipal principal) {
         String accessToken = jwtService.generateAccessToken(principal);
         String refreshToken = jwtService.generateRefreshToken(principal);
