@@ -16,5 +16,6 @@
         <module>oakpay-parent</module>
         <module>gateway-service</module>
         <module>auth-service</module>
+        <module>wallet-service</module>
     </modules>
 </project>
