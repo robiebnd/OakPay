@@ -19,19 +19,19 @@ public class WalletClient {
         this.internalSecret = internalSecret;
     }
 
-    public void lock(UUID userId, String currency, BigDecimal amount, UUID orderId) {
+    public void lock(UUID userId, String currency, BigDecimal amount, UUID referenceId) {
         client.post().uri("/api/v1/wallets/{currency}/lock", currency)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-OakPay-Internal-Secret", internalSecret)
-                .body(new WalletMutation(userId, amount, orderId.toString()))
+                .body(new WalletMutation(userId, amount, referenceId.toString()))
                 .retrieve().toBodilessEntity();
     }
 
-    public void unlock(UUID userId, String currency, BigDecimal amount, UUID orderId) {
+    public void unlock(UUID userId, String currency, BigDecimal amount, UUID referenceId) {
         client.post().uri("/api/v1/wallets/{currency}/unlock", currency)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("X-OakPay-Internal-Secret", internalSecret)
-                .body(new WalletMutation(userId, amount, orderId.toString()))
+                .body(new WalletMutation(userId, amount, referenceId.toString()))
                 .retrieve().toBodilessEntity();
     }
 
@@ -43,8 +43,17 @@ public class WalletClient {
                 .retrieve().toBodilessEntity();
     }
 
+    public void releaseEscrow(UUID sellerId, UUID buyerId, String asset, BigDecimal amount, UUID tradeId) {
+        client.post().uri("/api/v1/wallets/internal/escrow/release")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-OakPay-Internal-Secret", internalSecret)
+                .body(new EscrowRelease(sellerId, buyerId, asset, amount, tradeId.toString()))
+                .retrieve().toBodilessEntity();
+    }
+
     public record WalletMutation(UUID userId, BigDecimal amount, String reference) {}
     public record Settlement(UUID buyerId, UUID sellerId, String baseCurrency, String quoteCurrency,
                              BigDecimal baseAmount, BigDecimal quoteAmount,
                              BigDecimal buyerFee, BigDecimal sellerFee, String reference) {}
+    public record EscrowRelease(UUID sellerId, UUID buyerId, String asset, BigDecimal amount, String reference) {}
 }
