@@ -17,6 +17,11 @@ spring:
               predicates:
                 - Path=/api/v1/wallets/**
 
+            - id: trading-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/api/v1/trading/**
+
 server:
   port: 8082
 
