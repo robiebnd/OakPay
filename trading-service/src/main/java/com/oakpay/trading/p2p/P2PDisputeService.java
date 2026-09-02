@@ -1,8 +1,10 @@
 package com.oakpay.trading.p2p;
 
 import com.oakpay.trading.wallet.WalletClient;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -125,6 +127,6 @@ public class P2PDisputeService {
     private void requireAdmin(String supplied) {
         if (supplied == null || adminSecret == null || !MessageDigest.isEqual(
                 supplied.getBytes(StandardCharsets.UTF_8), adminSecret.getBytes(StandardCharsets.UTF_8)))
-            throw new SecurityException("Invalid admin credentials");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid admin credentials");
     }
 }
