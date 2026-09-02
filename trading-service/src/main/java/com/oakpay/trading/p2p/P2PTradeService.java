@@ -14,10 +14,15 @@ import java.util.UUID;
 public class P2PTradeService {
     private final P2PTradeRepository repository;
     private final WalletClient walletClient;
+    private final P2PPaymentService paymentService;
+    private final P2PPaymentRepository paymentRepository;
 
-    public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient) {
+    public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient,
+                           P2PPaymentService paymentService, P2PPaymentRepository paymentRepository) {
         this.repository = repository;
         this.walletClient = walletClient;
+        this.paymentService = paymentService;
+        this.paymentRepository = paymentRepository;
     }
 
     @Transactional
@@ -46,7 +51,6 @@ public class P2PTradeService {
         trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
         trade = repository.save(trade);
 
-        // Crypto is moved into escrow before the buyer is allowed to pay.
         walletClient.lock(sellerId, asset, quantity, trade.getId());
         trade.setStatus(P2PTradeStatus.PAYMENT_PENDING);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
@@ -54,17 +58,10 @@ public class P2PTradeService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse markPaid(UUID buyerId, UUID tradeId, P2PTradeDtos.PaymentRequest request) {
-        P2PTrade trade = get(tradeId);
-        ensureNotExpired(trade);
-        if (!trade.getBuyerId().equals(buyerId)) throw new IllegalArgumentException("Trade does not belong to buyer");
-        if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING)
-            throw new IllegalStateException("Trade is not awaiting payment");
-        if (request == null || request.paymentReference() == null || request.paymentReference().isBlank())
-            throw new IllegalArgumentException("Payment reference is required");
-        trade.setPaymentReference(request.paymentReference().trim());
-        trade.setPaymentNote(request.paymentNote());
-        trade.setStatus(P2PTradeStatus.PAYMENT_MARKED);
-        return P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        paymentService.submit(buyerId, tradeId,
+                new P2PPaymentDtos.SubmitRequest(request == null ? null : request.paymentReference(),
+                        request == null ? null : request.paymentNote()));
+        return P2PTradeDtos.TradeResponse.from(get(tradeId));
     }
 
     @Transactional
@@ -74,6 +71,11 @@ public class P2PTradeService {
         if (!trade.getSellerId().equals(sellerId)) throw new IllegalArgumentException("Trade does not belong to seller");
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED)
             throw new IllegalStateException("Buyer has not marked payment");
+
+        P2PPayment payment = paymentRepository.findByTradeId(tradeId)
+                .orElseThrow(() -> new IllegalStateException("Payment record not found"));
+        if (payment.getStatus() != PaymentStatus.VERIFIED)
+            throw new IllegalStateException("Payment must be verified before crypto is released");
 
         walletClient.releaseEscrow(sellerId, trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
         trade.setStatus(P2PTradeStatus.COMPLETED);
