@@ -52,9 +52,13 @@ public class AdvertisementService {
     public List<AdvertisementDtos.AdResponse> search(OrderSide side, String asset, String fiat, int limit) {
         if (side == null) throw new IllegalArgumentException("Side is required");
         int safeLimit = Math.min(Math.max(limit, 1), 100);
-        return repository.findAllBySideAndAssetAndFiatCurrencyAndStatusOrderByPriceAscCreatedAtAsc(
-                        side, normalize(asset), normalize(fiat), AdStatus.ACTIVE, PageRequest.of(0, safeLimit))
-                .stream().filter(a -> a.getAvailableQuantity().signum() > 0)
+        String normalizedAsset = normalize(asset), normalizedFiat = normalize(fiat);
+        var ads = side == OrderSide.BUY
+                ? repository.findAllBySideAndAssetAndFiatCurrencyAndStatusOrderByPriceDescCreatedAtAsc(
+                    side, normalizedAsset, normalizedFiat, AdStatus.ACTIVE, PageRequest.of(0, safeLimit))
+                : repository.findAllBySideAndAssetAndFiatCurrencyAndStatusOrderByPriceAscCreatedAtAsc(
+                    side, normalizedAsset, normalizedFiat, AdStatus.ACTIVE, PageRequest.of(0, safeLimit));
+        return ads.stream().filter(a -> a.getAvailableQuantity().signum() > 0)
                 .map(AdvertisementDtos.AdResponse::from).toList();
     }
 
@@ -71,8 +75,8 @@ public class AdvertisementService {
         if (r.price() != null) ad.setPrice(positive(r.price(), "Price"));
         if (r.minQuantity() != null) ad.setMinQuantity(positive(r.minQuantity(), "Minimum quantity"));
         if (r.maxQuantity() != null) ad.setMaxQuantity(positive(r.maxQuantity(), "Maximum quantity"));
-        if (ad.getMinQuantity().compareTo(ad.getMaxQuantity()) > 0)
-            throw new IllegalArgumentException("Minimum quantity cannot exceed maximum quantity");
+        if (ad.getMinQuantity().compareTo(ad.getMaxQuantity()) > 0 || ad.getMaxQuantity().compareTo(ad.getTotalQuantity()) > 0)
+            throw new IllegalArgumentException("Quantity limits are invalid");
         if (r.paymentMethods() != null && !r.paymentMethods().isBlank()) ad.setPaymentMethods(r.paymentMethods().trim());
         if (r.terms() != null) ad.setTerms(r.terms());
         return AdvertisementDtos.AdResponse.from(repository.save(ad));
@@ -94,9 +98,9 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public P2PTradeDtos.TradeResponse take(UUID buyerOrSellerId, UUID adId, AdvertisementDtos.TakeRequest r) {
+    public P2PTradeDtos.TradeResponse take(UUID takerId, UUID adId, AdvertisementDtos.TakeRequest r) {
         Advertisement ad = ownedForUpdate(null, adId);
-        if (ad.getOwnerId().equals(buyerOrSellerId)) throw new IllegalArgumentException("You cannot take your own advertisement");
+        if (ad.getOwnerId().equals(takerId)) throw new IllegalArgumentException("You cannot take your own advertisement");
         if (ad.getStatus() != AdStatus.ACTIVE) throw new IllegalStateException("Advertisement is not active");
         BigDecimal quantity = positive(r.quantity(), "Quantity");
         if (quantity.compareTo(ad.getMinQuantity()) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0)
@@ -104,11 +108,11 @@ public class AdvertisementService {
         if (quantity.compareTo(ad.getAvailableQuantity()) > 0)
             throw new IllegalStateException("Advertisement has insufficient available quantity");
 
-        UUID sellerId = ad.getSide() == OrderSide.SELL ? ad.getOwnerId() : buyerOrSellerId;
-        UUID buyerId = ad.getSide() == OrderSide.SELL ? buyerOrSellerId : ad.getOwnerId();
+        UUID sellerId = ad.getSide() == OrderSide.SELL ? ad.getOwnerId() : takerId;
+        UUID buyerId = ad.getSide() == OrderSide.SELL ? takerId : ad.getOwnerId();
         P2PTradeDtos.CreateRequest request = new P2PTradeDtos.CreateRequest(
-                buyerId, ad.getAsset(), ad.getFiatCurrency(), quantity, ad.getPrice(), firstPaymentMethod(ad.getPaymentMethods()),
-                r.expiryMinutes());
+                buyerId, ad.getAsset(), ad.getFiatCurrency(), quantity, ad.getPrice(),
+                firstPaymentMethod(ad.getPaymentMethods()), r.expiryMinutes());
         P2PTradeDtos.TradeResponse trade = tradeService.create(sellerId, request);
 
         ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
@@ -126,8 +130,7 @@ public class AdvertisementService {
     }
 
     private String firstPaymentMethod(String methods) {
-        String[] values = methods.split(",");
-        return values[0].trim();
+        return methods.split(",")[0].trim();
     }
 
     private BigDecimal positive(BigDecimal value, String label) {
