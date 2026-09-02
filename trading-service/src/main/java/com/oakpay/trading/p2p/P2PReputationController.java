@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/p2p/reputation")
+@RequestMapping("/api/v1/p2p")
 public class P2PReputationController {
 
     private final P2PReputationService reputationService;
@@ -18,7 +18,7 @@ public class P2PReputationController {
         this.reputationService = reputationService;
     }
 
-    @PostMapping("/../trades/{tradeId}/rating")
+    @PostMapping("/trades/{tradeId}/rating")
     @ResponseStatus(HttpStatus.CREATED)
     public P2PReputationDtos.RatingResponse rate(Authentication authentication,
                                                   @PathVariable UUID tradeId,
@@ -26,17 +26,17 @@ public class P2PReputationController {
         return reputationService.rate(currentUserId(authentication), tradeId, request);
     }
 
-    @GetMapping("/me")
+    @GetMapping("/reputation/me")
     public P2PReputationDtos.ReputationResponse me(Authentication authentication) {
         return reputationService.get(currentUserId(authentication));
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/reputation/{userId}")
     public P2PReputationDtos.ReputationResponse get(@PathVariable UUID userId) {
         return reputationService.get(userId);
     }
 
-    @GetMapping("/{userId}/ratings")
+    @GetMapping("/reputation/{userId}/ratings")
     public List<P2PReputationDtos.RatingResponse> ratings(@PathVariable UUID userId) {
         return reputationService.ratings(userId);
     }
