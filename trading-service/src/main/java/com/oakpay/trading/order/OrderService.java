@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,9 +19,7 @@ public class OrderService {
     private final WalletClient walletClient;
     private final BigDecimal feeRate;
 
-    public OrderService(OrderRepository orderRepository,
-                        TradeRepository tradeRepository,
-                        WalletClient walletClient,
+    public OrderService(OrderRepository orderRepository, TradeRepository tradeRepository, WalletClient walletClient,
                         @Value("${oakpay.trading.fee-rate:0.001}") BigDecimal feeRate) {
         this.orderRepository = orderRepository;
         this.tradeRepository = tradeRepository;
@@ -46,25 +45,20 @@ public class OrderService {
                 ? order.getPrice().multiply(order.getQuantity()).multiply(BigDecimal.ONE.add(feeRate))
                 : order.getQuantity();
         walletClient.lock(userId, reserveCurrency(order), reserve, order.getId());
-
         match(order);
         return response(order);
     }
 
     @Transactional
     public void cancel(UUID userId, UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new IllegalArgumentException("Order not found"));
         if (!order.getUserId().equals(userId)) throw new IllegalArgumentException("Order does not belong to user");
         if (order.getStatus() == OrderStatus.FILLED || order.getStatus() == OrderStatus.CANCELLED)
             throw new IllegalStateException("Order cannot be cancelled");
-
-        BigDecimal remainingReserve = order.getSide() == OrderSide.BUY
+        BigDecimal reserve = order.getSide() == OrderSide.BUY
                 ? order.getPrice().multiply(order.getRemainingQuantity()).multiply(BigDecimal.ONE.add(feeRate))
                 : order.getRemainingQuantity();
-        if (remainingReserve.signum() > 0) {
-            walletClient.unlock(userId, reserveCurrency(order), remainingReserve, order.getId());
-        }
+        if (reserve.signum() > 0) walletClient.unlock(userId, reserveCurrency(order), reserve, order.getId());
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
     }
@@ -77,10 +71,11 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<TradingDtos.OrderResponse> orderBook(String base, String quote) {
         String b = normalize(base), q = normalize(quote);
-        return List.of(
-                orderRepository.findAllByBaseCurrencyAndQuoteCurrencyAndSideAndStatusOrderByCreatedAtAsc(b, q, OrderSide.BUY, OrderStatus.OPEN),
-                orderRepository.findAllByBaseCurrencyAndQuoteCurrencyAndSideAndStatusOrderByCreatedAtAsc(b, q, OrderSide.SELL, OrderStatus.OPEN))
-                .stream().flatMap(List::stream).map(this::response).toList();
+        List<Order> buys = orderRepository.findAllByBaseCurrencyAndQuoteCurrencyAndSideAndStatusOrderByCreatedAtAsc(b, q, OrderSide.BUY, OrderStatus.OPEN);
+        List<Order> sells = orderRepository.findAllByBaseCurrencyAndQuoteCurrencyAndSideAndStatusOrderByCreatedAtAsc(b, q, OrderSide.SELL, OrderStatus.OPEN);
+        buys.sort(Comparator.comparing(Order::getPrice).reversed().thenComparing(Order::getCreatedAt));
+        sells.sort(Comparator.comparing(Order::getPrice).thenComparing(Order::getCreatedAt));
+        return java.util.stream.Stream.concat(buys.stream(), sells.stream()).map(this::response).toList();
     }
 
     @Transactional(readOnly = true)
@@ -92,6 +87,10 @@ public class OrderService {
         OrderSide opposite = incoming.getSide() == OrderSide.BUY ? OrderSide.SELL : OrderSide.BUY;
         List<Order> candidates = orderRepository.findAllByBaseCurrencyAndQuoteCurrencyAndSideAndStatusOrderByCreatedAtAsc(
                 incoming.getBaseCurrency(), incoming.getQuoteCurrency(), opposite, OrderStatus.OPEN);
+        Comparator<Order> comparator = incoming.getSide() == OrderSide.BUY
+                ? Comparator.comparing(Order::getPrice).thenComparing(Order::getCreatedAt)
+                : Comparator.comparing(Order::getPrice).reversed().thenComparing(Order::getCreatedAt);
+        candidates.sort(comparator);
 
         for (Order resting : candidates) {
             if (incoming.getRemainingQuantity().signum() <= 0) break;
@@ -108,37 +107,25 @@ public class OrderService {
             Order buyOrder = incoming.getSide() == OrderSide.BUY ? incoming : resting;
             Order sellOrder = incoming.getSide() == OrderSide.SELL ? incoming : resting;
 
-            walletClient.settle(new WalletClient.Settlement(
-                    buyerId, sellerId, incoming.getBaseCurrency(), incoming.getQuoteCurrency(),
+            walletClient.settle(new WalletClient.Settlement(buyerId, sellerId, incoming.getBaseCurrency(), incoming.getQuoteCurrency(),
                     fill, gross, buyerFee, sellerFee, "TRADE-" + UUID.randomUUID()));
 
             Trade trade = new Trade();
-            trade.setBuyOrderId(buyOrder.getId());
-            trade.setSellOrderId(sellOrder.getId());
-            trade.setBuyerId(buyerId);
-            trade.setSellerId(sellerId);
-            trade.setBaseCurrency(incoming.getBaseCurrency());
-            trade.setQuoteCurrency(incoming.getQuoteCurrency());
-            trade.setPrice(executionPrice);
-            trade.setQuantity(fill);
-            trade.setGrossValue(gross);
-            trade.setBuyerFee(buyerFee);
-            trade.setSellerFee(sellerFee);
+            trade.setBuyOrderId(buyOrder.getId()); trade.setSellOrderId(sellOrder.getId());
+            trade.setBuyerId(buyerId); trade.setSellerId(sellerId);
+            trade.setBaseCurrency(incoming.getBaseCurrency()); trade.setQuoteCurrency(incoming.getQuoteCurrency());
+            trade.setPrice(executionPrice); trade.setQuantity(fill); trade.setGrossValue(gross);
+            trade.setBuyerFee(buyerFee); trade.setSellerFee(sellerFee);
             tradeRepository.save(trade);
 
             incoming.setRemainingQuantity(incoming.getRemainingQuantity().subtract(fill));
             resting.setRemainingQuantity(resting.getRemainingQuantity().subtract(fill));
-            updateStatus(incoming);
-            updateStatus(resting);
-            orderRepository.save(incoming);
-            orderRepository.save(resting);
+            updateStatus(incoming); updateStatus(resting);
+            orderRepository.save(incoming); orderRepository.save(resting);
 
-            // A BUY order can have reserved quote above the execution price. Release the price improvement.
-            if (buyOrder == incoming && incoming.getSide() == OrderSide.BUY) {
+            if (buyOrder == incoming) {
                 BigDecimal improvement = incoming.getPrice().subtract(executionPrice).multiply(fill);
-                if (improvement.signum() > 0) {
-                    walletClient.unlock(buyerId, incoming.getQuoteCurrency(), improvement, incoming.getId());
-                }
+                if (improvement.signum() > 0) walletClient.unlock(buyerId, incoming.getQuoteCurrency(), improvement, incoming.getId());
             }
         }
     }
@@ -148,14 +135,8 @@ public class OrderService {
                 ? incoming.getPrice().compareTo(resting.getPrice()) >= 0
                 : incoming.getPrice().compareTo(resting.getPrice()) <= 0;
     }
-
-    private void updateStatus(Order order) {
-        if (order.getRemainingQuantity().signum() == 0) order.setStatus(OrderStatus.FILLED);
-        else order.setStatus(OrderStatus.PARTIALLY_FILLED);
-    }
-
+    private void updateStatus(Order order) { order.setStatus(order.getRemainingQuantity().signum() == 0 ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED); }
     private String reserveCurrency(Order order) { return order.getSide() == OrderSide.BUY ? order.getQuoteCurrency() : order.getBaseCurrency(); }
-
     private void validate(TradingDtos.CreateOrderRequest r) {
         if (r.side() == null) throw new IllegalArgumentException("Order side is required");
         String base = normalize(r.baseCurrency()), quote = normalize(r.quoteCurrency());
@@ -163,7 +144,6 @@ public class OrderService {
         if (r.price() == null || r.price().signum() <= 0) throw new IllegalArgumentException("Price must be greater than zero");
         if (r.quantity() == null || r.quantity().signum() <= 0) throw new IllegalArgumentException("Quantity must be greater than zero");
     }
-
     private BigDecimal scale(BigDecimal value) { return value.setScale(18, RoundingMode.DOWN); }
     private String normalize(String value) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException("Currency is required");
