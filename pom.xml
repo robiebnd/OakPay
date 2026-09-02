@@ -17,5 +17,6 @@
         <module>gateway-service</module>
         <module>auth-service</module>
         <module>wallet-service</module>
+        <module>trading-service</module>
     </modules>
 </project>
