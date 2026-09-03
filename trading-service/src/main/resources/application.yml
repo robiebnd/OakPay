@@ -39,3 +39,5 @@ oakpay:
     dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET:oakpay-admin-dispute-development-secret-change-before-production}
   trading:
     fee-rate: ${OAKPAY_TRADING_FEE_RATE:0.001}
+  p2p:
+    commission-rate: ${OAKPAY_P2P_COMMISSION_RATE:0.001}
