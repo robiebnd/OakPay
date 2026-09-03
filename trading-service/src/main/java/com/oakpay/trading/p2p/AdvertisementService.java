@@ -105,6 +105,7 @@ public class AdvertisementService {
     public AdvertisementDtos.AdResponse close(UUID ownerId, UUID id) {
         Advertisement ad = ownedForUpdate(ownerId, id);
         ad.setStatus(AdStatus.CLOSED);
+        ad.setAutoClosed(false);
         return AdvertisementDtos.AdResponse.from(repository.save(ad));
     }
 
