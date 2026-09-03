@@ -1,5 +1,7 @@
 package com.oakpay.wallet.api;
 
+import com.oakpay.wallet.ledger.LedgerBalanceType;
+import com.oakpay.wallet.ledger.LedgerDirection;
 import com.oakpay.wallet.ledger.LedgerEntry;
 import com.oakpay.wallet.ledger.LedgerStatus;
 import com.oakpay.wallet.ledger.LedgerTransactionType;
@@ -25,6 +27,8 @@ public final class LedgerDtos {
             UUID userId,
             LedgerTransactionType transactionType,
             LedgerStatus status,
+            LedgerDirection direction,
+            LedgerBalanceType balanceType,
             String currency,
             BigDecimal amount,
             BigDecimal balanceBefore,
@@ -34,8 +38,8 @@ public final class LedgerDtos {
             LocalDateTime createdAt) {
         public static LedgerResponse from(LedgerEntry e) {
             return new LedgerResponse(e.getId(), e.getWalletId(), e.getUserId(), e.getTransactionType(),
-                    e.getStatus(), e.getCurrency(), e.getAmount(), e.getBalanceBefore(), e.getBalanceAfter(),
-                    e.getReference(), e.getMetadata(), e.getCreatedAt());
+                    e.getStatus(), e.getDirection(), e.getBalanceType(), e.getCurrency(), e.getAmount(),
+                    e.getBalanceBefore(), e.getBalanceAfter(), e.getReference(), e.getMetadata(), e.getCreatedAt());
         }
     }
 }
