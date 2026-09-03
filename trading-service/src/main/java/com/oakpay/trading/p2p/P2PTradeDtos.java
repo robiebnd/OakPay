@@ -14,7 +14,13 @@ public final class P2PTradeDtos {
             BigDecimal quantity,
             BigDecimal unitPrice,
             String paymentMethod,
-            Integer expiryMinutes) {}
+            Integer expiryMinutes,
+            UUID advertisementId) {
+        public CreateRequest(UUID buyerId, String asset, String fiatCurrency, BigDecimal quantity,
+                             BigDecimal unitPrice, String paymentMethod, Integer expiryMinutes) {
+            this(buyerId, asset, fiatCurrency, quantity, unitPrice, paymentMethod, expiryMinutes, null);
+        }
+    }
 
     public record PaymentRequest(String paymentReference, String paymentNote) {}
 
@@ -22,6 +28,7 @@ public final class P2PTradeDtos {
             UUID id,
             UUID buyerId,
             UUID sellerId,
+            UUID advertisementId,
             String asset,
             String fiatCurrency,
             BigDecimal quantity,
@@ -35,9 +42,10 @@ public final class P2PTradeDtos {
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {
         static TradeResponse from(P2PTrade t) {
-            return new TradeResponse(t.getId(), t.getBuyerId(), t.getSellerId(), t.getAsset(), t.getFiatCurrency(),
-                    t.getQuantity(), t.getUnitPrice(), t.getFiatAmount(), t.getPaymentMethod(), t.getStatus(),
-                    t.getPaymentReference(), t.getPaymentNote(), t.getExpiresAt(), t.getCreatedAt(), t.getUpdatedAt());
+            return new TradeResponse(t.getId(), t.getBuyerId(), t.getSellerId(), t.getAdvertisementId(),
+                    t.getAsset(), t.getFiatCurrency(), t.getQuantity(), t.getUnitPrice(), t.getFiatAmount(),
+                    t.getPaymentMethod(), t.getStatus(), t.getPaymentReference(), t.getPaymentNote(),
+                    t.getExpiresAt(), t.getCreatedAt(), t.getUpdatedAt());
         }
     }
 }
