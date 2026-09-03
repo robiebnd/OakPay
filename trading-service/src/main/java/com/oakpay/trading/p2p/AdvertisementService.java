@@ -1,5 +1,8 @@
 package com.oakpay.trading.p2p;
 
+import com.oakpay.trading.asset.AssetStatus;
+import com.oakpay.trading.asset.SupportedAsset;
+import com.oakpay.trading.asset.SupportedAssetRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,14 +17,18 @@ import java.util.UUID;
 public class AdvertisementService {
     private final AdvertisementRepository repository;
     private final P2PTradeService tradeService;
+    private final SupportedAssetRepository assetRepository;
 
-    public AdvertisementService(AdvertisementRepository repository, P2PTradeService tradeService) {
+    public AdvertisementService(AdvertisementRepository repository, P2PTradeService tradeService,
+                                 SupportedAssetRepository assetRepository) {
         this.repository = repository;
         this.tradeService = tradeService;
+        this.assetRepository = assetRepository;
     }
 
     @Transactional
     public AdvertisementDtos.AdResponse create(UUID ownerId, AdvertisementDtos.CreateRequest r) {
+        if (r == null) throw new IllegalArgumentException("Advertisement request is required");
         if (r.side() == null) throw new IllegalArgumentException("Advertisement side is required");
         String asset = normalize(r.asset()), fiat = normalize(r.fiatCurrency());
         if (asset.equals(fiat)) throw new IllegalArgumentException("Asset and fiat currency must differ");
@@ -29,6 +36,7 @@ public class AdvertisementService {
         BigDecimal total = positive(r.totalQuantity(), "Total quantity");
         BigDecimal min = positive(r.minQuantity(), "Minimum quantity");
         BigDecimal max = positive(r.maxQuantity(), "Maximum quantity");
+        validateP2PAsset(asset, min);
         if (min.compareTo(max) > 0 || max.compareTo(total) > 0)
             throw new IllegalArgumentException("Quantity limits are invalid");
         if (r.paymentMethods() == null || r.paymentMethods().isBlank())
@@ -71,11 +79,13 @@ public class AdvertisementService {
 
     @Transactional
     public AdvertisementDtos.AdResponse update(UUID ownerId, UUID id, AdvertisementDtos.UpdateRequest r) {
+        if (r == null) throw new IllegalArgumentException("Update request is required");
         Advertisement ad = ownedForUpdate(ownerId, id);
         if (ad.getStatus() == AdStatus.CLOSED) throw new IllegalStateException("Advertisement is closed");
         if (r.price() != null) ad.setPrice(positive(r.price(), "Price"));
         if (r.minQuantity() != null) ad.setMinQuantity(positive(r.minQuantity(), "Minimum quantity"));
         if (r.maxQuantity() != null) ad.setMaxQuantity(positive(r.maxQuantity(), "Maximum quantity"));
+        validateP2PAsset(ad.getAsset(), ad.getMinQuantity());
         if (ad.getMinQuantity().compareTo(ad.getMaxQuantity()) > 0 || ad.getMaxQuantity().compareTo(ad.getTotalQuantity()) > 0)
             throw new IllegalArgumentException("Quantity limits are invalid");
         if (r.paymentMethods() != null && !r.paymentMethods().isBlank()) ad.setPaymentMethods(r.paymentMethods().trim());
@@ -105,27 +115,36 @@ public class AdvertisementService {
         if (ad.getOwnerId().equals(takerId)) throw new IllegalArgumentException("You cannot take your own advertisement");
         if (ad.getStatus() != AdStatus.ACTIVE) throw new IllegalStateException("Advertisement is not active");
         BigDecimal quantity = positive(r.quantity(), "Quantity");
+        validateP2PAsset(ad.getAsset(), quantity);
         if (quantity.compareTo(ad.getMinQuantity()) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0)
             throw new IllegalArgumentException("Quantity is outside the advertisement limits");
         if (quantity.compareTo(ad.getAvailableQuantity()) > 0)
             throw new IllegalStateException("Advertisement has insufficient available quantity");
 
         String paymentMethod = normalizePaymentMethod(r.paymentMethod());
-        if (!containsPaymentMethod(ad.getPaymentMethods(), paymentMethod)) {
+        if (!containsPaymentMethod(ad.getPaymentMethods(), paymentMethod))
             throw new IllegalArgumentException("Selected payment method is not supported by this advertisement");
-        }
 
         UUID sellerId = ad.getSide() == OrderSide.SELL ? ad.getOwnerId() : takerId;
         UUID buyerId = ad.getSide() == OrderSide.SELL ? takerId : ad.getOwnerId();
         P2PTradeDtos.CreateRequest request = new P2PTradeDtos.CreateRequest(
                 buyerId, ad.getAsset(), ad.getFiatCurrency(), quantity, ad.getPrice(),
-                paymentMethod, r.expiryMinutes());
+                paymentMethod, r.expiryMinutes(), ad.getId());
         P2PTradeDtos.TradeResponse trade = tradeService.create(sellerId, request);
 
         ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
         if (ad.getAvailableQuantity().signum() == 0) ad.setStatus(AdStatus.CLOSED);
         repository.save(ad);
         return trade;
+    }
+
+    private void validateP2PAsset(String symbol, BigDecimal quantity) {
+        SupportedAsset asset = assetRepository.findBySymbolIgnoreCase(symbol)
+                .orElseThrow(() -> new IllegalArgumentException("Unsupported asset " + symbol));
+        if (asset.getStatus() != AssetStatus.ACTIVE || !asset.getP2pEnabled())
+            throw new IllegalStateException("Asset is not enabled for P2P");
+        if (quantity.compareTo(asset.getMinTradeAmount()) < 0)
+            throw new IllegalArgumentException("Quantity is below the minimum trade amount for " + symbol);
     }
 
     private boolean containsPaymentMethod(String methods, String selected) {
@@ -155,6 +174,6 @@ public class AdvertisementService {
 
     private String normalize(String value) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException("Currency is required");
-        return value.trim().toUpperCase();
+        return value.trim().toUpperCase(Locale.ROOT);
     }
 }
