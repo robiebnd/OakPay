@@ -1,15 +1,24 @@
 package com.oakpay.trading.order;
 
 import com.oakpay.trading.api.TradingDtos;
+import com.oakpay.trading.asset.AssetStatus;
+import com.oakpay.trading.asset.SupportedAsset;
+import com.oakpay.trading.asset.SupportedAssetRepository;
+import com.oakpay.trading.market.TradingPair;
+import com.oakpay.trading.market.TradingPairRepository;
+import com.oakpay.trading.market.TradingPairStatus;
 import com.oakpay.trading.wallet.WalletClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -17,24 +26,30 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final TradeRepository tradeRepository;
     private final WalletClient walletClient;
+    private final TradingPairRepository tradingPairRepository;
+    private final SupportedAssetRepository supportedAssetRepository;
     private final BigDecimal feeRate;
 
     public OrderService(OrderRepository orderRepository, TradeRepository tradeRepository, WalletClient walletClient,
+                        TradingPairRepository tradingPairRepository, SupportedAssetRepository supportedAssetRepository,
                         @Value("${oakpay.trading.fee-rate:0.001}") BigDecimal feeRate) {
         this.orderRepository = orderRepository;
         this.tradeRepository = tradeRepository;
         this.walletClient = walletClient;
+        this.tradingPairRepository = tradingPairRepository;
+        this.supportedAssetRepository = supportedAssetRepository;
         this.feeRate = feeRate;
     }
 
     @Transactional
     public TradingDtos.OrderResponse place(UUID userId, TradingDtos.CreateOrderRequest request) {
-        validate(request);
+        TradingPair pair = validateAndResolvePair(request);
+
         Order order = new Order();
         order.setUserId(userId);
         order.setSide(request.side());
-        order.setBaseCurrency(normalize(request.baseCurrency()));
-        order.setQuoteCurrency(normalize(request.quoteCurrency()));
+        order.setBaseCurrency(pair.getBaseCurrency());
+        order.setQuoteCurrency(pair.getQuoteCurrency());
         order.setPrice(scale(request.price()));
         order.setQuantity(scale(request.quantity()));
         order.setRemainingQuantity(scale(request.quantity()));
@@ -135,23 +150,81 @@ public class OrderService {
                 ? incoming.getPrice().compareTo(resting.getPrice()) >= 0
                 : incoming.getPrice().compareTo(resting.getPrice()) <= 0;
     }
-    private void updateStatus(Order order) { order.setStatus(order.getRemainingQuantity().signum() == 0 ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED); }
-    private String reserveCurrency(Order order) { return order.getSide() == OrderSide.BUY ? order.getQuoteCurrency() : order.getBaseCurrency(); }
-    private void validate(TradingDtos.CreateOrderRequest r) {
-        if (r.side() == null) throw new IllegalArgumentException("Order side is required");
-        String base = normalize(r.baseCurrency()), quote = normalize(r.quoteCurrency());
-        if (base.equals(quote)) throw new IllegalArgumentException("Base and quote currencies must differ");
-        if (r.price() == null || r.price().signum() <= 0) throw new IllegalArgumentException("Price must be greater than zero");
-        if (r.quantity() == null || r.quantity().signum() <= 0) throw new IllegalArgumentException("Quantity must be greater than zero");
+
+    private void updateStatus(Order order) {
+        order.setStatus(order.getRemainingQuantity().signum() == 0 ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED);
     }
+
+    private String reserveCurrency(Order order) {
+        return order.getSide() == OrderSide.BUY ? order.getQuoteCurrency() : order.getBaseCurrency();
+    }
+
+    private TradingPair validateAndResolvePair(TradingDtos.CreateOrderRequest r) {
+        if (r.side() == null) throw badRequest("Order side is required");
+        String base = normalize(r.baseCurrency());
+        String quote = normalize(r.quoteCurrency());
+
+        if (base.equals(quote)) throw badRequest("Base and quote currencies must differ");
+        if (r.price() == null || r.price().signum() <= 0) throw badRequest("Price must be greater than zero");
+        if (r.quantity() == null || r.quantity().signum() <= 0) throw badRequest("Quantity must be greater than zero");
+
+        TradingPair pair = tradingPairRepository.findByBaseCurrencyIgnoreCaseAndQuoteCurrencyIgnoreCase(base, quote)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trading pair is not supported"));
+
+        if (pair.getStatus() != TradingPairStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trading pair is not active");
+        }
+
+        requireSpotEnabledAsset(pair.getBaseCurrency());
+        requireSpotEnabledAsset(pair.getQuoteCurrency());
+
+        BigDecimal price = r.price();
+        BigDecimal quantity = r.quantity();
+        if (price.compareTo(pair.getMinPrice()) < 0 || price.compareTo(pair.getMaxPrice()) > 0) {
+            throw badRequest("Price is outside the allowed trading range");
+        }
+        if (!aligned(price, pair.getPriceTickSize())) {
+            throw badRequest("Price does not match the market tick size");
+        }
+        if (quantity.compareTo(pair.getMinQuantity()) < 0) {
+            throw badRequest("Quantity is below the market minimum");
+        }
+        if (!aligned(quantity, pair.getQuantityStepSize())) {
+            throw badRequest("Quantity does not match the market step size");
+        }
+        return pair;
+    }
+
+    private void requireSpotEnabledAsset(String symbol) {
+        SupportedAsset asset = supportedAssetRepository.findBySymbolIgnoreCase(symbol)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset " + symbol + " is not supported"));
+        if (asset.getStatus() != AssetStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset " + symbol + " is not active");
+        }
+        if (!Boolean.TRUE.equals(asset.getSpotEnabled())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Spot trading is disabled for asset " + symbol);
+        }
+    }
+
+    private boolean aligned(BigDecimal value, BigDecimal step) {
+        return value.remainder(step).compareTo(BigDecimal.ZERO) == 0;
+    }
+
+    private ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
     private BigDecimal scale(BigDecimal value) { return value.setScale(18, RoundingMode.DOWN); }
+
     private String normalize(String value) {
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Currency is required");
-        return value.trim().toUpperCase();
+        if (value == null || value.isBlank()) throw badRequest("Currency is required");
+        return value.trim().toUpperCase(Locale.ROOT);
     }
+
     private TradingDtos.OrderResponse response(Order o) {
         return new TradingDtos.OrderResponse(o.getId(), o.getUserId(), o.getSide(), o.getStatus(), o.getBaseCurrency(), o.getQuoteCurrency(), o.getPrice(), o.getQuantity(), o.getRemainingQuantity(), o.getCreatedAt(), o.getUpdatedAt());
     }
+
     private TradingDtos.TradeResponse tradeResponse(Trade t) {
         return new TradingDtos.TradeResponse(t.getId(), t.getBuyOrderId(), t.getSellOrderId(), t.getBuyerId(), t.getSellerId(), t.getBaseCurrency(), t.getQuoteCurrency(), t.getPrice(), t.getQuantity(), t.getGrossValue(), t.getBuyerFee(), t.getSellerFee(), t.getCreatedAt());
     }
