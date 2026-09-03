@@ -53,6 +53,9 @@ public class Advertisement {
     @Column(nullable = false, length = 15)
     private AdStatus status;
 
+    @Column(name = "auto_closed", nullable = false)
+    private boolean autoClosed;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -97,6 +100,8 @@ public class Advertisement {
     public void setTerms(String v) { terms = v; }
     public AdStatus getStatus() { return status; }
     public void setStatus(AdStatus v) { status = v; }
+    public boolean isAutoClosed() { return autoClosed; }
+    public void setAutoClosed(boolean v) { autoClosed = v; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
