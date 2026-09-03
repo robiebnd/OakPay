@@ -22,6 +22,11 @@ public class P2PPaymentService {
                 .orElseThrow(() -> new IllegalArgumentException("P2P trade not found"));
         if (!trade.getBuyerId().equals(buyerId)) throw new IllegalArgumentException("Trade does not belong to buyer");
         if (trade.getExpiresAt().isBefore(LocalDateTime.now())) throw new IllegalStateException("P2P trade has expired");
+        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) {
+            return paymentRepository.findByTradeId(tradeId)
+                    .map(P2PPaymentDtos.PaymentResponse::from)
+                    .orElseThrow(() -> new IllegalStateException("Payment record not found"));
+        }
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING)
             throw new IllegalStateException("Trade is not awaiting payment");
         if (request == null || request.paymentReference() == null || request.paymentReference().isBlank())
@@ -65,11 +70,18 @@ public class P2PPaymentService {
         P2PTrade trade = tradeRepository.findById(tradeId)
                 .orElseThrow(() -> new IllegalArgumentException("P2P trade not found"));
         if (!trade.getSellerId().equals(sellerId)) throw new IllegalArgumentException("Trade does not belong to seller");
+        if (trade.getStatus() == P2PTradeStatus.COMPLETED) {
+            return paymentRepository.findByTradeId(tradeId)
+                    .map(P2PPaymentDtos.PaymentResponse::from)
+                    .orElseThrow(() -> new IllegalStateException("Payment record not found"));
+        }
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED)
             throw new IllegalStateException("Trade is not awaiting payment verification");
 
         P2PPayment payment = paymentRepository.findByTradeId(tradeId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        if (payment.getStatus() == PaymentStatus.VERIFIED)
+            return P2PPaymentDtos.PaymentResponse.from(payment);
         if (payment.getStatus() != PaymentStatus.SUBMITTED)
             throw new IllegalStateException("Payment is not awaiting verification");
 
