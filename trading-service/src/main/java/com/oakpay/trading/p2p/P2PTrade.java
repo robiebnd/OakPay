@@ -9,7 +9,8 @@ import java.util.UUID;
 @Table(name = "p2p_trades", indexes = {
         @Index(name = "idx_p2p_buyer", columnList = "buyer_id"),
         @Index(name = "idx_p2p_seller", columnList = "seller_id"),
-        @Index(name = "idx_p2p_status", columnList = "status")
+        @Index(name = "idx_p2p_status", columnList = "status"),
+        @Index(name = "idx_p2p_advertisement", columnList = "advertisement_id")
 })
 public class P2PTrade {
     @Id
@@ -21,6 +22,9 @@ public class P2PTrade {
 
     @Column(name = "seller_id", nullable = false, updatable = false)
     private UUID sellerId;
+
+    @Column(name = "advertisement_id", updatable = false)
+    private UUID advertisementId;
 
     @Column(name = "asset", nullable = false, length = 10, updatable = false)
     private String asset;
@@ -76,6 +80,8 @@ public class P2PTrade {
     public void setBuyerId(UUID v) { buyerId = v; }
     public UUID getSellerId() { return sellerId; }
     public void setSellerId(UUID v) { sellerId = v; }
+    public UUID getAdvertisementId() { return advertisementId; }
+    public void setAdvertisementId(UUID v) { advertisementId = v; }
     public String getAsset() { return asset; }
     public void setAsset(String v) { asset = v; }
     public String getFiatCurrency() { return fiatCurrency; }
