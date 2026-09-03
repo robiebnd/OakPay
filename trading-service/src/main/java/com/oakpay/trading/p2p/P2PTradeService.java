@@ -21,16 +21,19 @@ public class P2PTradeService {
     private final P2PPaymentRepository paymentRepository;
     private final P2PCommissionService commissionService;
     private final SupportedAssetRepository assetRepository;
+    private final AdvertisementRepository advertisementRepository;
 
     public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient,
                            P2PPaymentService paymentService, P2PPaymentRepository paymentRepository,
-                           P2PCommissionService commissionService, SupportedAssetRepository assetRepository) {
+                           P2PCommissionService commissionService, SupportedAssetRepository assetRepository,
+                           AdvertisementRepository advertisementRepository) {
         this.repository = repository;
         this.walletClient = walletClient;
         this.paymentService = paymentService;
         this.paymentRepository = paymentRepository;
         this.commissionService = commissionService;
         this.assetRepository = assetRepository;
+        this.advertisementRepository = advertisementRepository;
     }
 
     @Transactional
@@ -49,9 +52,25 @@ public class P2PTradeService {
         int expiry = request.expiryMinutes() == null ? 30 : request.expiryMinutes();
         if (expiry < 5 || expiry > 1440) throw new IllegalArgumentException("Expiry must be between 5 and 1440 minutes");
 
+        if (request.advertisementId() != null) {
+            Advertisement ad = advertisementRepository.findByIdForUpdate(request.advertisementId())
+                    .orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
+            if (!ad.getOwnerId().equals(sellerId))
+                throw new IllegalArgumentException("Advertisement does not belong to seller");
+            if (ad.getStatus() != AdStatus.ACTIVE)
+                throw new IllegalStateException("Advertisement is not active");
+            if (!ad.getAsset().equals(asset) || !ad.getFiatCurrency().equals(fiat)
+                    || ad.getPrice().compareTo(price) != 0)
+                throw new IllegalArgumentException("Trade does not match advertisement terms");
+            if (quantity.compareTo(ad.getMinQuantity()) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0
+                    || quantity.compareTo(ad.getAvailableQuantity()) > 0)
+                throw new IllegalArgumentException("Quantity is outside the advertisement limits");
+        }
+
         P2PTrade trade = new P2PTrade();
         trade.setSellerId(sellerId);
         trade.setBuyerId(request.buyerId());
+        trade.setAdvertisementId(request.advertisementId());
         trade.setAsset(asset);
         trade.setFiatCurrency(fiat);
         trade.setQuantity(quantity);
@@ -71,9 +90,7 @@ public class P2PTradeService {
     public P2PTradeDtos.TradeResponse markPaid(UUID buyerId, UUID tradeId, P2PTradeDtos.PaymentRequest request) {
         P2PTrade trade = get(tradeId);
         if (!trade.getBuyerId().equals(buyerId)) throw new IllegalArgumentException("Trade does not belong to buyer");
-        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) {
-            return P2PTradeDtos.TradeResponse.from(trade);
-        }
+        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING)
             throw new IllegalStateException("Trade is not awaiting payment");
         paymentService.submit(buyerId, tradeId,
@@ -86,8 +103,7 @@ public class P2PTradeService {
     public P2PTradeDtos.TradeResponse confirmPayment(UUID sellerId, UUID tradeId) {
         P2PTrade trade = get(tradeId);
         if (!trade.getSellerId().equals(sellerId)) throw new IllegalArgumentException("Trade does not belong to seller");
-        if (trade.getStatus() == P2PTradeStatus.COMPLETED)
-            return P2PTradeDtos.TradeResponse.from(trade);
+        if (trade.getStatus() == P2PTradeStatus.COMPLETED) return P2PTradeDtos.TradeResponse.from(trade);
         ensureNotExpired(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED)
             throw new IllegalStateException("Buyer has not marked payment");
@@ -113,6 +129,7 @@ public class P2PTradeService {
             throw new IllegalStateException("Paid or disputed trade must not be cancelled");
         walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
         trade.setStatus(P2PTradeStatus.CANCELLED);
+        restoreAdvertisement(trade);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
     }
 
@@ -121,8 +138,7 @@ public class P2PTradeService {
         P2PTrade trade = get(tradeId);
         if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId))
             throw new IllegalArgumentException("Trade does not belong to user");
-        if (trade.getStatus() == P2PTradeStatus.DISPUTED)
-            return P2PTradeDtos.TradeResponse.from(trade);
+        if (trade.getStatus() == P2PTradeStatus.DISPUTED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED)
             throw new IllegalStateException("Only a payment-marked trade can be disputed");
         trade.setStatus(P2PTradeStatus.DISPUTED);
@@ -161,10 +177,21 @@ public class P2PTradeService {
             if (trade.getStatus() == P2PTradeStatus.PAYMENT_PENDING) {
                 walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
                 trade.setStatus(P2PTradeStatus.EXPIRED);
+                restoreAdvertisement(trade);
                 repository.save(trade);
             }
             throw new IllegalStateException("P2P trade has expired");
         }
+    }
+
+    private void restoreAdvertisement(P2PTrade trade) {
+        if (trade.getAdvertisementId() == null) return;
+        Advertisement ad = advertisementRepository.findByIdForUpdate(trade.getAdvertisementId()).orElse(null);
+        if (ad == null) return;
+        BigDecimal restored = ad.getAvailableQuantity().add(trade.getQuantity());
+        ad.setAvailableQuantity(restored.min(ad.getTotalQuantity()));
+        if (ad.getStatus() == AdStatus.CLOSED && ad.getAvailableQuantity().signum() > 0) ad.setStatus(AdStatus.ACTIVE);
+        advertisementRepository.save(ad);
     }
 
     private BigDecimal positive(BigDecimal value, String label) {
