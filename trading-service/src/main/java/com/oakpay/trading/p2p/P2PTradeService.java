@@ -54,8 +54,6 @@ public class P2PTradeService {
         trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
         trade = repository.save(trade);
 
-        // The seller's crypto is the escrowed asset. The commission is assessed
-        // against the fiat transaction value and remains separately auditable.
         commissionService.assess(trade);
         walletClient.lock(sellerId, asset, quantity, trade.getId());
         trade.setStatus(P2PTradeStatus.PAYMENT_PENDING);
@@ -64,6 +62,12 @@ public class P2PTradeService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse markPaid(UUID buyerId, UUID tradeId, P2PTradeDtos.PaymentRequest request) {
+        P2PTrade trade = get(tradeId);
+        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) {
+            return P2PTradeDtos.TradeResponse.from(trade);
+        }
+        if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING)
+            throw new IllegalStateException("Trade is not awaiting payment");
         paymentService.submit(buyerId, tradeId,
                 new P2PPaymentDtos.SubmitRequest(request == null ? null : request.paymentReference(),
                         request == null ? null : request.paymentNote()));
@@ -73,8 +77,10 @@ public class P2PTradeService {
     @Transactional
     public P2PTradeDtos.TradeResponse confirmPayment(UUID sellerId, UUID tradeId) {
         P2PTrade trade = get(tradeId);
-        ensureNotExpired(trade);
         if (!trade.getSellerId().equals(sellerId)) throw new IllegalArgumentException("Trade does not belong to seller");
+        if (trade.getStatus() == P2PTradeStatus.COMPLETED)
+            return P2PTradeDtos.TradeResponse.from(trade);
+        ensureNotExpired(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED)
             throw new IllegalStateException("Buyer has not marked payment");
 
@@ -83,8 +89,6 @@ public class P2PTradeService {
         if (payment.getStatus() != PaymentStatus.VERIFIED)
             throw new IllegalStateException("Payment must be verified before crypto is released");
 
-        // Crypto transfer is kept exact: buyer receives the advertised quantity.
-        // OakPay commission is separately assessed on the fiat transaction value.
         walletClient.releaseEscrow(sellerId, trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
         trade.setStatus(P2PTradeStatus.COMPLETED);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
@@ -95,10 +99,12 @@ public class P2PTradeService {
         P2PTrade trade = get(tradeId);
         if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId))
             throw new IllegalArgumentException("Trade does not belong to user");
-        if (trade.getStatus() == P2PTradeStatus.COMPLETED || trade.getStatus() == P2PTradeStatus.CANCELLED)
-            throw new IllegalStateException("Trade cannot be cancelled");
-        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED)
-            throw new IllegalStateException("Paid trade must be disputed, not cancelled");
+        if (trade.getStatus() == P2PTradeStatus.COMPLETED)
+            throw new IllegalStateException("Completed trade cannot be cancelled");
+        if (trade.getStatus() == P2PTradeStatus.CANCELLED || trade.getStatus() == P2PTradeStatus.EXPIRED)
+            return P2PTradeDtos.TradeResponse.from(trade);
+        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED || trade.getStatus() == P2PTradeStatus.DISPUTED)
+            throw new IllegalStateException("Paid or disputed trade must not be cancelled");
         walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
         trade.setStatus(P2PTradeStatus.CANCELLED);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
@@ -109,6 +115,8 @@ public class P2PTradeService {
         P2PTrade trade = get(tradeId);
         if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId))
             throw new IllegalArgumentException("Trade does not belong to user");
+        if (trade.getStatus() == P2PTradeStatus.DISPUTED)
+            return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED)
             throw new IllegalStateException("Only a payment-marked trade can be disputed");
         trade.setStatus(P2PTradeStatus.DISPUTED);
