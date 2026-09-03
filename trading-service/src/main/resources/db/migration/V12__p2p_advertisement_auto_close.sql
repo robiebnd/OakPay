@@ -1,0 +1,2 @@
+ALTER TABLE p2p_advertisements
+    ADD COLUMN auto_closed BOOLEAN NOT NULL DEFAULT FALSE;
