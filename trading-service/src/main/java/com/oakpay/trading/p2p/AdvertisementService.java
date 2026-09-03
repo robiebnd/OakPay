@@ -130,12 +130,7 @@ public class AdvertisementService {
         P2PTradeDtos.CreateRequest request = new P2PTradeDtos.CreateRequest(
                 buyerId, ad.getAsset(), ad.getFiatCurrency(), quantity, ad.getPrice(),
                 paymentMethod, r.expiryMinutes(), ad.getId());
-        P2PTradeDtos.TradeResponse trade = tradeService.create(sellerId, request);
-
-        ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
-        if (ad.getAvailableQuantity().signum() == 0) ad.setStatus(AdStatus.CLOSED);
-        repository.save(ad);
-        return trade;
+        return tradeService.create(sellerId, request);
     }
 
     private void validateP2PAsset(String symbol, BigDecimal quantity) {
