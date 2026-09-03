@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -99,6 +100,7 @@ public class AdvertisementService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse take(UUID takerId, UUID adId, AdvertisementDtos.TakeRequest r) {
+        if (r == null) throw new IllegalArgumentException("Take request is required");
         Advertisement ad = ownedForUpdate(null, adId);
         if (ad.getOwnerId().equals(takerId)) throw new IllegalArgumentException("You cannot take your own advertisement");
         if (ad.getStatus() != AdStatus.ACTIVE) throw new IllegalStateException("Advertisement is not active");
@@ -108,11 +110,16 @@ public class AdvertisementService {
         if (quantity.compareTo(ad.getAvailableQuantity()) > 0)
             throw new IllegalStateException("Advertisement has insufficient available quantity");
 
+        String paymentMethod = normalizePaymentMethod(r.paymentMethod());
+        if (!containsPaymentMethod(ad.getPaymentMethods(), paymentMethod)) {
+            throw new IllegalArgumentException("Selected payment method is not supported by this advertisement");
+        }
+
         UUID sellerId = ad.getSide() == OrderSide.SELL ? ad.getOwnerId() : takerId;
         UUID buyerId = ad.getSide() == OrderSide.SELL ? takerId : ad.getOwnerId();
         P2PTradeDtos.CreateRequest request = new P2PTradeDtos.CreateRequest(
                 buyerId, ad.getAsset(), ad.getFiatCurrency(), quantity, ad.getPrice(),
-                firstPaymentMethod(ad.getPaymentMethods()), r.expiryMinutes());
+                paymentMethod, r.expiryMinutes());
         P2PTradeDtos.TradeResponse trade = tradeService.create(sellerId, request);
 
         ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
@@ -121,16 +128,24 @@ public class AdvertisementService {
         return trade;
     }
 
+    private boolean containsPaymentMethod(String methods, String selected) {
+        return java.util.Arrays.stream(methods.split(","))
+                .map(String::trim)
+                .map(value -> value.toUpperCase(Locale.ROOT))
+                .anyMatch(selected::equals);
+    }
+
+    private String normalizePaymentMethod(String value) {
+        if (value == null || value.isBlank()) throw new IllegalArgumentException("Payment method is required");
+        return value.trim().toUpperCase(Locale.ROOT);
+    }
+
     private Advertisement ownedForUpdate(UUID ownerId, UUID id) {
         Advertisement ad = repository.findByIdForUpdate(id)
                 .orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
         if (ownerId != null && !ad.getOwnerId().equals(ownerId))
             throw new IllegalArgumentException("Advertisement does not belong to user");
         return ad;
-    }
-
-    private String firstPaymentMethod(String methods) {
-        return methods.split(",")[0].trim();
     }
 
     private BigDecimal positive(BigDecimal value, String label) {
