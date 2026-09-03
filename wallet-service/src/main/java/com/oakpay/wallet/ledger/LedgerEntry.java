@@ -27,6 +27,14 @@ public class LedgerEntry {
     @Column(nullable = false, length = 20)
     private LedgerStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, updatable = false)
+    private LedgerDirection direction;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "balance_type", nullable = false, length = 10, updatable = false)
+    private LedgerBalanceType balanceType;
+
     @Column(nullable = false, length = 10, updatable = false)
     private String currency;
 
@@ -52,6 +60,8 @@ public class LedgerEntry {
     void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (direction == null) direction = LedgerDirection.CREDIT;
+        if (balanceType == null) balanceType = LedgerBalanceType.AVAILABLE;
     }
 
     public UUID getId() { return id; }
@@ -63,6 +73,10 @@ public class LedgerEntry {
     public void setTransactionType(LedgerTransactionType transactionType) { this.transactionType = transactionType; }
     public LedgerStatus getStatus() { return status; }
     public void setStatus(LedgerStatus status) { this.status = status; }
+    public LedgerDirection getDirection() { return direction; }
+    public void setDirection(LedgerDirection direction) { this.direction = direction; }
+    public LedgerBalanceType getBalanceType() { return balanceType; }
+    public void setBalanceType(LedgerBalanceType balanceType) { this.balanceType = balanceType; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public BigDecimal getAmount() { return amount; }
