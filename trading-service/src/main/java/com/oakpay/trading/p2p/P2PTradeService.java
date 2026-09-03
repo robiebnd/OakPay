@@ -93,7 +93,10 @@ public class P2PTradeService {
 
         if (ad != null) {
             ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
-            if (ad.getAvailableQuantity().signum() == 0) ad.setStatus(AdStatus.CLOSED);
+            if (ad.getAvailableQuantity().signum() == 0) {
+                ad.setStatus(AdStatus.CLOSED);
+                ad.setAutoClosed(true);
+            }
             advertisementRepository.save(ad);
         }
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
@@ -229,7 +232,10 @@ public class P2PTradeService {
         if (ad == null) return;
         BigDecimal restored = ad.getAvailableQuantity().add(trade.getQuantity());
         ad.setAvailableQuantity(restored.min(ad.getTotalQuantity()));
-        if (ad.getStatus() == AdStatus.CLOSED && ad.getAvailableQuantity().signum() > 0) ad.setStatus(AdStatus.ACTIVE);
+        if (ad.isAutoClosed() && ad.getAvailableQuantity().signum() > 0) {
+            ad.setStatus(AdStatus.ACTIVE);
+            ad.setAutoClosed(false);
+        }
         advertisementRepository.save(ad);
     }
 
