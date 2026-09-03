@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
@@ -17,17 +18,20 @@ public class P2PDisputeService {
     private final P2PDisputeRepository disputeRepository;
     private final P2PDisputeAuditRepository auditRepository;
     private final P2PTradeRepository tradeRepository;
+    private final AdvertisementRepository advertisementRepository;
     private final WalletClient walletClient;
     private final String adminSecret;
 
     public P2PDisputeService(P2PDisputeRepository disputeRepository,
                              P2PDisputeAuditRepository auditRepository,
                              P2PTradeRepository tradeRepository,
+                             AdvertisementRepository advertisementRepository,
                              WalletClient walletClient,
                              @org.springframework.beans.factory.annotation.Value("${oakpay.admin.dispute-secret}") String adminSecret) {
         this.disputeRepository = disputeRepository;
         this.auditRepository = auditRepository;
         this.tradeRepository = tradeRepository;
+        this.advertisementRepository = advertisementRepository;
         this.walletClient = walletClient;
         this.adminSecret = adminSecret;
     }
@@ -101,6 +105,7 @@ public class P2PDisputeService {
         } else {
             walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
             trade.setStatus(P2PTradeStatus.CANCELLED);
+            restoreAdvertisement(trade);
         }
         tradeRepository.save(trade);
 
@@ -112,6 +117,16 @@ public class P2PDisputeService {
         disputeRepository.save(dispute);
         audit(dispute, adminId, "DISPUTE_RESOLVED", request.resolution().name() + ": " + request.note());
         return P2PDisputeDtos.DisputeResponse.from(dispute);
+    }
+
+    private void restoreAdvertisement(P2PTrade trade) {
+        if (trade.getAdvertisementId() == null) return;
+        Advertisement ad = advertisementRepository.findByIdForUpdate(trade.getAdvertisementId()).orElse(null);
+        if (ad == null) return;
+        BigDecimal restored = ad.getAvailableQuantity().add(trade.getQuantity());
+        ad.setAvailableQuantity(restored.min(ad.getTotalQuantity()));
+        if (ad.getStatus() == AdStatus.CLOSED && ad.getAvailableQuantity().signum() > 0) ad.setStatus(AdStatus.ACTIVE);
+        advertisementRepository.save(ad);
     }
 
     private void audit(P2PDispute dispute, UUID actorId, String eventType, String note) {
