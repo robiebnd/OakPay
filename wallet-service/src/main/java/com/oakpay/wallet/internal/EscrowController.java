@@ -23,6 +23,6 @@ public class EscrowController {
         if (secret == null || secret.isBlank() || !secret.equals(supplied)) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid internal credential");
         }
-        escrowService.release(request.sellerId(), request.buyerId(), request.asset(), request.amount());
+        escrowService.release(request.sellerId(), request.buyerId(), request.asset(), request.amount(), request.reference());
     }
 }
