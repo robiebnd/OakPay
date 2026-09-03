@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -36,6 +37,30 @@ public class P2PCommissionService {
             commission.setStatus(P2PCommissionStatus.ASSESSED);
             return repository.save(commission);
         });
+    }
+
+    @Transactional
+    public P2PCommission collect(UUID tradeId, P2PCommissionDtos.CollectionRequest request) {
+        P2PCommission commission = getByTrade(tradeId);
+        if (commission.getStatus() == P2PCommissionStatus.COLLECTED) {
+            if (!commission.getCollectionReference().equals(request.collectionReference().trim())) {
+                throw new IllegalStateException("Commission has already been collected with another reference");
+            }
+            return commission;
+        }
+        if (commission.getStatus() == P2PCommissionStatus.WAIVED) {
+            throw new IllegalStateException("Waived commission cannot be collected");
+        }
+
+        String reference = request.collectionReference().trim();
+        String method = request.collectionMethod().trim().toUpperCase();
+        if (reference.isBlank() || method.isBlank()) throw new IllegalArgumentException("Collection reference and method are required");
+
+        commission.setCollectionReference(reference);
+        commission.setCollectionMethod(method);
+        commission.setCollectedAt(LocalDateTime.now());
+        commission.setStatus(P2PCommissionStatus.COLLECTED);
+        return repository.save(commission);
     }
 
     @Transactional(readOnly = true)
