@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -47,6 +48,7 @@ public class P2PTradeService {
             throw new IllegalArgumentException("Payment method is required");
         String asset = normalize(request.asset());
         String fiat = normalize(request.fiatCurrency());
+        String paymentMethod = request.paymentMethod().trim().toUpperCase(Locale.ROOT);
         validateP2PAsset(asset, quantity);
         BigDecimal fiatAmount = quantity.multiply(price).setScale(18, RoundingMode.DOWN);
         int expiry = request.expiryMinutes() == null ? 30 : request.expiryMinutes();
@@ -56,8 +58,9 @@ public class P2PTradeService {
         if (request.advertisementId() != null) {
             ad = advertisementRepository.findByIdForUpdate(request.advertisementId())
                     .orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
-            if (!ad.getOwnerId().equals(sellerId))
-                throw new IllegalArgumentException("Advertisement does not belong to seller");
+            UUID expectedOwner = ad.getSide() == OrderSide.SELL ? sellerId : request.buyerId();
+            if (!ad.getOwnerId().equals(expectedOwner))
+                throw new IllegalArgumentException("Trade participants do not match advertisement");
             if (ad.getStatus() != AdStatus.ACTIVE)
                 throw new IllegalStateException("Advertisement is not active");
             if (!ad.getAsset().equals(asset) || !ad.getFiatCurrency().equals(fiat)
@@ -66,6 +69,8 @@ public class P2PTradeService {
             if (quantity.compareTo(ad.getMinQuantity()) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0
                     || quantity.compareTo(ad.getAvailableQuantity()) > 0)
                 throw new IllegalArgumentException("Quantity is outside the advertisement limits");
+            if (!containsPaymentMethod(ad.getPaymentMethods(), paymentMethod))
+                throw new IllegalArgumentException("Selected payment method is not supported by this advertisement");
         }
 
         P2PTrade trade = new P2PTrade();
@@ -77,7 +82,7 @@ public class P2PTradeService {
         trade.setQuantity(quantity);
         trade.setUnitPrice(price);
         trade.setFiatAmount(fiatAmount);
-        trade.setPaymentMethod(request.paymentMethod().trim());
+        trade.setPaymentMethod(paymentMethod);
         trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
         trade = repository.save(trade);
 
@@ -166,6 +171,13 @@ public class P2PTradeService {
                 .map(P2PTradeDtos.TradeResponse::from).toList();
     }
 
+    private boolean containsPaymentMethod(String methods, String selected) {
+        return java.util.Arrays.stream(methods.split(","))
+                .map(String::trim)
+                .map(value -> value.toUpperCase(Locale.ROOT))
+                .anyMatch(selected::equals);
+    }
+
     private void validateP2PAsset(String symbol, BigDecimal quantity) {
         SupportedAsset asset = assetRepository.findBySymbolIgnoreCase(symbol)
                 .orElseThrow(() -> new IllegalArgumentException("Unsupported asset " + symbol));
@@ -208,6 +220,6 @@ public class P2PTradeService {
 
     private String normalize(String value) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException("Currency is required");
-        return value.trim().toUpperCase();
+        return value.trim().toUpperCase(Locale.ROOT);
     }
 }
