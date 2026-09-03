@@ -52,8 +52,9 @@ public class P2PTradeService {
         int expiry = request.expiryMinutes() == null ? 30 : request.expiryMinutes();
         if (expiry < 5 || expiry > 1440) throw new IllegalArgumentException("Expiry must be between 5 and 1440 minutes");
 
+        Advertisement ad = null;
         if (request.advertisementId() != null) {
-            Advertisement ad = advertisementRepository.findByIdForUpdate(request.advertisementId())
+            ad = advertisementRepository.findByIdForUpdate(request.advertisementId())
                     .orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
             if (!ad.getOwnerId().equals(sellerId))
                 throw new IllegalArgumentException("Advertisement does not belong to seller");
@@ -83,6 +84,12 @@ public class P2PTradeService {
         commissionService.assess(trade);
         walletClient.lock(sellerId, asset, quantity, trade.getId());
         trade.setStatus(P2PTradeStatus.PAYMENT_PENDING);
+
+        if (ad != null) {
+            ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
+            if (ad.getAvailableQuantity().signum() == 0) ad.setStatus(AdStatus.CLOSED);
+            advertisementRepository.save(ad);
+        }
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
     }
 
