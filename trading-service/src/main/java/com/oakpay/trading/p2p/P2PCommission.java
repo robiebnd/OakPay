@@ -35,6 +35,15 @@ public class P2PCommission {
     @Column(nullable = false, length = 15)
     private P2PCommissionStatus status;
 
+    @Column(name = "collection_reference", length = 100)
+    private String collectionReference;
+
+    @Column(name = "collection_method", length = 30)
+    private String collectionMethod;
+
+    @Column(name = "collected_at")
+    private LocalDateTime collectedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -67,6 +76,12 @@ public class P2PCommission {
     public void setCommissionAmount(BigDecimal value) { commissionAmount = value; }
     public P2PCommissionStatus getStatus() { return status; }
     public void setStatus(P2PCommissionStatus value) { status = value; }
+    public String getCollectionReference() { return collectionReference; }
+    public void setCollectionReference(String value) { collectionReference = value; }
+    public String getCollectionMethod() { return collectionMethod; }
+    public void setCollectionMethod(String value) { collectionMethod = value; }
+    public LocalDateTime getCollectedAt() { return collectedAt; }
+    public void setCollectedAt(LocalDateTime value) { collectedAt = value; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
