@@ -25,7 +25,10 @@ public final class AdvertisementDtos {
             String paymentMethods,
             String terms) {}
 
-    public record TakeRequest(BigDecimal quantity, Integer expiryMinutes) {}
+    public record TakeRequest(
+            BigDecimal quantity,
+            String paymentMethod,
+            Integer expiryMinutes) {}
 
     public record AdResponse(
             UUID id,
