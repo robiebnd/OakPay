@@ -4,6 +4,7 @@ import com.oakpay.trading.asset.AssetStatus;
 import com.oakpay.trading.asset.SupportedAsset;
 import com.oakpay.trading.asset.SupportedAssetRepository;
 import com.oakpay.trading.wallet.WalletClient;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -169,6 +170,25 @@ public class P2PTradeService {
     public List<P2PTradeDtos.TradeResponse> mine(UUID userId) {
         return repository.findAllByBuyerIdOrSellerIdOrderByCreatedAtDesc(userId, userId).stream()
                 .map(P2PTradeDtos.TradeResponse::from).toList();
+    }
+
+    @Scheduled(fixedDelayString = "${oakpay.p2p.expiry-check-ms:60000}")
+    @Transactional
+    public void expirePendingTrades() {
+        LocalDateTime now = LocalDateTime.now();
+        repository.findAllByStatusAndExpiresAtBefore(P2PTradeStatus.PAYMENT_PENDING, now).stream()
+                .map(P2PTrade::getId)
+                .forEach(this::expirePendingTrade);
+    }
+
+    private void expirePendingTrade(UUID tradeId) {
+        P2PTrade trade = repository.findByIdForUpdate(tradeId).orElse(null);
+        if (trade == null || trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING
+                || !trade.getExpiresAt().isBefore(LocalDateTime.now())) return;
+        walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
+        trade.setStatus(P2PTradeStatus.EXPIRED);
+        restoreAdvertisement(trade);
+        repository.save(trade);
     }
 
     private boolean containsPaymentMethod(String methods, String selected) {
