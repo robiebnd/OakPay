@@ -16,13 +16,16 @@ public class P2PTradeService {
     private final WalletClient walletClient;
     private final P2PPaymentService paymentService;
     private final P2PPaymentRepository paymentRepository;
+    private final P2PCommissionService commissionService;
 
     public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient,
-                           P2PPaymentService paymentService, P2PPaymentRepository paymentRepository) {
+                           P2PPaymentService paymentService, P2PPaymentRepository paymentRepository,
+                           P2PCommissionService commissionService) {
         this.repository = repository;
         this.walletClient = walletClient;
         this.paymentService = paymentService;
         this.paymentRepository = paymentRepository;
+        this.commissionService = commissionService;
     }
 
     @Transactional
@@ -51,6 +54,9 @@ public class P2PTradeService {
         trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
         trade = repository.save(trade);
 
+        // The seller's crypto is the escrowed asset. The commission is assessed
+        // against the fiat transaction value and remains separately auditable.
+        commissionService.assess(trade);
         walletClient.lock(sellerId, asset, quantity, trade.getId());
         trade.setStatus(P2PTradeStatus.PAYMENT_PENDING);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
@@ -77,6 +83,8 @@ public class P2PTradeService {
         if (payment.getStatus() != PaymentStatus.VERIFIED)
             throw new IllegalStateException("Payment must be verified before crypto is released");
 
+        // Crypto transfer is kept exact: buyer receives the advertised quantity.
+        // OakPay commission is separately assessed on the fiat transaction value.
         walletClient.releaseEscrow(sellerId, trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
         trade.setStatus(P2PTradeStatus.COMPLETED);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
