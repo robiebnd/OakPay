@@ -19,5 +19,5 @@ public final class InternalWalletDtos {
             BigDecimal sellerFee,
             String reference) {}
 
-    public record EscrowReleaseRequest(UUID sellerId, UUID buyerId, String asset, BigDecimal amount) {}
+    public record EscrowReleaseRequest(UUID sellerId, UUID buyerId, String asset, BigDecimal amount, String reference) {}
 }
