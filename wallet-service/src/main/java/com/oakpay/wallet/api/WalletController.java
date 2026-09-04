@@ -27,14 +27,6 @@ public class WalletController {
                 .body(walletService.createWallet(userId(authentication), request.currency()));
     }
 
-    @PostMapping("/{currency}/deposit")
-    public WalletDtos.WalletResponse deposit(
-            @PathVariable String currency,
-            @Valid @RequestBody WalletDtos.DepositRequest request,
-            Authentication authentication) {
-        return walletService.deposit(userId(authentication), currency, request);
-    }
-
     @GetMapping
     public List<WalletDtos.WalletResponse> getWallets(Authentication authentication) {
         return walletService.getUserWallets(userId(authentication));
