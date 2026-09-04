@@ -2,7 +2,7 @@ spring:
   application:
     name: trading-service
   datasource:
-    url: ${OAKPAY_DB_URL:jdbc:postgresql://127.0.0.1:5432/oakpay}
+    url: ${OAKPAY_DB_URL:jdbc:postgresql://127.0.0.1:5432/oakpay_trading}
     username: ${OAKPAY_DB_USERNAME:oakpay}
     password: ${OAKPAY_DB_PASSWORD:oakpay_dev_password}
     driver-class-name: org.postgresql.Driver
