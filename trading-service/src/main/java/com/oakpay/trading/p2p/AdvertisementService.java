@@ -72,6 +72,12 @@ public class AdvertisementService {
     }
 
     @Transactional(readOnly = true)
+    public AdvertisementDtos.AdResponse get(UUID id) {
+        return AdvertisementDtos.AdResponse.from(repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Advertisement not found")));
+    }
+
+    @Transactional(readOnly = true)
     public List<AdvertisementDtos.AdResponse> mine(UUID ownerId) {
         return repository.findAllByOwnerIdOrderByCreatedAtDesc(ownerId).stream()
                 .map(AdvertisementDtos.AdResponse::from).toList();
