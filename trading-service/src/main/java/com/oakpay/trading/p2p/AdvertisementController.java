@@ -34,6 +34,11 @@ public class AdvertisementController {
         return service.mine(userId(authentication));
     }
 
+    @GetMapping("/{adId}")
+    public AdvertisementDtos.AdResponse get(@PathVariable UUID adId) {
+        return service.get(adId);
+    }
+
     @PutMapping("/{adId}")
     public AdvertisementDtos.AdResponse update(@PathVariable UUID adId,
                                                 @RequestBody AdvertisementDtos.UpdateRequest request,
