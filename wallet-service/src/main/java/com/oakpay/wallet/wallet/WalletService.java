@@ -42,6 +42,13 @@ public class WalletService {
         return toResponse(wallet);
     }
 
+    @Transactional(readOnly = true)
+    public WalletDtos.WalletResponse getWalletById(UUID userId, UUID walletId) {
+        Wallet wallet = walletRepository.findByIdAndUserId(walletId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        return toResponse(wallet);
+    }
+
     private String normalizeCurrency(String currency) {
         if (currency == null || currency.isBlank()) throw new IllegalArgumentException("Currency is required");
         return currency.trim().toUpperCase();
