@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface WalletRepository extends JpaRepository<Wallet, UUID> {
     List<Wallet> findAllByUserId(UUID userId);
     Optional<Wallet> findByUserIdAndCurrency(UUID userId, String currency);
+    Optional<Wallet> findByIdAndUserId(UUID id, UUID userId);
     boolean existsByUserIdAndCurrency(UUID userId, String currency);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
