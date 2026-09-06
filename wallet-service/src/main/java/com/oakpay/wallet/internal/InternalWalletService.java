@@ -77,12 +77,8 @@ public class InternalWalletService {
             }
 
             if (existing.getStatus() == AdvertisementReservationStatus.RESERVED) {
-                // A restoration adds the returned quantity to an existing reservation.
-                // If the exact amount is submitted again, treat it as an idempotent call.
-                if (existing.getReservedAmount().compareTo(amount) == 0) {
-                    return;
-                }
-
+                // Reservation restoration is incremental: the returned trade quantity
+                // must be added to the reservation that is still active.
                 Wallet wallet = wallet(userId, normalized);
                 if (wallet.getAvailableBalance().compareTo(amount) < 0) {
                     throw new IllegalStateException("Insufficient available balance");
