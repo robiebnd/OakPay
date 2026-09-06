@@ -56,6 +56,14 @@ public class AdvertisementController {
         return service.close(userId(authentication), adId);
     }
 
+    @DeleteMapping("/{adId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID adId, Authentication authentication) {
+        // Advertisements are retained for trade/audit history; DELETE is a seller-facing
+        // lifecycle operation that closes the advertisement rather than hard-deleting it.
+        service.close(userId(authentication), adId);
+    }
+
     @PostMapping("/{adId}/take")
     public ResponseEntity<P2PTradeDtos.TradeResponse> take(@PathVariable UUID adId,
                                                             @RequestBody AdvertisementDtos.TakeRequest request,
