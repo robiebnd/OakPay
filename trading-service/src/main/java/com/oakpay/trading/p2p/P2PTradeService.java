@@ -112,18 +112,19 @@ public class P2PTradeService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse markPaid(UUID buyerId, UUID tradeId, P2PTradeDtos.PaymentRequest request) {
-        P2PTrade trade = get(tradeId);
+        P2PTrade trade = getForUpdate(tradeId);
         if (!trade.getBuyerId().equals(buyerId)) throw new IllegalArgumentException("Trade does not belong to buyer");
         if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING) throw new IllegalStateException("Trade is not awaiting payment");
         ensureNotExpired(trade);
         paymentService.submit(buyerId, tradeId, new P2PPaymentDtos.SubmitRequest(request == null ? null : request.paymentReference(), request == null ? null : request.paymentNote()));
-        return P2PTradeDtos.TradeResponse.from(get(tradeId));
+        return P2PTradeDtos.TradeResponse.from(getForUpdate(tradeId));
     }
 
     @Transactional
     public P2PTradeDtos.TradeResponse confirmPayment(UUID sellerId, UUID tradeId) {
-        P2PTrade trade = get(tradeId);
+        // Serialize confirmations so two concurrent requests cannot both release escrow.
+        P2PTrade trade = getForUpdate(tradeId);
         if (!trade.getSellerId().equals(sellerId)) throw new IllegalArgumentException("Trade does not belong to seller");
         if (trade.getStatus() == P2PTradeStatus.COMPLETED) return P2PTradeDtos.TradeResponse.from(trade);
         ensureNotExpired(trade);
@@ -137,7 +138,8 @@ public class P2PTradeService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse cancel(UUID userId, UUID tradeId) {
-        P2PTrade trade = get(tradeId);
+        // Serialize cancellation against confirmation, payment and expiry transitions.
+        P2PTrade trade = getForUpdate(tradeId);
         if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) throw new IllegalArgumentException("Trade does not belong to user");
         if (trade.getStatus() == P2PTradeStatus.COMPLETED) throw new IllegalStateException("Completed trade cannot be cancelled");
         if (trade.getStatus() == P2PTradeStatus.CANCELLED || trade.getStatus() == P2PTradeStatus.EXPIRED) return P2PTradeDtos.TradeResponse.from(trade);
@@ -148,7 +150,7 @@ public class P2PTradeService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse dispute(UUID userId, UUID tradeId) {
-        P2PTrade trade = get(tradeId);
+        P2PTrade trade = getForUpdate(tradeId);
         if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) throw new IllegalArgumentException("Trade does not belong to user");
         if (trade.getStatus() == P2PTradeStatus.DISPUTED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED) throw new IllegalStateException("Only a payment-marked trade can be disputed");
@@ -205,6 +207,8 @@ public class P2PTradeService {
     }
 
     private P2PTrade get(UUID id) { return repository.findById(id).orElseThrow(() -> new IllegalArgumentException("P2P trade not found")); }
+
+    private P2PTrade getForUpdate(UUID id) { return repository.findByIdForUpdate(id).orElseThrow(() -> new IllegalArgumentException("P2P trade not found")); }
 
     private void ensureNotExpired(P2PTrade trade) {
         if (trade.getExpiresAt().isBefore(LocalDateTime.now())) {
