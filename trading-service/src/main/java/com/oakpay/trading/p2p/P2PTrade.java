@@ -2,6 +2,7 @@ package com.oakpay.trading.p2p;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -32,13 +33,13 @@ public class P2PTrade {
     @Column(name = "fiat_currency", nullable = false, length = 10, updatable = false)
     private String fiatCurrency;
 
-    @Column(nullable = false, precision = 38, scale = 18, updatable = false)
+    @Column(nullable = false, precision = 20, scale = 2, updatable = false)
     private BigDecimal quantity;
 
-    @Column(nullable = false, precision = 38, scale = 18, updatable = false)
+    @Column(nullable = false, precision = 20, scale = 2, updatable = false)
     private BigDecimal unitPrice;
 
-    @Column(name = "fiat_amount", nullable = false, precision = 38, scale = 18, updatable = false)
+    @Column(name = "fiat_amount", nullable = false, precision = 20, scale = 2, updatable = false)
     private BigDecimal fiatAmount;
 
     @Column(name = "payment_method", nullable = false, length = 50, updatable = false)
@@ -67,13 +68,17 @@ public class P2PTrade {
     void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (status == null) status = P2PTradeStatus.ESCROWED;
+        normalize();
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
     }
 
     @PreUpdate
-    void preUpdate() { updatedAt = LocalDateTime.now(); }
+    void preUpdate() { normalize(); updatedAt = LocalDateTime.now(); }
+
+    private BigDecimal money(BigDecimal v) { return v == null ? null : v.setScale(2, RoundingMode.HALF_UP); }
+    private void normalize() { quantity = money(quantity); unitPrice = money(unitPrice); fiatAmount = money(fiatAmount); }
 
     public UUID getId() { return id; }
     public UUID getBuyerId() { return buyerId; }
@@ -87,11 +92,11 @@ public class P2PTrade {
     public String getFiatCurrency() { return fiatCurrency; }
     public void setFiatCurrency(String v) { fiatCurrency = v; }
     public BigDecimal getQuantity() { return quantity; }
-    public void setQuantity(BigDecimal v) { quantity = v; }
+    public void setQuantity(BigDecimal v) { quantity = money(v); }
     public BigDecimal getUnitPrice() { return unitPrice; }
-    public void setUnitPrice(BigDecimal v) { unitPrice = v; }
+    public void setUnitPrice(BigDecimal v) { unitPrice = money(v); }
     public BigDecimal getFiatAmount() { return fiatAmount; }
-    public void setFiatAmount(BigDecimal v) { fiatAmount = v; }
+    public void setFiatAmount(BigDecimal v) { fiatAmount = money(v); }
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String v) { paymentMethod = v; }
     public P2PTradeStatus getStatus() { return status; }
