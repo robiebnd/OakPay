@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/wallets")
 public class InternalWalletController {
@@ -14,6 +16,15 @@ public class InternalWalletController {
                                     @Value("${oakpay.internal-secret}") String secret) {
         this.service = service;
         this.secret = secret;
+    }
+
+    @GetMapping("/internal/{userId}/{currency}/balance")
+    public InternalWalletDtos.BalanceResponse balance(
+            @PathVariable UUID userId,
+            @PathVariable String currency,
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String supplied) {
+        authorize(supplied);
+        return service.balance(userId, currency);
     }
 
     @PostMapping("/{currency}/lock")
