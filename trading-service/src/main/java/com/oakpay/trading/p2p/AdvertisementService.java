@@ -3,6 +3,7 @@ package com.oakpay.trading.p2p;
 import com.oakpay.trading.asset.AssetStatus;
 import com.oakpay.trading.asset.SupportedAsset;
 import com.oakpay.trading.asset.SupportedAssetRepository;
+import com.oakpay.trading.wallet.WalletClient;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +19,14 @@ public class AdvertisementService {
     private final AdvertisementRepository repository;
     private final P2PTradeService tradeService;
     private final SupportedAssetRepository assetRepository;
+    private final WalletClient walletClient;
 
     public AdvertisementService(AdvertisementRepository repository, P2PTradeService tradeService,
-                                 SupportedAssetRepository assetRepository) {
+                                 SupportedAssetRepository assetRepository, WalletClient walletClient) {
         this.repository = repository;
         this.tradeService = tradeService;
         this.assetRepository = assetRepository;
+        this.walletClient = walletClient;
     }
 
     @Transactional
@@ -41,6 +44,14 @@ public class AdvertisementService {
             throw new IllegalArgumentException("Quantity limits are invalid");
         if (r.paymentMethods() == null || r.paymentMethods().isBlank())
             throw new IllegalArgumentException("At least one payment method is required");
+
+        if (r.side() == OrderSide.SELL) {
+            BigDecimal availableBalance = walletClient.availableBalance(ownerId, asset);
+            if (availableBalance.compareTo(total) < 0) {
+                throw new IllegalStateException(
+                        "Insufficient available " + asset + " balance to create this sell advertisement");
+            }
+        }
 
         Advertisement ad = new Advertisement();
         ad.setOwnerId(ownerId);
