@@ -8,6 +8,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -51,15 +52,19 @@ public class Wallet {
         updatedAt = LocalDateTime.now();
     }
 
+    private BigDecimal money(BigDecimal value) {
+        return value == null ? null : value.setScale(2, RoundingMode.HALF_UP);
+    }
+
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public BigDecimal getAvailableBalance() { return availableBalance; }
-    public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = availableBalance == null ? null : availableBalance.setScale(2); }
+    public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = money(availableBalance); }
     public BigDecimal getLockedBalance() { return lockedBalance; }
-    public void setLockedBalance(BigDecimal lockedBalance) { this.lockedBalance = lockedBalance == null ? null : lockedBalance.setScale(2); }
+    public void setLockedBalance(BigDecimal lockedBalance) { this.lockedBalance = money(lockedBalance); }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
