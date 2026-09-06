@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "oakpay",
-    "newArchEnabled": true,
     "plugins": ["expo-router", "expo-secure-store"],
     "android": {
       "package": "com.oakpay.mobile"
