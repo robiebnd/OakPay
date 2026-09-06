@@ -16,8 +16,7 @@ public class AdvertisementController {
     public AdvertisementController(AdvertisementService service) { this.service = service; }
 
     @PostMapping
-    public ResponseEntity<AdvertisementDtos.AdResponse> create(@RequestBody AdvertisementDtos.CreateRequest request,
-                                                                Authentication authentication) {
+    public ResponseEntity<AdvertisementDtos.AdResponse> create(@RequestBody AdvertisementDtos.CreateRequest request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(userId(authentication), request));
     }
 
@@ -30,25 +29,24 @@ public class AdvertisementController {
     }
 
     @GetMapping("/mine")
-    public List<AdvertisementDtos.AdResponse> mine(Authentication authentication) {
-        return service.mine(userId(authentication));
-    }
+    public List<AdvertisementDtos.AdResponse> mine(Authentication authentication) { return service.mine(userId(authentication)); }
 
     @GetMapping("/{adId}")
-    public AdvertisementDtos.AdResponse get(@PathVariable UUID adId) {
-        return service.get(adId);
-    }
+    public AdvertisementDtos.AdResponse get(@PathVariable UUID adId) { return service.get(adId); }
 
     @PutMapping("/{adId}")
-    public AdvertisementDtos.AdResponse update(@PathVariable UUID adId,
-                                                @RequestBody AdvertisementDtos.UpdateRequest request,
-                                                Authentication authentication) {
+    public AdvertisementDtos.AdResponse update(@PathVariable UUID adId, @RequestBody AdvertisementDtos.UpdateRequest request, Authentication authentication) {
         return service.update(userId(authentication), adId, request);
     }
 
     @PostMapping("/{adId}/pause")
     public AdvertisementDtos.AdResponse pause(@PathVariable UUID adId, Authentication authentication) {
         return service.pause(userId(authentication), adId);
+    }
+
+    @PostMapping("/{adId}/resume")
+    public AdvertisementDtos.AdResponse resume(@PathVariable UUID adId, Authentication authentication) {
+        return service.resume(userId(authentication), adId);
     }
 
     @PostMapping("/{adId}/close")
@@ -58,16 +56,10 @@ public class AdvertisementController {
 
     @DeleteMapping("/{adId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID adId, Authentication authentication) {
-        // Advertisements are retained for trade/audit history; DELETE is a seller-facing
-        // lifecycle operation that closes the advertisement rather than hard-deleting it.
-        service.close(userId(authentication), adId);
-    }
+    public void delete(@PathVariable UUID adId, Authentication authentication) { service.close(userId(authentication), adId); }
 
     @PostMapping("/{adId}/take")
-    public ResponseEntity<P2PTradeDtos.TradeResponse> take(@PathVariable UUID adId,
-                                                            @RequestBody AdvertisementDtos.TakeRequest request,
-                                                            Authentication authentication) {
+    public ResponseEntity<P2PTradeDtos.TradeResponse> take(@PathVariable UUID adId, @RequestBody AdvertisementDtos.TakeRequest request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.take(userId(authentication), adId, request));
     }
 
