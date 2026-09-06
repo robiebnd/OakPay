@@ -20,4 +20,6 @@ public final class InternalWalletDtos {
             String reference) {}
 
     public record EscrowReleaseRequest(UUID sellerId, UUID buyerId, String asset, BigDecimal amount, String reference) {}
+
+    public record BalanceResponse(UUID userId, String currency, BigDecimal availableBalance, BigDecimal lockedBalance) {}
 }
