@@ -14,37 +14,28 @@ import java.util.UUID;
 @RequestMapping("/api/v1/wallets")
 public class WalletController {
     private final WalletService walletService;
-
-    public WalletController(WalletService walletService) {
-        this.walletService = walletService;
-    }
+    public WalletController(WalletService walletService) { this.walletService = walletService; }
 
     @PostMapping
-    public ResponseEntity<WalletDtos.WalletResponse> createWallet(
-            @Valid @RequestBody WalletDtos.CreateWalletRequest request,
-            Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(walletService.createWallet(userId(authentication), request.currency()));
+    public ResponseEntity<WalletDtos.WalletResponse> createWallet(@Valid @RequestBody WalletDtos.CreateWalletRequest request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(walletService.createWallet(userId(authentication), request.currency()));
     }
 
     @GetMapping
-    public List<WalletDtos.WalletResponse> getWallets(Authentication authentication) {
-        return walletService.getUserWallets(userId(authentication));
-    }
+    public List<WalletDtos.WalletResponse> getWallets(Authentication authentication) { return walletService.getUserWallets(userId(authentication)); }
 
     @GetMapping("/{currency}")
-    public WalletDtos.WalletResponse getWallet(@PathVariable String currency, Authentication authentication) {
-        return walletService.getWallet(userId(authentication), currency);
+    public WalletDtos.WalletResponse getWallet(@PathVariable String currency, Authentication authentication) { return walletService.getWallet(userId(authentication), currency); }
+
+    @GetMapping("/{currency}/balance")
+    public WalletDtos.BalanceResponse getBalance(@PathVariable String currency, Authentication authentication) {
+        return walletService.getBalance(userId(authentication), currency);
     }
 
     @GetMapping("/id/{walletId}")
-    public WalletDtos.WalletResponse getWalletById(
-            @PathVariable UUID walletId,
-            Authentication authentication) {
+    public WalletDtos.WalletResponse getWalletById(@PathVariable UUID walletId, Authentication authentication) {
         return walletService.getWalletById(userId(authentication), walletId);
     }
 
-    private UUID userId(Authentication authentication) {
-        return UUID.fromString(authentication.getName());
-    }
+    private UUID userId(Authentication authentication) { return UUID.fromString(authentication.getName()); }
 }
