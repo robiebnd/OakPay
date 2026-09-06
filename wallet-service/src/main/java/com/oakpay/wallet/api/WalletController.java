@@ -37,6 +37,13 @@ public class WalletController {
         return walletService.getWallet(userId(authentication), currency);
     }
 
+    @GetMapping("/id/{walletId}")
+    public WalletDtos.WalletResponse getWalletById(
+            @PathVariable UUID walletId,
+            Authentication authentication) {
+        return walletService.getWalletById(userId(authentication), walletId);
+    }
+
     private UUID userId(Authentication authentication) {
         return UUID.fromString(authentication.getName());
     }
