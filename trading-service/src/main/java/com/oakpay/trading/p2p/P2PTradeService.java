@@ -44,7 +44,6 @@ public class P2PTradeService {
     @Transactional
     public P2PTradeDtos.TradeResponse create(UUID authenticatedUserId, P2PTradeDtos.CreateRequest request) {
         if (request == null) throw new IllegalArgumentException("Trade request is required");
-        if (request.buyerId() == null) throw new IllegalArgumentException("Buyer is required");
 
         BigDecimal quantity = positive(request.quantity(), "Quantity");
         BigDecimal price = positive(request.unitPrice(), "Unit price");
@@ -89,18 +88,13 @@ public class P2PTradeService {
             }
 
             if (ad.getSide() == OrderSide.SELL) {
-                // A SELL ad is taken by a buyer. The authenticated user must be that buyer.
-                if (!authenticatedUserId.equals(request.buyerId())) {
-                    throw new IllegalArgumentException("Authenticated user must be the buyer for a SELL advertisement");
-                }
+                // A SELL ad is taken by a buyer. The authenticated user is the buyer.
+                // Do not trust or require a client-supplied buyerId.
                 sellerId = ad.getOwnerId();
                 buyerId = authenticatedUserId;
             } else {
-                // A BUY ad is taken by a seller. The advertisement owner is the buyer,
-                // and the authenticated user must be a different seller.
-                if (!ad.getOwnerId().equals(request.buyerId())) {
-                    throw new IllegalArgumentException("Buyer must match the BUY advertisement owner");
-                }
+                // A BUY ad is taken by a seller. The advertisement owner is the buyer.
+                // Do not trust or require a client-supplied buyerId.
                 if (authenticatedUserId.equals(ad.getOwnerId())) {
                     throw new IllegalArgumentException("A different seller is required");
                 }
@@ -111,8 +105,15 @@ public class P2PTradeService {
             if (sellerId.equals(buyerId)) {
                 throw new IllegalArgumentException("A different buyer is required");
             }
-        } else if (buyerId.equals(authenticatedUserId)) {
-            throw new IllegalArgumentException("A different buyer is required");
+        } else {
+            // Direct trade: there is no advertisement from which the buyer can be derived,
+            // so buyerId remains required. The authenticated user is the seller.
+            if (buyerId == null) {
+                throw new IllegalArgumentException("Buyer is required for a direct trade");
+            }
+            if (buyerId.equals(authenticatedUserId)) {
+                throw new IllegalArgumentException("A different buyer is required");
+            }
         }
 
         P2PTrade trade = new P2PTrade();
