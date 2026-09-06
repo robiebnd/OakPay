@@ -19,6 +19,18 @@ public class WalletClient {
         this.internalSecret = internalSecret;
     }
 
+    public BigDecimal availableBalance(UUID userId, String currency) {
+        WalletBalance response = client.get()
+                .uri("/api/v1/wallets/internal/{userId}/{currency}/balance", userId, currency)
+                .header("X-OakPay-Internal-Secret", internalSecret)
+                .retrieve()
+                .body(WalletBalance.class);
+        if (response == null || response.availableBalance() == null) {
+            throw new IllegalStateException("Wallet balance could not be retrieved");
+        }
+        return response.availableBalance();
+    }
+
     public void lock(UUID userId, String currency, BigDecimal amount, UUID referenceId) {
         client.post().uri("/api/v1/wallets/{currency}/lock", currency)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -51,6 +63,7 @@ public class WalletClient {
                 .retrieve().toBodilessEntity();
     }
 
+    public record WalletBalance(UUID userId, String currency, BigDecimal availableBalance, BigDecimal lockedBalance) {}
     public record WalletMutation(UUID userId, BigDecimal amount, String reference) {}
     public record Settlement(UUID buyerId, UUID sellerId, String baseCurrency, String quoteCurrency,
                              BigDecimal baseAmount, BigDecimal quoteAmount,
