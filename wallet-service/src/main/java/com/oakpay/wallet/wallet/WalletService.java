@@ -43,6 +43,22 @@ public class WalletService {
     }
 
     @Transactional(readOnly = true)
+    public WalletDtos.BalanceResponse getBalance(UUID userId, String currency) {
+        Wallet wallet = walletRepository.findByUserIdAndCurrency(userId, normalizeCurrency(currency))
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        BigDecimal available = wallet.getAvailableBalance();
+        BigDecimal locked = wallet.getLockedBalance();
+        BigDecimal total = available.add(locked);
+        return new WalletDtos.BalanceResponse(
+                wallet.getId(),
+                wallet.getUserId(),
+                wallet.getCurrency(),
+                available,
+                locked,
+                total);
+    }
+
+    @Transactional(readOnly = true)
     public WalletDtos.WalletResponse getWalletById(UUID userId, UUID walletId) {
         Wallet wallet = walletRepository.findByIdAndUserId(walletId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
