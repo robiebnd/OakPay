@@ -18,4 +18,12 @@ public final class WalletDtos {
             BigDecimal totalBalance,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {}
+
+    public record BalanceResponse(
+            UUID walletId,
+            UUID userId,
+            String currency,
+            BigDecimal availableBalance,
+            BigDecimal lockedBalance,
+            BigDecimal totalBalance) {}
 }
