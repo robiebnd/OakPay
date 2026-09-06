@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,41 +13,36 @@ import java.util.UUID;
 @RequestMapping("/api/v1/p2p/trades")
 public class P2PTradeController {
     private final P2PTradeService service;
-
     public P2PTradeController(P2PTradeService service) { this.service = service; }
 
     @PostMapping
-    public ResponseEntity<P2PTradeDtos.TradeResponse> create(
-            @RequestBody P2PTradeDtos.CreateRequest request, Authentication authentication) {
+    public ResponseEntity<P2PTradeDtos.TradeResponse> create(@RequestBody P2PTradeDtos.CreateRequest request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(userId(authentication), request));
     }
 
     @GetMapping
-    public List<P2PTradeDtos.TradeResponse> mine(Authentication authentication) {
-        return service.mine(userId(authentication));
+    public List<P2PTradeDtos.TradeResponse> mine(@RequestParam(required = false) P2PTradeStatus status,
+                                                  @RequestParam(required = false) String asset,
+                                                  @RequestParam(required = false) LocalDateTime from,
+                                                  @RequestParam(required = false) LocalDateTime to,
+                                                  @RequestParam(defaultValue = "50") int limit,
+                                                  Authentication authentication) {
+        return service.mine(userId(authentication), status, asset, from, to, limit);
     }
 
     @GetMapping("/{tradeId}")
-    public P2PTradeDtos.TradeResponse get(@PathVariable UUID tradeId, Authentication authentication) {
-        return service.getOne(userId(authentication), tradeId);
-    }
+    public P2PTradeDtos.TradeResponse get(@PathVariable UUID tradeId, Authentication authentication) { return service.getOne(userId(authentication), tradeId); }
 
     @PostMapping("/{tradeId}/paid")
-    public P2PTradeDtos.TradeResponse paid(@PathVariable UUID tradeId,
-                                           @RequestBody P2PTradeDtos.PaymentRequest request,
-                                           Authentication authentication) {
+    public P2PTradeDtos.TradeResponse paid(@PathVariable UUID tradeId, @RequestBody P2PTradeDtos.PaymentRequest request, Authentication authentication) {
         return service.markPaid(userId(authentication), tradeId, request);
     }
 
     @PostMapping("/{tradeId}/confirm")
-    public P2PTradeDtos.TradeResponse confirm(@PathVariable UUID tradeId, Authentication authentication) {
-        return service.confirmPayment(userId(authentication), tradeId);
-    }
+    public P2PTradeDtos.TradeResponse confirm(@PathVariable UUID tradeId, Authentication authentication) { return service.confirmPayment(userId(authentication), tradeId); }
 
     @PostMapping("/{tradeId}/cancel")
-    public P2PTradeDtos.TradeResponse cancel(@PathVariable UUID tradeId, Authentication authentication) {
-        return service.cancel(userId(authentication), tradeId);
-    }
+    public P2PTradeDtos.TradeResponse cancel(@PathVariable UUID tradeId, Authentication authentication) { return service.cancel(userId(authentication), tradeId); }
 
     private UUID userId(Authentication authentication) { return UUID.fromString(authentication.getName()); }
 }
