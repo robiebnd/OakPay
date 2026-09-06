@@ -26,7 +26,13 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"FORBIDDEN\",\"message\":\"The authenticated user is not allowed to perform this operation\"}");
                         }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/scheduledtasks").permitAll()
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/info",
+                                "/actuator/scheduledtasks",
+                                "/api/v1/p2p/rates",
+                                "/api/v1/p2p/rates/**"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
