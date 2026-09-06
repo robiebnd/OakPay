@@ -16,6 +16,8 @@ import java.util.UUID;
 
 @Service
 public class AdvertisementService {
+    private static final List<AdStatus> OPEN_STATUSES = List.of(AdStatus.ACTIVE, AdStatus.PAUSED);
+
     private final AdvertisementRepository repository;
     private final P2PTradeService tradeService;
     private final SupportedAssetRepository assetRepository;
@@ -47,9 +49,15 @@ public class AdvertisementService {
 
         if (r.side() == OrderSide.SELL) {
             BigDecimal availableBalance = walletClient.availableBalance(ownerId, asset);
-            if (availableBalance.compareTo(total) < 0) {
+            BigDecimal alreadyAdvertised = repository
+                    .sumAvailableQuantityByOwnerAndSideAndAssetAndStatuses(ownerId, OrderSide.SELL, asset, OPEN_STATUSES);
+            BigDecimal requiredBalance = alreadyAdvertised.add(total);
+            if (availableBalance.compareTo(requiredBalance) < 0) {
                 throw new IllegalStateException(
-                        "Insufficient available " + asset + " balance to create this sell advertisement");
+                        "Insufficient available " + asset + " balance. " +
+                        "Existing open advertisements reserve " + alreadyAdvertised.stripTrailingZeros().toPlainString() +
+                        " " + asset + " and this advertisement requires " +
+                        total.stripTrailingZeros().toPlainString() + " " + asset);
             }
         }
 
@@ -121,6 +129,9 @@ public class AdvertisementService {
     @Transactional
     public AdvertisementDtos.AdResponse close(UUID ownerId, UUID id) {
         Advertisement ad = ownedForUpdate(ownerId, id);
+        if (ad.getStatus() == AdStatus.CLOSED) {
+            throw new IllegalStateException("Advertisement is already closed");
+        }
         ad.setStatus(AdStatus.CLOSED);
         ad.setAutoClosed(false);
         return AdvertisementDtos.AdResponse.from(repository.save(ad));
