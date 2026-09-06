@@ -22,6 +22,17 @@ public class InternalWalletService {
         this.ledgerRepository = ledgerRepository;
     }
 
+    @Transactional(readOnly = true)
+    public InternalWalletDtos.BalanceResponse balance(UUID userId, String currency) {
+        Wallet wallet = walletRepository.findByUserIdAndCurrency(userId, normalize(currency))
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found for currency " + currency));
+        return new InternalWalletDtos.BalanceResponse(
+                userId,
+                wallet.getCurrency(),
+                wallet.getAvailableBalance(),
+                wallet.getLockedBalance());
+    }
+
     @Transactional
     public void lock(UUID userId, String currency, InternalWalletDtos.MutationRequest request) {
         Wallet wallet = wallet(userId, currency);
