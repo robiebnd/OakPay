@@ -24,10 +24,10 @@ public class Wallet {
     @Column(nullable = false, length = 10)
     private String currency;
 
-    @Column(name = "available_balance", nullable = false, precision = 38, scale = 18)
+    @Column(name = "available_balance", nullable = false, precision = 20, scale = 2)
     private BigDecimal availableBalance;
 
-    @Column(name = "locked_balance", nullable = false, precision = 38, scale = 18)
+    @Column(name = "locked_balance", nullable = false, precision = 20, scale = 2)
     private BigDecimal lockedBalance;
 
     @Column(nullable = false, updatable = false)
@@ -39,8 +39,8 @@ public class Wallet {
     @PrePersist
     void prePersist() {
         if (id == null) id = UUID.randomUUID();
-        if (availableBalance == null) availableBalance = BigDecimal.ZERO;
-        if (lockedBalance == null) lockedBalance = BigDecimal.ZERO;
+        if (availableBalance == null) availableBalance = BigDecimal.ZERO.setScale(2);
+        if (lockedBalance == null) lockedBalance = BigDecimal.ZERO.setScale(2);
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
@@ -57,9 +57,9 @@ public class Wallet {
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public BigDecimal getAvailableBalance() { return availableBalance; }
-    public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = availableBalance; }
+    public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = availableBalance == null ? null : availableBalance.setScale(2); }
     public BigDecimal getLockedBalance() { return lockedBalance; }
-    public void setLockedBalance(BigDecimal lockedBalance) { this.lockedBalance = lockedBalance; }
+    public void setLockedBalance(BigDecimal lockedBalance) { this.lockedBalance = lockedBalance == null ? null : lockedBalance.setScale(2); }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
