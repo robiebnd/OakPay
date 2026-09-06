@@ -25,61 +25,41 @@ public class P2PTradeService {
     private final SupportedAssetRepository assetRepository;
     private final AdvertisementRepository advertisementRepository;
 
-    public P2PTradeService(P2PTradeRepository repository,
-                           WalletClient walletClient,
-                           P2PPaymentService paymentService,
-                           P2PPaymentRepository paymentRepository,
-                           P2PCommissionService commissionService,
-                           SupportedAssetRepository assetRepository,
-                           AdvertisementRepository advertisementRepository) {
-        this.repository = repository;
-        this.walletClient = walletClient;
-        this.paymentService = paymentService;
-        this.paymentRepository = paymentRepository;
-        this.commissionService = commissionService;
-        this.assetRepository = assetRepository;
-        this.advertisementRepository = advertisementRepository;
+    public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient, P2PPaymentService paymentService,
+                           P2PPaymentRepository paymentRepository, P2PCommissionService commissionService,
+                           SupportedAssetRepository assetRepository, AdvertisementRepository advertisementRepository) {
+        this.repository = repository; this.walletClient = walletClient; this.paymentService = paymentService;
+        this.paymentRepository = paymentRepository; this.commissionService = commissionService;
+        this.assetRepository = assetRepository; this.advertisementRepository = advertisementRepository;
     }
 
     @Transactional
     public P2PTradeDtos.TradeResponse create(UUID authenticatedUserId, P2PTradeDtos.CreateRequest request) {
         if (request == null) throw new IllegalArgumentException("Trade request is required");
-
         BigDecimal quantity = positive(request.quantity(), "Quantity");
-        BigDecimal price = positive(request.unitPrice(), "Unit price");
-        if (request.paymentMethod() == null || request.paymentMethod().isBlank()) {
-            throw new IllegalArgumentException("Payment method is required");
-        }
-
-        String asset = normalize(request.asset());
-        String fiat = normalize(request.fiatCurrency());
+        if (request.paymentMethod() == null || request.paymentMethod().isBlank()) throw new IllegalArgumentException("Payment method is required");
         String paymentMethod = request.paymentMethod().trim().toUpperCase(Locale.ROOT);
-        validateP2PAsset(asset, quantity);
-
-        BigDecimal fiatAmount = quantity.multiply(price).setScale(2, RoundingMode.HALF_UP);
         int expiry = request.expiryMinutes() == null ? 30 : request.expiryMinutes();
-        if (expiry < 5 || expiry > 1440) {
-            throw new IllegalArgumentException("Expiry must be between 5 and 1440 minutes");
-        }
+        if (expiry < 5 || expiry > 1440) throw new IllegalArgumentException("Expiry must be between 5 and 1440 minutes");
 
         Advertisement ad = null;
         UUID sellerId = authenticatedUserId;
         UUID buyerId = request.buyerId();
+        String asset;
+        String fiat;
+        BigDecimal price;
 
         if (request.advertisementId() != null) {
             ad = advertisementRepository.findByIdForUpdate(request.advertisementId())
                     .orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
+            if (ad.getStatus() != AdStatus.ACTIVE) throw new IllegalStateException("Advertisement is not active");
 
-            if (ad.getStatus() != AdStatus.ACTIVE) {
-                throw new IllegalStateException("Advertisement is not active");
-            }
-            if (!ad.getAsset().equals(asset)
-                    || !ad.getFiatCurrency().equals(fiat)
-                    || ad.getPrice().compareTo(price) != 0) {
-                throw new IllegalArgumentException("Trade does not match advertisement terms");
-            }
-            if (quantity.compareTo(ad.getMinQuantity()) < 0
-                    || quantity.compareTo(ad.getMaxQuantity()) > 0
+            // Advertisement terms are authoritative. Client-supplied asset, fiat and price are ignored.
+            asset = ad.getAsset();
+            fiat = ad.getFiatCurrency();
+            price = ad.getPrice();
+
+            if (quantity.compareTo(ad.getMinQuantity()) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0
                     || quantity.compareTo(ad.getAvailableQuantity()) > 0) {
                 throw new IllegalArgumentException("Quantity is outside the advertisement limits");
             }
@@ -88,54 +68,35 @@ public class P2PTradeService {
             }
 
             if (ad.getSide() == OrderSide.SELL) {
-                // A SELL ad is taken by a buyer. The authenticated user is the buyer.
-                // Do not trust or require a client-supplied buyerId.
                 sellerId = ad.getOwnerId();
                 buyerId = authenticatedUserId;
             } else {
-                // A BUY ad is taken by a seller. The advertisement owner is the buyer.
-                // Do not trust or require a client-supplied buyerId.
-                if (authenticatedUserId.equals(ad.getOwnerId())) {
-                    throw new IllegalArgumentException("A different seller is required");
-                }
+                if (authenticatedUserId.equals(ad.getOwnerId())) throw new IllegalArgumentException("A different seller is required");
                 sellerId = authenticatedUserId;
                 buyerId = ad.getOwnerId();
             }
-
-            if (sellerId.equals(buyerId)) {
-                throw new IllegalArgumentException("A different buyer is required");
-            }
         } else {
-            // Direct trade: there is no advertisement from which the buyer can be derived,
-            // so buyerId remains required. The authenticated user is the seller.
-            if (buyerId == null) {
-                throw new IllegalArgumentException("Buyer is required for a direct trade");
-            }
-            if (buyerId.equals(authenticatedUserId)) {
-                throw new IllegalArgumentException("A different buyer is required");
-            }
+            if (buyerId == null) throw new IllegalArgumentException("Buyer is required for a direct trade");
+            if (buyerId.equals(authenticatedUserId)) throw new IllegalArgumentException("A different buyer is required");
+            asset = normalize(request.asset());
+            fiat = normalize(request.fiatCurrency());
+            price = positive(request.unitPrice(), "Unit price");
         }
 
+        if (sellerId.equals(buyerId)) throw new IllegalArgumentException("A different buyer is required");
+        validateP2PAsset(asset, quantity);
+        BigDecimal fiatAmount = quantity.multiply(price).setScale(2, RoundingMode.HALF_UP);
+
         P2PTrade trade = new P2PTrade();
-        trade.setSellerId(sellerId);
-        trade.setBuyerId(buyerId);
-        trade.setAdvertisementId(request.advertisementId());
-        trade.setAsset(asset);
-        trade.setFiatCurrency(fiat);
-        trade.setQuantity(quantity);
-        trade.setUnitPrice(price);
-        trade.setFiatAmount(fiatAmount);
-        trade.setPaymentMethod(paymentMethod);
-        trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
+        trade.setSellerId(sellerId); trade.setBuyerId(buyerId); trade.setAdvertisementId(request.advertisementId());
+        trade.setAsset(asset); trade.setFiatCurrency(fiat); trade.setQuantity(quantity); trade.setUnitPrice(price);
+        trade.setFiatAmount(fiatAmount); trade.setPaymentMethod(paymentMethod); trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
         trade = repository.save(trade);
         commissionService.assess(trade);
 
         if (ad != null && ad.getSide() == OrderSide.SELL) {
-            if (ad.getReservationReference() == null) {
-                throw new IllegalStateException("Sell advertisement has no wallet reservation");
-            }
-            walletClient.consumeAdvertisementReservation(
-                    sellerId, asset, quantity, ad.getReservationReference(), trade.getId());
+            if (ad.getReservationReference() == null) throw new IllegalStateException("Sell advertisement has no wallet reservation");
+            walletClient.consumeAdvertisementReservation(sellerId, asset, quantity, ad.getReservationReference(), trade.getId());
         } else {
             walletClient.lock(sellerId, asset, quantity, trade.getId());
         }
@@ -143,58 +104,33 @@ public class P2PTradeService {
         trade.setStatus(P2PTradeStatus.PAYMENT_PENDING);
         if (ad != null) {
             ad.setAvailableQuantity(ad.getAvailableQuantity().subtract(quantity));
-            if (ad.getAvailableQuantity().signum() == 0) {
-                ad.setStatus(AdStatus.CLOSED);
-                ad.setAutoClosed(true);
-            }
+            if (ad.getAvailableQuantity().signum() == 0) { ad.setStatus(AdStatus.CLOSED); ad.setAutoClosed(true); }
             advertisementRepository.save(ad);
         }
-
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
     }
 
     @Transactional
     public P2PTradeDtos.TradeResponse markPaid(UUID buyerId, UUID tradeId, P2PTradeDtos.PaymentRequest request) {
         P2PTrade trade = get(tradeId);
-        if (!trade.getBuyerId().equals(buyerId)) {
-            throw new IllegalArgumentException("Trade does not belong to buyer");
-        }
-        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) {
-            return P2PTradeDtos.TradeResponse.from(trade);
-        }
-        if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING) {
-            throw new IllegalStateException("Trade is not awaiting payment");
-        }
+        if (!trade.getBuyerId().equals(buyerId)) throw new IllegalArgumentException("Trade does not belong to buyer");
+        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) return P2PTradeDtos.TradeResponse.from(trade);
+        if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING) throw new IllegalStateException("Trade is not awaiting payment");
         ensureNotExpired(trade);
-        paymentService.submit(buyerId, tradeId,
-                new P2PPaymentDtos.SubmitRequest(
-                        request == null ? null : request.paymentReference(),
-                        request == null ? null : request.paymentNote()));
+        paymentService.submit(buyerId, tradeId, new P2PPaymentDtos.SubmitRequest(request == null ? null : request.paymentReference(), request == null ? null : request.paymentNote()));
         return P2PTradeDtos.TradeResponse.from(get(tradeId));
     }
 
     @Transactional
     public P2PTradeDtos.TradeResponse confirmPayment(UUID sellerId, UUID tradeId) {
         P2PTrade trade = get(tradeId);
-        if (!trade.getSellerId().equals(sellerId)) {
-            throw new IllegalArgumentException("Trade does not belong to seller");
-        }
-        if (trade.getStatus() == P2PTradeStatus.COMPLETED) {
-            return P2PTradeDtos.TradeResponse.from(trade);
-        }
+        if (!trade.getSellerId().equals(sellerId)) throw new IllegalArgumentException("Trade does not belong to seller");
+        if (trade.getStatus() == P2PTradeStatus.COMPLETED) return P2PTradeDtos.TradeResponse.from(trade);
         ensureNotExpired(trade);
-        if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED) {
-            throw new IllegalStateException("Buyer has not marked payment");
-        }
-
-        P2PPayment payment = paymentRepository.findByTradeId(tradeId)
-                .orElseThrow(() -> new IllegalStateException("Payment record not found"));
-        if (payment.getStatus() != PaymentStatus.VERIFIED) {
-            throw new IllegalStateException("Payment must be verified before crypto is released");
-        }
-
-        walletClient.releaseEscrow(
-                sellerId, trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
+        if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED) throw new IllegalStateException("Buyer has not marked payment");
+        P2PPayment payment = paymentRepository.findByTradeId(tradeId).orElseThrow(() -> new IllegalStateException("Payment record not found"));
+        if (payment.getStatus() != PaymentStatus.VERIFIED) throw new IllegalStateException("Payment must be verified before crypto is released");
+        walletClient.releaseEscrow(sellerId, trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
         trade.setStatus(P2PTradeStatus.COMPLETED);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
     }
@@ -202,165 +138,90 @@ public class P2PTradeService {
     @Transactional
     public P2PTradeDtos.TradeResponse cancel(UUID userId, UUID tradeId) {
         P2PTrade trade = get(tradeId);
-        if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) {
-            throw new IllegalArgumentException("Trade does not belong to user");
-        }
-        if (trade.getStatus() == P2PTradeStatus.COMPLETED) {
-            throw new IllegalStateException("Completed trade cannot be cancelled");
-        }
-        if (trade.getStatus() == P2PTradeStatus.CANCELLED || trade.getStatus() == P2PTradeStatus.EXPIRED) {
-            return P2PTradeDtos.TradeResponse.from(trade);
-        }
-        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED
-                || trade.getStatus() == P2PTradeStatus.DISPUTED) {
-            throw new IllegalStateException("Paid or disputed trade must not be cancelled");
-        }
-
-        releaseTradeHold(trade);
-        trade.setStatus(P2PTradeStatus.CANCELLED);
-        restoreAdvertisement(trade);
+        if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) throw new IllegalArgumentException("Trade does not belong to user");
+        if (trade.getStatus() == P2PTradeStatus.COMPLETED) throw new IllegalStateException("Completed trade cannot be cancelled");
+        if (trade.getStatus() == P2PTradeStatus.CANCELLED || trade.getStatus() == P2PTradeStatus.EXPIRED) return P2PTradeDtos.TradeResponse.from(trade);
+        if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED || trade.getStatus() == P2PTradeStatus.DISPUTED) throw new IllegalStateException("Paid or disputed trade must not be cancelled");
+        releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.CANCELLED); restoreAdvertisement(trade);
         return P2PTradeDtos.TradeResponse.from(repository.save(trade));
     }
 
     @Transactional
     public P2PTradeDtos.TradeResponse dispute(UUID userId, UUID tradeId) {
         P2PTrade trade = get(tradeId);
-        if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) {
-            throw new IllegalArgumentException("Trade does not belong to user");
-        }
-        if (trade.getStatus() == P2PTradeStatus.DISPUTED) {
-            return P2PTradeDtos.TradeResponse.from(trade);
-        }
-        if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED) {
-            throw new IllegalStateException("Only a payment-marked trade can be disputed");
-        }
-        trade.setStatus(P2PTradeStatus.DISPUTED);
-        return P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) throw new IllegalArgumentException("Trade does not belong to user");
+        if (trade.getStatus() == P2PTradeStatus.DISPUTED) return P2PTradeDtos.TradeResponse.from(trade);
+        if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED) throw new IllegalStateException("Only a payment-marked trade can be disputed");
+        trade.setStatus(P2PTradeStatus.DISPUTED); return P2PTradeDtos.TradeResponse.from(repository.save(trade));
     }
 
     @Transactional(readOnly = true)
     public P2PTradeDtos.TradeResponse getOne(UUID userId, UUID tradeId) {
         P2PTrade trade = get(tradeId);
-        if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) {
-            throw new IllegalArgumentException("Trade does not belong to user");
-        }
+        if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) throw new IllegalArgumentException("Trade does not belong to user");
         return P2PTradeDtos.TradeResponse.from(trade);
     }
 
     @Transactional(readOnly = true)
-    public List<P2PTradeDtos.TradeResponse> mine(UUID userId) {
-        return repository.findAllByBuyerIdOrSellerIdOrderByCreatedAtDesc(userId, userId)
-                .stream()
-                .map(P2PTradeDtos.TradeResponse::from)
-                .toList();
+    public List<P2PTradeDtos.TradeResponse> mine(UUID userId, P2PTradeStatus status, String asset, LocalDateTime from, LocalDateTime to, int limit) {
+        int safe = Math.min(Math.max(limit, 1), 100);
+        String normalizedAsset = asset == null || asset.isBlank() ? null : asset.trim().toUpperCase(Locale.ROOT);
+        return repository.findAllByBuyerIdOrSellerIdOrderByCreatedAtDesc(userId, userId).stream()
+                .filter(t -> status == null || t.getStatus() == status)
+                .filter(t -> normalizedAsset == null || t.getAsset().equals(normalizedAsset))
+                .filter(t -> from == null || !t.getCreatedAt().isBefore(from))
+                .filter(t -> to == null || !t.getCreatedAt().isAfter(to))
+                .limit(safe).map(P2PTradeDtos.TradeResponse::from).toList();
     }
 
     @Scheduled(fixedDelayString = "${oakpay.p2p.expiry-check-ms:60000}")
     @Transactional
     public void expirePendingTrades() {
         LocalDateTime now = LocalDateTime.now();
-        repository.findAllByStatusOrderByCreatedAtAsc(P2PTradeStatus.PAYMENT_PENDING)
-                .stream()
-                .filter(t -> !t.getExpiresAt().isAfter(now))
-                .map(P2PTrade::getId)
-                .forEach(this::expirePendingTrade);
+        repository.findAllByStatusOrderByCreatedAtAsc(P2PTradeStatus.PAYMENT_PENDING).stream().filter(t -> !t.getExpiresAt().isAfter(now)).map(P2PTrade::getId).forEach(this::expirePendingTrade);
     }
 
     @Transactional
     public void expirePendingTrade(UUID tradeId) {
         P2PTrade trade = repository.findByIdForUpdate(tradeId).orElse(null);
-        if (trade == null
-                || trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING
-                || trade.getExpiresAt().isAfter(LocalDateTime.now())) {
-            return;
-        }
-
-        releaseTradeHold(trade);
-        trade.setStatus(P2PTradeStatus.EXPIRED);
-        restoreAdvertisement(trade);
-        repository.save(trade);
+        if (trade == null || trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING || trade.getExpiresAt().isAfter(LocalDateTime.now())) return;
+        releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.EXPIRED); restoreAdvertisement(trade); repository.save(trade);
     }
 
     private void releaseTradeHold(P2PTrade trade) {
-        if (trade.getAdvertisementId() == null) {
-            walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
-            return;
-        }
-
+        if (trade.getAdvertisementId() == null) { walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId()); return; }
         Advertisement ad = advertisementRepository.findByIdForUpdate(trade.getAdvertisementId()).orElse(null);
-        if (ad == null || ad.getSide() != OrderSide.SELL) {
-            walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
-        }
+        if (ad == null || ad.getSide() != OrderSide.SELL) walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
     }
 
     private boolean containsPaymentMethod(String methods, String selected) {
-        return java.util.Arrays.stream(methods.split(","))
-                .map(String::trim)
-                .map(v -> v.toUpperCase(Locale.ROOT))
-                .anyMatch(selected::equals);
+        return java.util.Arrays.stream(methods.split(",")).map(String::trim).map(v -> v.toUpperCase(Locale.ROOT)).anyMatch(selected::equals);
     }
 
     private void validateP2PAsset(String symbol, BigDecimal quantity) {
-        SupportedAsset asset = assetRepository.findBySymbolIgnoreCase(symbol)
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported asset " + symbol));
-        if (asset.getStatus() != AssetStatus.ACTIVE || !asset.getP2pEnabled()) {
-            throw new IllegalStateException("Asset is not enabled for P2P");
-        }
-        if (quantity.compareTo(asset.getMinTradeAmount()) < 0) {
-            throw new IllegalArgumentException("Quantity is below the minimum trade amount for " + symbol);
-        }
+        SupportedAsset asset = assetRepository.findBySymbolIgnoreCase(symbol).orElseThrow(() -> new IllegalArgumentException("Unsupported asset " + symbol));
+        if (asset.getStatus() != AssetStatus.ACTIVE || !asset.getP2pEnabled()) throw new IllegalStateException("Asset is not enabled for P2P");
+        if (quantity.compareTo(asset.getMinTradeAmount()) < 0) throw new IllegalArgumentException("Quantity is below the minimum trade amount for " + symbol);
     }
 
-    private P2PTrade get(UUID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("P2P trade not found"));
-    }
+    private P2PTrade get(UUID id) { return repository.findById(id).orElseThrow(() -> new IllegalArgumentException("P2P trade not found")); }
 
     private void ensureNotExpired(P2PTrade trade) {
         if (trade.getExpiresAt().isBefore(LocalDateTime.now())) {
-            if (trade.getStatus() == P2PTradeStatus.PAYMENT_PENDING) {
-                releaseTradeHold(trade);
-                trade.setStatus(P2PTradeStatus.EXPIRED);
-                restoreAdvertisement(trade);
-                repository.save(trade);
-            }
+            if (trade.getStatus() == P2PTradeStatus.PAYMENT_PENDING) { releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.EXPIRED); restoreAdvertisement(trade); repository.save(trade); }
             throw new IllegalStateException("P2P trade has expired");
         }
     }
 
     private void restoreAdvertisement(P2PTrade trade) {
         if (trade.getAdvertisementId() == null) return;
-
-        Advertisement ad = advertisementRepository.findByIdForUpdate(trade.getAdvertisementId()).orElse(null);
-        if (ad == null) return;
-
-        BigDecimal restored = ad.getAvailableQuantity().add(trade.getQuantity());
-        ad.setAvailableQuantity(restored.min(ad.getTotalQuantity()));
-
-        if (ad.isAutoClosed() && ad.getAvailableQuantity().signum() > 0) {
-            ad.setStatus(AdStatus.ACTIVE);
-            ad.setAutoClosed(false);
-        }
-
-        if (ad.getSide() == OrderSide.SELL && ad.getReservationReference() != null) {
-            walletClient.reserveAdvertisement(
-                    ad.getOwnerId(), ad.getAsset(), trade.getQuantity(), ad.getReservationReference());
-        }
-
+        Advertisement ad = advertisementRepository.findByIdForUpdate(trade.getAdvertisementId()).orElse(null); if (ad == null) return;
+        ad.setAvailableQuantity(ad.getAvailableQuantity().add(trade.getQuantity()).min(ad.getTotalQuantity()));
+        if (ad.isAutoClosed() && ad.getAvailableQuantity().signum() > 0) { ad.setStatus(AdStatus.ACTIVE); ad.setAutoClosed(false); }
+        if (ad.getSide() == OrderSide.SELL && ad.getReservationReference() != null) walletClient.reserveAdvertisement(ad.getOwnerId(), ad.getAsset(), trade.getQuantity(), ad.getReservationReference());
         advertisementRepository.save(ad);
     }
 
-    private BigDecimal positive(BigDecimal value, String label) {
-        if (value == null || value.signum() <= 0) {
-            throw new IllegalArgumentException(label + " must be greater than zero");
-        }
-        return value.setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Currency is required");
-        }
-        return value.trim().toUpperCase(Locale.ROOT);
-    }
+    private BigDecimal positive(BigDecimal value, String label) { if (value == null || value.signum() <= 0) throw new IllegalArgumentException(label + " must be greater than zero"); return value.setScale(2, RoundingMode.HALF_UP); }
+    private String normalize(String value) { if (value == null || value.isBlank()) throw new IllegalArgumentException("Currency is required"); return value.trim().toUpperCase(Locale.ROOT); }
 }
