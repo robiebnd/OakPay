@@ -96,13 +96,16 @@ public class P2PTradeService {
                 sellerId = ad.getOwnerId();
                 buyerId = authenticatedUserId;
             } else {
-                // A BUY ad is taken by a seller. The authenticated user must be the seller,
-                // while the advertisement owner is the buyer.
-                if (!authenticatedUserId.equals(request.buyerId()) && ad.getOwnerId().equals(authenticatedUserId)) {
-                    throw new IllegalArgumentException("Authenticated user must be the seller for a BUY advertisement");
+                // A BUY ad is taken by a seller. The advertisement owner is the buyer,
+                // and the authenticated user must be a different seller.
+                if (!ad.getOwnerId().equals(request.buyerId())) {
+                    throw new IllegalArgumentException("Buyer must match the BUY advertisement owner");
                 }
-                buyerId = ad.getOwnerId();
+                if (authenticatedUserId.equals(ad.getOwnerId())) {
+                    throw new IllegalArgumentException("A different seller is required");
+                }
                 sellerId = authenticatedUserId;
+                buyerId = ad.getOwnerId();
             }
 
             if (sellerId.equals(buyerId)) {
