@@ -3,6 +3,7 @@ package com.oakpay.wallet.ledger;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -38,13 +39,13 @@ public class LedgerEntry {
     @Column(nullable = false, length = 10, updatable = false)
     private String currency;
 
-    @Column(nullable = false, precision = 38, scale = 18, updatable = false)
+    @Column(nullable = false, precision = 20, scale = 2, updatable = false)
     private BigDecimal amount;
 
-    @Column(name = "balance_before", nullable = false, precision = 38, scale = 18, updatable = false)
+    @Column(name = "balance_before", nullable = false, precision = 20, scale = 2, updatable = false)
     private BigDecimal balanceBefore;
 
-    @Column(name = "balance_after", nullable = false, precision = 38, scale = 18, updatable = false)
+    @Column(name = "balance_after", nullable = false, precision = 20, scale = 2, updatable = false)
     private BigDecimal balanceAfter;
 
     @Column(nullable = false, unique = true, length = 100, updatable = false)
@@ -62,6 +63,13 @@ public class LedgerEntry {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (direction == null) direction = LedgerDirection.CREDIT;
         if (balanceType == null) balanceType = LedgerBalanceType.AVAILABLE;
+        amount = money(amount);
+        balanceBefore = money(balanceBefore);
+        balanceAfter = money(balanceAfter);
+    }
+
+    private BigDecimal money(BigDecimal value) {
+        return value == null ? null : value.setScale(2, RoundingMode.HALF_UP);
     }
 
     public UUID getId() { return id; }
@@ -80,11 +88,11 @@ public class LedgerEntry {
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public void setAmount(BigDecimal amount) { this.amount = money(amount); }
     public BigDecimal getBalanceBefore() { return balanceBefore; }
-    public void setBalanceBefore(BigDecimal balanceBefore) { this.balanceBefore = balanceBefore; }
+    public void setBalanceBefore(BigDecimal balanceBefore) { this.balanceBefore = money(balanceBefore); }
     public BigDecimal getBalanceAfter() { return balanceAfter; }
-    public void setBalanceAfter(BigDecimal balanceAfter) { this.balanceAfter = balanceAfter; }
+    public void setBalanceAfter(BigDecimal balanceAfter) { this.balanceAfter = money(balanceAfter); }
     public String getReference() { return reference; }
     public void setReference(String reference) { this.reference = reference; }
     public String getMetadata() { return metadata; }
