@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+
+const OAKPAY_LOGO = require('../../assets/Logo_OakPay.png');
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -30,7 +32,7 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.brand}>
-        <Text style={styles.logo}>OakPay</Text>
+        <Image source={OAKPAY_LOGO} style={styles.logo} resizeMode="contain" />
         <Text style={styles.subtitle}>Simple. Secure. P2P.</Text>
       </View>
 
@@ -73,9 +75,9 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0D1017', padding: 24, justifyContent: 'center' },
-  brand: { marginBottom: 48 },
-  logo: { fontSize: 40, fontWeight: '800', color: '#D8FF3E' },
-  subtitle: { marginTop: 6, fontSize: 15, color: '#9BA2AE' },
+  brand: { marginBottom: 48, alignItems: 'flex-start' },
+  logo: { width: 270, height: 92 },
+  subtitle: { marginTop: 4, fontSize: 15, color: '#9BA2AE' },
   form: { width: '100%' },
   title: { fontSize: 29, fontWeight: '700', color: '#F5F7FA' },
   description: { marginTop: 8, marginBottom: 24, color: '#9BA2AE', lineHeight: 21 },
