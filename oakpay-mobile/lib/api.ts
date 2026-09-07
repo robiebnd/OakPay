@@ -1,11 +1,23 @@
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 15000;
 
+type ApiErrorBody = {
+  message?: string;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+};
+
 export type ApiError = {
   status: number;
   message: string;
   fieldErrors?: Record<string, string>;
 };
+
+function timeoutPromise(): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Check that the OakPay Gateway is running and reachable at ${API_BASE_URL}.`)), REQUEST_TIMEOUT_MS);
+  });
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!API_BASE_URL) {
@@ -13,18 +25,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const requestPromise = fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    signal: controller.signal,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(options.headers ?? {}),
+    },
+  });
 
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...(options.headers ?? {}),
-      },
-    });
+    const response = await Promise.race([requestPromise, timeoutPromise()]);
+    controller.abort();
 
     const raw = await response.text();
     let body: unknown = null;
@@ -36,19 +49,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
 
     if (!response.ok) {
-      const data = body as { message?: string; error?: string; fieldErrors?: Record<string, string> } | null;
+      const data = (body ?? {}) as ApiErrorBody;
       const error: ApiError = {
         status: response.status,
-        message: data?.message ?? data?.error ?? (typeof body === 'string' ? body : 'Request failed'),
-        fieldErrors: data?.fieldErrors,
+        message: data.message ?? data.error ?? (typeof body === 'string' ? body : `Request failed with status ${response.status}`),
+        fieldErrors: data.fieldErrors,
       };
       throw error;
     }
 
     return body as T;
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error(`Request timed out. Check that OakPay Gateway is running and reachable at ${API_BASE_URL}.`);
+    if (error instanceof Error && error.message.startsWith('Request timed out')) {
+      controller.abort();
+      throw error;
     }
 
     if (error instanceof TypeError) {
@@ -56,8 +70,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
 
     throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
 
@@ -89,14 +101,10 @@ export type UserResponse = {
 };
 
 export const authApi = {
-  login: (request: LoginRequest) =>
-    requestJson<TokenResponse>('/api/v1/auth/login', request),
-  register: (request: RegisterRequest) =>
-    requestJson<UserResponse>('/api/v1/auth/register', request, 'POST'),
-  refresh: (refreshToken: string) =>
-    requestJson<TokenResponse>('/api/v1/auth/refresh', { refreshToken }),
-  logout: (refreshToken: string) =>
-    requestJson<void>('/api/v1/auth/logout', { refreshToken }, 'POST'),
+  login: (request: LoginRequest) => requestJson<TokenResponse>('/api/v1/auth/login', request),
+  register: (request: RegisterRequest) => requestJson<UserResponse>('/api/v1/auth/register', request),
+  refresh: (refreshToken: string) => requestJson<TokenResponse>('/api/v1/auth/refresh', { refreshToken }),
+  logout: (refreshToken: string) => requestJson<void>('/api/v1/auth/logout', { refreshToken }),
 };
 
 async function requestJson<T>(path: string, body: unknown, method = 'POST') {
