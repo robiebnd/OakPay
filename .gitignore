@@ -26,6 +26,9 @@ application-secret.yml
 docker-data/
 
 # Expo / React Native
+.expo/
+.expo-shared/
+node_modules/
 oakpay-mobile/.expo/
 oakpay-mobile/node_modules/
 oakpay-mobile/.expo-shared/
