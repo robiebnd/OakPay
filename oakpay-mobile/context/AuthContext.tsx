@@ -21,9 +21,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 async function saveSession(tokens: TokenResponse, user?: UserResponse) {
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken);
   await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken);
-  if (user) {
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
-  }
+  if (user) await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -41,15 +39,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
         ]);
 
         if (storedUser) setUser(JSON.parse(storedUser));
-
         if (storedAccessToken) {
           setAccessToken(storedAccessToken);
           return;
         }
-
         if (storedRefreshToken) {
+          const storedUserValue = storedUser ? JSON.parse(storedUser) : undefined;
           const tokens = await authApi.refresh(storedRefreshToken);
-          await saveSession(tokens, storedUser ? JSON.parse(storedUser) : undefined);
+          await saveSession(tokens, storedUserValue);
           setAccessToken(tokens.accessToken);
         }
       } catch {
@@ -58,7 +55,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setIsLoading(false);
       }
     }
-
     restore();
   }, []);
 
@@ -71,11 +67,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signUp = useCallback(async (request: RegisterRequest) => {
     const registeredUser = await authApi.register(request);
-    const tokens = await authApi.login({ email: request.email, password: request.password });
-    await saveSession(tokens, registeredUser);
     setUser(registeredUser);
-    setAccessToken(tokens.accessToken);
-    router.replace('/(tabs)');
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(registeredUser));
+    router.replace({ pathname: '/(auth)/login', params: { registered: '1' } });
   }, []);
 
   const signOut = useCallback(async () => {
