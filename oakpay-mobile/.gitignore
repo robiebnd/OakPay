@@ -1,0 +1,15 @@
+# Expo
+.expo/
+.expo-shared/
+
+# Dependencies
+node_modules/
+
+# Build output
+.expo/
+dist/
+web-build/
+
+# Local environment
+.env
+.env.*
