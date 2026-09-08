@@ -34,7 +34,8 @@ export const authApi = {
   login: (request: LoginRequest) => requestJson<TokenResponse>('/api/v1/auth/login', request),
   register: (request: RegisterRequest) => requestJson<UserResponse>('/api/v1/auth/register', request),
   refresh: (refreshToken: string) => requestJson<TokenResponse>('/api/v1/auth/refresh', { refreshToken }),
-  logout: (refreshToken: string) => requestJson<void>('/api/v1/auth/logout', { refreshToken })
+  logout: (refreshToken: string) => requestJson<void>('/api/v1/auth/logout', { refreshToken }),
+  me: (token: string) => apiGet<UserResponse>('/api/v1/auth/me', token)
 };
 
 export const walletApi = {
