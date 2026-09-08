@@ -32,6 +32,51 @@ public class LedgerService {
         return mutate(userId, currency, request, LedgerTransactionType.WITHDRAWAL);
     }
 
+    /** Credits a confirmed blockchain deposit. The reference makes the credit idempotent. */
+    @Transactional
+    public LedgerDtos.LedgerResponse creditExternalDeposit(UUID userId, String currency, BigDecimal amount,
+                                                             String reference, String metadata) {
+        String normalizedCurrency = normalize(currency);
+        if (amount == null || amount.signum() <= 0) throw new IllegalArgumentException("Amount must be greater than zero");
+        BigDecimal normalizedAmount = amount.setScale(Wallet.scaleFor(normalizedCurrency), RoundingMode.HALF_UP);
+        if (reference == null || reference.isBlank()) throw new IllegalArgumentException("Reference is required");
+        String normalizedReference = reference.trim();
+
+        var existing = ledgerRepository.findByReference(normalizedReference);
+        if (existing.isPresent()) {
+            LedgerEntry entry = existing.get();
+            if (!entry.getUserId().equals(userId)
+                    || entry.getTransactionType() != LedgerTransactionType.DEPOSIT
+                    || !entry.getCurrency().equals(normalizedCurrency)
+                    || entry.getAmount().compareTo(normalizedAmount) != 0) {
+                throw new IllegalArgumentException("Reference was already used for a different deposit");
+            }
+            return LedgerDtos.LedgerResponse.from(entry);
+        }
+
+        Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(userId, normalizedCurrency)
+                .orElseGet(() -> createWalletForDeposit(userId, normalizedCurrency));
+        BigDecimal before = wallet.getAvailableBalance();
+        BigDecimal after = before.add(normalizedAmount);
+        wallet.setAvailableBalance(after);
+        walletRepository.save(wallet);
+
+        LedgerEntry entry = new LedgerEntry();
+        entry.setWalletId(wallet.getId());
+        entry.setUserId(userId);
+        entry.setTransactionType(LedgerTransactionType.DEPOSIT);
+        entry.setStatus(LedgerStatus.COMPLETED);
+        entry.setDirection(LedgerDirection.CREDIT);
+        entry.setBalanceType(LedgerBalanceType.AVAILABLE);
+        entry.setCurrency(normalizedCurrency);
+        entry.setAmount(normalizedAmount);
+        entry.setBalanceBefore(before);
+        entry.setBalanceAfter(after);
+        entry.setReference(normalizedReference);
+        entry.setMetadata(metadata);
+        return LedgerDtos.LedgerResponse.from(ledgerRepository.save(entry));
+    }
+
     @Transactional(readOnly = true)
     public List<LedgerDtos.LedgerResponse> getTransactions(UUID userId, String currency, int limit) {
         int safe = Math.min(Math.max(limit, 1), 100);
@@ -88,6 +133,15 @@ public class LedgerService {
         entry.setReference(reference);
         entry.setMetadata(request.metadata());
         return LedgerDtos.LedgerResponse.from(ledgerRepository.save(entry));
+    }
+
+    private Wallet createWalletForDeposit(UUID userId, String currency) {
+        Wallet wallet = new Wallet();
+        wallet.setUserId(userId);
+        wallet.setCurrency(currency);
+        wallet.setAvailableBalance(BigDecimal.ZERO.setScale(Wallet.scaleFor(currency)));
+        wallet.setLockedBalance(BigDecimal.ZERO.setScale(Wallet.scaleFor(currency)));
+        return walletRepository.saveAndFlush(wallet);
     }
 
     private String normalize(String currency) {
