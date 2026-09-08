@@ -22,8 +22,7 @@ public class P2PExchangeRateController {
     public ResponseEntity<RateResponse> getRate(
             @RequestParam String baseCurrency,
             @RequestParam String quoteCurrency) {
-        P2PExchangeRate rate = service.getRate(baseCurrency, quoteCurrency);
-        return ResponseEntity.ok(RateResponse.from(rate));
+        return ResponseEntity.ok(RateResponse.from(service.getRate(baseCurrency, quoteCurrency)));
     }
 
     public record RateResponse(
@@ -32,13 +31,13 @@ public class P2PExchangeRateController {
             BigDecimal rate,
             String source,
             LocalDateTime effectiveAt) {
-        static RateResponse from(P2PExchangeRate rate) {
+        static RateResponse from(P2PExchangeRateService.RateSnapshot rate) {
             return new RateResponse(
-                    rate.getBaseCurrency(),
-                    rate.getQuoteCurrency(),
-                    rate.getRate(),
-                    rate.getSource(),
-                    rate.getEffectiveAt());
+                    rate.baseCurrency(),
+                    rate.quoteCurrency(),
+                    rate.rate(),
+                    rate.source(),
+                    rate.effectiveAt());
         }
     }
 }
