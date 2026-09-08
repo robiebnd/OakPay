@@ -63,10 +63,10 @@ public class Wallet {
         return currency != null && FIAT_CURRENCIES.contains(currency.trim().toUpperCase()) ? FIAT_SCALE : CRYPTO_SCALE;
     }
 
-    private int scaleFor(String currency) { return scaleFor((String) currency); }
+    private int scaleForCurrency() { return scaleFor(currency); }
 
     private BigDecimal money(BigDecimal value) {
-        return value == null ? null : value.setScale(scaleFor(currency), RoundingMode.HALF_UP);
+        return value == null ? null : value.setScale(scaleForCurrency(), RoundingMode.HALF_UP);
     }
 
     public UUID getId() { return id; }
