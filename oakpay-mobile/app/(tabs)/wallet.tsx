@@ -4,179 +4,56 @@ import QRCode from 'react-native-qrcode-svg';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../../context/AuthContext';
 import { DepositAddress, LedgerTransaction, Wallet, walletApi } from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 
-const BG = '#F5F5F3';
-const CARD = '#FFFFFF';
-const TEXT = '#111713';
-const MUTED = '#7C847E';
-const GREEN = '#123B2A';
-const LIME = '#D8FF3E';
-const RED = '#D84B5B';
-const BORDER = '#E3E6E2';
-const ZWG_PER_USDT = 26.56;
-
+const BG = '#F5F5F3'; const CARD = '#FFFFFF'; const TEXT = '#111713'; const MUTED = '#7C847E'; const GREEN = '#123B2A'; const LIME = '#D8FF3E'; const RED = '#D84B5B'; const BORDER = '#E3E6E2'; const ZWG_PER_USDT = 26.56;
 const money = (n: number) => Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const cryptoMoney = (n: number) => Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 8, maximumFractionDigits: 8 });
-const symbol = (currency: string) => ({ USDT: '₮', BTC: '₿', ETH: 'Ξ', BNB: 'B', SOL: 'S', USDC: '$', XRP: 'X', ADA: 'A', DOGE: 'Ð', TRX: 'T', LTC: 'Ł', AVAX: 'A' }[currency.toUpperCase()] ?? currency.slice(0, 1));
-const name = (currency: string) => ({ USDT: 'Tether', BTC: 'Bitcoin', ETH: 'Ethereum', BNB: 'BNB', SOL: 'Solana', USDC: 'USD Coin', XRP: 'XRP', ADA: 'Cardano', DOGE: 'Dogecoin', TRX: 'TRON', LTC: 'Litecoin', AVAX: 'Avalanche' }[currency.toUpperCase()] ?? currency);
-const isFiat = (currency: string) => ['USD', 'ZWG'].includes(currency.toUpperCase());
-
-function usdValue(wallet: Wallet) {
-  const c = wallet.currency.toUpperCase();
-  if (c === 'USD' || c === 'USDT') return wallet.totalBalance;
-  if (c === 'ZWG') return wallet.totalBalance / ZWG_PER_USDT;
-  return null;
-}
+const symbol = (c: string) => ({ USDT:'₮',BTC:'₿',ETH:'Ξ',BNB:'B',SOL:'S',USDC:'$',XRP:'X',ADA:'A',DOGE:'Ð',TRX:'T',LTC:'Ł',AVAX:'A' }[c.toUpperCase()] ?? c.slice(0,1));
+const assetName = (c: string) => ({ USDT:'Tether',BTC:'Bitcoin',ETH:'Ethereum',BNB:'BNB',SOL:'Solana',USDC:'USD Coin',XRP:'XRP',ADA:'Cardano',DOGE:'Dogecoin',TRX:'TRON',LTC:'Litecoin',AVAX:'Avalanche' }[c.toUpperCase()] ?? c);
+const isFiat = (c: string) => ['USD','ZWG'].includes(c.toUpperCase());
+const transactionLabel = (t: string) => t.replaceAll('_',' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+function usdValue(w: Wallet) { const c=w.currency.toUpperCase(); if(c==='USD'||c==='USDT') return w.totalBalance; if(c==='ZWG') return w.totalBalance/ZWG_PER_USDT; return null; }
 
 export default function WalletScreen() {
   const { accessToken } = useAuth();
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [transactions, setTransactions] = useState<LedgerTransaction[]>([]);
-  const [addresses, setAddresses] = useState<DepositAddress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [receiveLoading, setReceiveLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [modal, setModal] = useState<'receive' | 'withdraw' | null>(null);
-  const [currency, setCurrency] = useState('USDT');
-  const [network, setNetwork] = useState('');
-  const [amount, setAmount] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [wallets,setWallets]=useState<Wallet[]>([]); const [transactions,setTransactions]=useState<LedgerTransaction[]>([]); const [addresses,setAddresses]=useState<DepositAddress[]>([]);
+  const [loading,setLoading]=useState(true); const [receiveLoading,setReceiveLoading]=useState(false); const [submitting,setSubmitting]=useState(false); const [error,setError]=useState('');
+  const [modal,setModal]=useState<'receive'|'withdraw'|null>(null); const [currency,setCurrency]=useState('USDT'); const [network,setNetwork]=useState(''); const [amount,setAmount]=useState('');
 
-  const load = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      setLoading(true);
-      setError('');
-      const [w, t, a] = await Promise.all([
-        walletApi.wallets(accessToken),
-        walletApi.transactions(accessToken),
-        walletApi.depositAddresses(accessToken)
-      ]);
-      setWallets(w);
-      setTransactions(t);
-      setAddresses(a);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to load wallet.');
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken]);
+  const load=useCallback(async()=>{ if(!accessToken)return; try{setLoading(true);setError('');const [w,t,a]=await Promise.all([walletApi.wallets(accessToken),walletApi.transactions(accessToken),walletApi.depositAddresses(accessToken)]);setWallets(w);setTransactions(t);setAddresses(a);}catch(e){setError(e instanceof Error?e.message:'Unable to load wallet.');}finally{setLoading(false);}},[accessToken]);
+  useEffect(()=>{load();},[load]);
+  const orderedWallets=useMemo(()=>[...wallets].sort((a,b)=>{const rank=(c:string)=>({USDT:0,USDC:1,BTC:2,ETH:3,BNB:4,SOL:5,ZWG:90,USD:99}[c.toUpperCase()]??50);return rank(a.currency)-rank(b.currency);}),[wallets]);
+  const cryptoWallets=useMemo(()=>orderedWallets.filter(w=>!isFiat(w.currency)),[orderedWallets]);
+  const portfolio=useMemo(()=>wallets.reduce((s,w)=>s+(usdValue(w)??0),0),[wallets]);
+  const zwgWallet=useMemo(()=>wallets.find(w=>w.currency.toUpperCase()==='ZWG'),[wallets]);
+  const selectedWallet=useMemo(()=>wallets.find(w=>w.currency.toUpperCase()===currency.toUpperCase()),[wallets,currency]);
+  const selectedAddresses=useMemo(()=>addresses.filter(a=>a.currency.toUpperCase()===currency.toUpperCase()),[addresses,currency]);
+  const selectedAddress=useMemo(()=>selectedAddresses.find(a=>a.network.toUpperCase()===network.toUpperCase())??selectedAddresses[0],[selectedAddresses,network]);
+  const availableBalance=selectedWallet?.availableBalance??0; const parsedAmount=Number(amount); const amountValid=Number.isFinite(parsedAmount)&&parsedAmount>0; const amountWithinBalance=amountValid&&parsedAmount<=availableBalance;
 
-  useEffect(() => { load(); }, [load]);
+  function openWithdraw(asset='USDT'){setError('');setAmount('');setCurrency(asset);setModal('withdraw');}
+  async function openReceive(asset:string){setError('');setCurrency(asset);setNetwork('');setModal('receive');if(!accessToken)return;try{setReceiveLoading(true);const result=await walletApi.depositAddressesForAsset(accessToken,asset);setAddresses(cur=>[...cur.filter(x=>x.currency.toUpperCase()!==asset.toUpperCase()),...result]);if(result[0])setNetwork(result[0].network);}catch(e){setError(e instanceof Error?e.message:'Unable to load deposit address.');}finally{setReceiveLoading(false);}}
+  async function copyAddress(){if(!selectedAddress?.address)return;await Clipboard.setStringAsync(selectedAddress.address);Alert.alert('Address copied','The deposit address has been copied to your clipboard.');}
+  async function submitWithdraw(){setError('');if(!amountValid){setError('Enter a valid withdrawal amount.');return;}if(!selectedWallet){setError(`No ${currency} wallet is available.`);return;}if(!amountWithinBalance){setError(`Insufficient available ${currency} balance. Available: ${cryptoMoney(availableBalance)} ${currency}.`);return;}if(!accessToken)return;try{setSubmitting(true);await walletApi.withdraw(accessToken,currency,parsedAmount);setAmount('');setModal(null);await load();Alert.alert('Withdrawal submitted',`${cryptoMoney(parsedAmount)} ${currency} was deducted from your available balance.`);}catch(e){setError(e instanceof Error?e.message:'Withdrawal failed.');}finally{setSubmitting(false);}}
 
-  const orderedWallets = useMemo(() => [...wallets].sort((a, b) => {
-    const rank = (c: string) => ({ USDT: 0, USDC: 1, BTC: 2, ETH: 3, BNB: 4, SOL: 5, ZWG: 90, USD: 99 }[c.toUpperCase()] ?? 50);
-    return rank(a.currency) - rank(b.currency);
-  }), [wallets]);
+  return <SafeAreaView style={styles.safe} edges={['top']}><View style={styles.screen}><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}><View style={styles.container}>
+    <View style={styles.header}><View><Text style={styles.eyebrow}>OAKPAY WALLET</Text><Text style={styles.title}>Wallet</Text></View><View style={styles.headerIcon}><Ionicons name="shield-checkmark-outline" size={20} color={GREEN}/></View></View>
+    <View style={styles.hero}><View style={styles.heroTop}><Text style={styles.label}>TOTAL PORTFOLIO VALUE</Text><View style={styles.currencyBadge}><Text style={styles.currencyBadgeText}>USD</Text></View></View>{loading?<ActivityIndicator color={GREEN} style={styles.balanceLoader}/>:<><Text style={styles.balance}>$ {money(portfolio)}</Text><Text style={styles.converted}>≈ {money(zwgWallet?.totalBalance??portfolio*ZWG_PER_USDT)} ZWG</Text></>}<View style={styles.heroActions}><Pressable style={styles.receiveButton} onPress={()=>openReceive(cryptoWallets[0]?.currency??'USDT')}><Ionicons name="arrow-down" size={18} color="#102016"/><Text style={styles.receiveText}>Receive</Text></Pressable><Pressable style={styles.withdrawButton} onPress={()=>openWithdraw(cryptoWallets[0]?.currency??'USDT')}><Ionicons name="arrow-up" size={18} color={GREEN}/><Text style={styles.withdrawText}>Withdraw</Text></Pressable></View></View>
+    {error?<View style={styles.error}><Ionicons name="alert-circle-outline" size={18} color={RED}/><Text style={styles.errorText}>{error}</Text></View>:null}
+    <View style={styles.sectionRow}><Text style={styles.section}>Crypto</Text><Text style={styles.count}>{cryptoWallets.length} ASSETS</Text></View>
+    {loading?<View style={styles.loading}><ActivityIndicator color={GREEN}/><Text style={styles.muted}>Loading balances…</Text></View>:cryptoWallets.length===0?<View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="wallet-outline" size={22} color={GREEN}/></View><Text style={styles.emptyTitle}>No crypto wallets yet</Text><Text style={styles.muted}>Your crypto wallets will appear here.</Text></View>:cryptoWallets.map(w=>{const value=usdValue(w);return <View key={w.id} style={styles.assetCard}><View style={styles.assetLeft}><View style={styles.assetIcon}><Text style={styles.symbol}>{symbol(w.currency)}</Text></View><View><Text style={styles.assetName}>{w.currency.toUpperCase()}</Text><Text style={styles.assetSub}>{assetName(w.currency)}</Text></View></View><View style={styles.assetRight}><Text style={styles.assetAmount}>{cryptoMoney(w.totalBalance)}</Text><Text style={styles.assetUnit}>{w.currency.toUpperCase()}</Text>{value!==null?<Text style={styles.assetUsd}>≈ ${money(value)}</Text>:<Text style={styles.pendingPrice}>Market price pending</Text>}<Text style={styles.available}>Available {cryptoMoney(w.availableBalance)}</Text>{w.lockedBalance>0?<Text style={styles.locked}>{cryptoMoney(w.lockedBalance)} locked</Text>:null}<View style={styles.assetActions}><Pressable style={styles.smallButton} onPress={()=>openReceive(w.currency)}><Text style={styles.smallButtonText}>Receive</Text></Pressable><Pressable style={styles.smallOutlineButton} onPress={()=>openWithdraw(w.currency)}><Text style={styles.smallOutlineText}>Withdraw</Text></Pressable></View></View></View>})}
+    <View style={styles.sectionRowMore}><Text style={styles.section}>Recent activity</Text><Text style={styles.count}>{transactions.length} TRANSACTIONS</Text></View>
+    {transactions.length===0&&!loading?<View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="receipt-outline" size={22} color={GREEN}/></View><Text style={styles.emptyTitle}>No wallet activity</Text><Text style={styles.muted}>Deposits, withdrawals and P2P wallet movements will appear here.</Text></View>:transactions.slice(0,8).map(t=>{const credit=t.direction.toUpperCase()==='CREDIT';return <View style={styles.tx} key={t.id}><View style={[styles.txIcon,credit?styles.creditIcon:styles.debitIcon]}><Ionicons name={credit?'arrow-down':'arrow-up'} size={17} color={credit?GREEN:RED}/></View><View style={styles.txCopy}><Text style={styles.txTitle}>{transactionLabel(t.transactionType)}</Text><Text style={styles.txSub}>{new Date(t.createdAt).toLocaleString()}</Text></View><View style={styles.txRight}><Text style={[styles.txAmount,{color:credit?GREEN:RED}]}>{credit?'+':'-'}{isFiat(t.currency)?money(t.amount):cryptoMoney(t.amount)}</Text><View style={styles.statusRow}><Text style={styles.txSub}>{t.currency}</Text><View style={[styles.statusDot,t.status.toUpperCase()==='COMPLETED'?styles.statusComplete:styles.statusOther]}/></View></View></View>})}
+  </View></ScrollView>
 
-  const cryptoWallets = useMemo(() => orderedWallets.filter(w => !isFiat(w.currency)), [orderedWallets]);
-  const portfolio = useMemo(() => wallets.reduce((sum, w) => sum + (usdValue(w) ?? 0), 0), [wallets]);
-  const zwg = useMemo(() => wallets.find(w => w.currency.toUpperCase() === 'ZWG'), [wallets]);
-  const selectedAddresses = useMemo(() => addresses.filter(a => a.currency.toUpperCase() === currency.toUpperCase()), [addresses, currency]);
-  const selectedAddress = selectedAddresses.find(a => a.network.toUpperCase() === network.toUpperCase()) ?? selectedAddresses[0];
+  <Modal visible={modal==='receive'} transparent animationType="slide" onRequestClose={()=>setModal(null)}><View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle}/><Text style={styles.sheetTitle}>Receive Crypto</Text><Text style={styles.sheetText}>Use your assigned OakPay address to receive {currency}.</Text><Text style={styles.fieldLabel}>ASSET</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>{cryptoWallets.map(w=><Pressable key={w.currency} style={[styles.currencyPill,currency===w.currency&&styles.currencyPillActive]} onPress={()=>openReceive(w.currency)}><Text style={[styles.currencyText,currency===w.currency&&styles.currencyTextActive]}>{w.currency}</Text></Pressable>)}</ScrollView><Text style={styles.fieldLabel}>NETWORK</Text>{receiveLoading?<ActivityIndicator color={GREEN} style={styles.networkLoading}/>:selectedAddresses.length===0?<View style={styles.noAddress}><Text style={styles.noAddressText}>No deposit network has been assigned for {currency} yet.</Text></View>:<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>{selectedAddresses.map(a=><Pressable key={a.id} style={[styles.currencyPill,network===a.network&&styles.currencyPillActive]} onPress={()=>setNetwork(a.network)}><Text style={[styles.currencyText,network===a.network&&styles.currencyTextActive]}>{a.network}</Text></Pressable>)}</ScrollView>}{selectedAddress?<View style={styles.addressBox}><View style={styles.qrWrap}><QRCode value={selectedAddress.address} size={150} backgroundColor="#FFFFFF" color="#111713"/></View><Text style={styles.addressLabel}>YOUR {currency} DEPOSIT ADDRESS</Text><Text style={styles.networkSelected}>{selectedAddress.network}</Text><Text selectable style={styles.addressValue}>{selectedAddress.address}</Text>{selectedAddress.memoTag?<Text style={styles.memo}>Memo / Tag: {selectedAddress.memoTag}</Text>:null}<Pressable style={styles.copyButton} onPress={copyAddress}><Ionicons name="copy-outline" size={17} color="#102016"/><Text style={styles.copyText}>Copy Address</Text></Pressable></View>:null}<Text style={styles.warning}>⚠ Send only {currency} using the selected network to this address.</Text><Pressable onPress={()=>setModal(null)}><Text style={styles.cancel}>Close</Text></Pressable></View></View></Modal>
 
-  async function openReceive(asset: string) {
-    setCurrency(asset);
-    setNetwork('');
-    setModal('receive');
-    if (!accessToken) return;
-    try {
-      setReceiveLoading(true);
-      setError('');
-      const a = await walletApi.depositAddresses(accessToken);
-      setAddresses(a);
-      const first = a.find(x => x.currency.toUpperCase() === asset.toUpperCase());
-      if (first) setNetwork(first.network);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to load deposit address.');
-    } finally {
-      setReceiveLoading(false);
-    }
-  }
-
-  async function copyAddress() {
-    if (!selectedAddress?.address) return;
-    await Clipboard.setStringAsync(selectedAddress.address);
-    Alert.alert('Address copied', 'The deposit address has been copied to your clipboard.');
-  }
-
-  async function submitWithdraw() {
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) { setError('Enter a valid amount.'); return; }
-    if (!accessToken) return;
-    try {
-      setSubmitting(true);
-      setError('');
-      await walletApi.withdraw(accessToken, currency, value);
-      setAmount('');
-      setModal(null);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Withdrawal failed.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.container}>
-            <View style={styles.header}>
-              <View><Text style={styles.eyebrow}>OAKPAY WALLET</Text><Text style={styles.title}>Wallet</Text></View>
-              <View style={styles.headerIcon}><Ionicons name="shield-checkmark-outline" size={20} color={GREEN} /></View>
-            </View>
-
-            <View style={styles.hero}>
-              <View style={styles.heroTop}><Text style={styles.label}>TOTAL PORTFOLIO VALUE</Text><View style={styles.currencyBadge}><Text style={styles.currencyBadgeText}>USD</Text></View></View>
-              <Text style={styles.balance}>$ {money(portfolio)}</Text>
-              <Text style={styles.converted}>≈ {money(zwg?.totalBalance ?? portfolio * ZWG_PER_USDT)} ZWG</Text>
-              <View style={styles.heroActions}>
-                <Pressable style={styles.receiveButton} onPress={() => openReceive(cryptoWallets[0]?.currency ?? 'USDT')}><Ionicons name="arrow-down" size={18} color="#102016" /><Text style={styles.receiveText}>Receive</Text></Pressable>
-                <Pressable style={styles.withdraw} onPress={() => { setCurrency('USDT'); setModal('withdraw'); }}><Ionicons name="arrow-up" size={18} color={GREEN} /><Text style={styles.withdrawText}>Withdraw</Text></Pressable>
-              </View>
-            </View>
-
-            {error ? <View style={styles.error}><Ionicons name="alert-circle-outline" size={17} color={RED} /><Text style={styles.errorText}>{error}</Text></View> : null}
-
-            <View style={styles.sectionRow}><Text style={styles.section}>Crypto</Text><Text style={styles.count}>{cryptoWallets.length} ASSETS</Text></View>
-            {loading ? <View style={styles.loading}><ActivityIndicator color={GREEN} /><Text style={styles.muted}>Loading balances…</Text></View> : cryptoWallets.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="wallet-outline" size={22} color={GREEN} /></View><Text style={styles.emptyTitle}>No crypto wallets yet</Text><Text style={styles.muted}>Your crypto wallets will appear here.</Text></View> : cryptoWallets.map(w => {
-              const value = usdValue(w);
-              return <Pressable key={w.id} style={styles.assetCard} onPress={() => openReceive(w.currency)}><View style={styles.assetLeft}><View style={styles.assetIcon}><Text style={styles.symbol}>{symbol(w.currency)}</Text></View><View><Text style={styles.assetName}>{w.currency.toUpperCase()}</Text><Text style={styles.assetSub}>{name(w.currency)}</Text></View></View><View style={styles.assetRight}><Text style={styles.assetAmount}>{cryptoMoney(w.totalBalance)}</Text><Text style={styles.assetUnit}>{w.currency.toUpperCase()}</Text>{value !== null ? <Text style={styles.assetUsd}>≈ ${money(value)}</Text> : <Text style={styles.pendingPrice}>Market price pending</Text>}{w.lockedBalance > 0 ? <Text style={styles.locked}>{cryptoMoney(w.lockedBalance)} locked</Text> : null}</View></Pressable>;
-            })}
-
-            <View style={styles.sectionRowMore}><Text style={styles.section}>Recent activity</Text><Text style={styles.count}>{transactions.length} TRANSACTIONS</Text></View>
-            {transactions.length === 0 && !loading ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="receipt-outline" size={22} color={GREEN} /></View><Text style={styles.emptyTitle}>No wallet activity</Text><Text style={styles.muted}>Deposits, withdrawals and P2P wallet movements will appear here.</Text></View> : transactions.slice(0, 8).map(t => <View style={styles.tx} key={t.id}><View style={styles.txIcon}><Ionicons name={t.direction === 'CREDIT' ? 'arrow-down' : 'arrow-up'} size={17} color={t.direction === 'CREDIT' ? GREEN : RED} /></View><View style={styles.txCopy}><Text style={styles.txTitle}>{t.transactionType.replaceAll('_', ' ')}</Text><Text style={styles.txSub}>{new Date(t.createdAt).toLocaleString()}</Text></View><View style={styles.txRight}><Text style={[styles.txAmount, { color: t.direction === 'CREDIT' ? GREEN : RED }]}>{t.direction === 'CREDIT' ? '+' : '-'}{isFiat(t.currency) ? money(t.amount) : cryptoMoney(t.amount)}</Text><Text style={styles.txSub}>{t.currency}</Text></View></View>)}
-          </View>
-        </ScrollView>
-
-        <Modal visible={modal === 'receive'} transparent animationType="slide" onRequestClose={() => setModal(null)}>
-          <View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><Text style={styles.sheetTitle}>Receive Crypto</Text><Text style={styles.sheetText}>Use your assigned OakPay address to receive {currency}.</Text>
-            <Text style={styles.fieldLabel}>ASSET</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>{cryptoWallets.map(w => <Pressable key={w.currency} style={[styles.currencyPill, currency === w.currency && styles.currencyPillActive]} onPress={() => { setCurrency(w.currency); setNetwork(''); const first = addresses.find(a => a.currency.toUpperCase() === w.currency.toUpperCase()); if (first) setNetwork(first.network); }}><Text style={[styles.currencyText, currency === w.currency && styles.currencyTextActive]}>{w.currency}</Text></Pressable>)}</ScrollView>
-            <Text style={styles.fieldLabel}>NETWORK</Text>
-            {receiveLoading ? <ActivityIndicator color={GREEN} style={styles.networkLoading} /> : selectedAddresses.length === 0 ? <View style={styles.noAddress}><Text style={styles.noAddressText}>No deposit network has been assigned for {currency} yet.</Text></View> : <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>{selectedAddresses.map(a => <Pressable key={a.id} style={[styles.currencyPill, network === a.network && styles.currencyPillActive]} onPress={() => setNetwork(a.network)}><Text style={[styles.currencyText, network === a.network && styles.currencyTextActive]}>{a.network}</Text></Pressable>)}</ScrollView>}
-            {selectedAddress ? <View style={styles.addressBox}><View style={styles.qrWrap}><QRCode value={selectedAddress.address} size={150} backgroundColor="#FFFFFF" color="#111713" /></View><Text style={styles.addressLabel}>YOUR {currency} DEPOSIT ADDRESS</Text><Text style={styles.networkSelected}>{selectedAddress.network}</Text><Text selectable style={styles.addressValue}>{selectedAddress.address}</Text>{selectedAddress.memoTag ? <Text style={styles.memo}>Memo / Tag: {selectedAddress.memoTag}</Text> : null}<Pressable style={styles.copyButton} onPress={copyAddress}><Ionicons name="copy-outline" size={17} color="#102016" /><Text style={styles.copyText}>Copy Address</Text></Pressable></View> : null}
-            <Text style={styles.warning}>⚠ Send only {currency} using the selected network to this address.</Text><Pressable onPress={() => setModal(null)}><Text style={styles.cancel}>Close</Text></Pressable>
-          </View></View>
-        </Modal>
-
-        <Modal visible={modal === 'withdraw'} transparent animationType="slide" onRequestClose={() => !submitting && setModal(null)}><View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle} /><Text style={styles.sheetTitle}>Withdraw funds</Text><Text style={styles.sheetText}>Withdraw {currency} from your available balance.</Text><TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00000000" placeholderTextColor={MUTED} style={styles.amountInput} autoFocus /><Pressable style={[styles.confirm, submitting && { opacity: 0.6 }]} disabled={submitting} onPress={submitWithdraw}>{submitting ? <ActivityIndicator color="#102016" /> : <Text style={styles.confirmText}>Withdraw {currency}</Text>}</Pressable><Pressable onPress={() => setModal(null)} disabled={submitting}><Text style={styles.cancel}>Close</Text></Pressable></View></View></Modal>
-      </View>
-    </SafeAreaView>
-  );
+  <Modal visible={modal==='withdraw'} transparent animationType="slide" onRequestClose={()=>!submitting&&setModal(null)}><View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHandle}/><Text style={styles.sheetTitle}>Withdraw balance</Text><Text style={styles.sheetText}>Move funds out of your available {currency} wallet balance.</Text><Text style={styles.fieldLabel}>ASSET</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>{cryptoWallets.map(w=><Pressable key={w.currency} style={[styles.currencyPill,currency===w.currency&&styles.currencyPillActive]} onPress={()=>{setCurrency(w.currency);setAmount('');setError('');}}><Text style={[styles.currencyText,currency===w.currency&&styles.currencyTextActive]}>{w.currency}</Text></Pressable>)}</ScrollView><View style={styles.availableBox}><Text style={styles.availableLabel}>AVAILABLE</Text><Text style={styles.availableValue}>{cryptoMoney(availableBalance)} {currency}</Text></View><Text style={styles.fieldLabel}>AMOUNT</Text><View style={styles.amountRow}><TextInput value={amount} onChangeText={v=>{setAmount(v.replace(/[^0-9.]/g,''));setError('');}} keyboardType="decimal-pad" placeholder="0.00000000" placeholderTextColor={MUTED} style={styles.amountInput} autoFocus/><Pressable style={styles.maxButton} onPress={()=>availableBalance>0&&setAmount(String(availableBalance))}><Text style={styles.maxText}>MAX</Text></Pressable></View>{amountValid&&!amountWithinBalance?<Text style={styles.validationText}>Amount exceeds your available balance.</Text>:null}<Pressable style={[styles.confirm,(!amountWithinBalance||submitting)&&styles.confirmDisabled]} disabled={!amountWithinBalance||submitting} onPress={submitWithdraw}>{submitting?<ActivityIndicator color="#102016"/>:<Text style={styles.confirmText}>Withdraw {currency}</Text>}</Pressable><Pressable onPress={()=>setModal(null)} disabled={submitting}><Text style={styles.cancel}>Close</Text></Pressable></View></View></Modal>
+  </View></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG }, screen: { flex: 1, backgroundColor: BG }, content: { paddingBottom: 36 }, container: { paddingHorizontal: 20, paddingTop: 8 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }, headerIcon: { width: 44, height: 44, borderRadius: 15, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, alignItems: 'center', justifyContent: 'center' },
-  eyebrow: { fontFamily: 'Inter_700Bold', fontSize: 10, letterSpacing: 1.8, color: GREEN }, title: { fontFamily: 'Inter_800ExtraBold', fontSize: 30, lineHeight: 38, color: TEXT, marginTop: 4 },
-  hero: { backgroundColor: CARD, borderRadius: 23, padding: 20, borderWidth: 1, borderColor: BORDER, marginBottom: 23 }, heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, label: { fontFamily: 'Inter_700Bold', fontSize: 10, letterSpacing: 1.3, color: MUTED }, currencyBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, backgroundColor: '#EEF4DF' }, currencyBadgeText: { fontFamily: 'Inter_800ExtraBold', fontSize: 9, color: GREEN, letterSpacing: .7 }, balance: { fontFamily: 'Inter_800ExtraBold', fontSize: 34, lineHeight: 43, marginTop: 9, color: TEXT }, converted: { fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 3, color: MUTED }, heroActions: { flexDirection: 'row', gap: 10, marginTop: 17 }, receiveButton: { flex: 1, height: 48, borderRadius: 14, backgroundColor: LIME, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' }, receiveText: { color: '#102016', fontFamily: 'Inter_800ExtraBold', fontSize: 13 }, withdraw: { flex: 1, height: 48, borderRadius: 14, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: BORDER, backgroundColor: '#F1F3F0' }, withdrawText: { fontFamily: 'Inter_700Bold', fontSize: 13, color: GREEN },
-  error: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FFF0F2', borderRadius: 13, padding: 12, marginBottom: 16 }, errorText: { flex: 1, color: RED, fontFamily: 'Inter_400Regular', fontSize: 12 }, sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }, sectionRowMore: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 11 }, section: { fontFamily: 'Inter_800ExtraBold', fontSize: 18, color: TEXT }, count: { fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 1.1, color: MUTED }, loading: { backgroundColor: CARD, borderRadius: 17, padding: 25, alignItems: 'center', gap: 10, borderWidth: 1, borderColor: BORDER }, muted: { fontFamily: 'Inter_400Regular', fontSize: 12, color: MUTED, textAlign: 'center', lineHeight: 18 }, empty: { backgroundColor: CARD, borderRadius: 17, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: BORDER }, emptyIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#EEF4DF', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }, emptyTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 14, color: TEXT, marginBottom: 4 },
-  assetCard: { backgroundColor: CARD, borderRadius: 17, padding: 16, borderWidth: 1, borderColor: BORDER, marginBottom: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, assetLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 }, assetIcon: { width: 43, height: 43, borderRadius: 14, backgroundColor: '#EEF4DF', alignItems: 'center', justifyContent: 'center', marginRight: 11 }, symbol: { fontFamily: 'Inter_800ExtraBold', fontSize: 18, color: GREEN }, assetName: { fontFamily: 'Inter_800ExtraBold', fontSize: 14, color: TEXT }, assetSub: { fontFamily: 'Inter_400Regular', fontSize: 11, color: MUTED, marginTop: 2 }, assetRight: { alignItems: 'flex-end', maxWidth: '53%' }, assetAmount: { fontFamily: 'Inter_700Bold', fontSize: 13, color: TEXT }, assetUnit: { fontFamily: 'Inter_400Regular', fontSize: 10, color: MUTED, marginTop: 1 }, assetUsd: { fontFamily: 'Inter_700Bold', fontSize: 11, color: GREEN, marginTop: 4 }, pendingPrice: { fontFamily: 'Inter_400Regular', fontSize: 10, color: MUTED, marginTop: 4 }, locked: { fontFamily: 'Inter_400Regular', fontSize: 9, color: MUTED, marginTop: 3 },
-  tx: { backgroundColor: CARD, borderRadius: 15, padding: 13, borderWidth: 1, borderColor: BORDER, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }, txIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#F1F3F0', alignItems: 'center', justifyContent: 'center', marginRight: 10 }, txCopy: { flex: 1 }, txTitle: { fontFamily: 'Inter_700Bold', fontSize: 12, color: TEXT, textTransform: 'capitalize' }, txSub: { fontFamily: 'Inter_400Regular', fontSize: 9, color: MUTED, marginTop: 3 }, txRight: { alignItems: 'flex-end' }, txAmount: { fontFamily: 'Inter_800ExtraBold', fontSize: 12 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,.48)', justifyContent: 'flex-end' }, sheet: { backgroundColor: CARD, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30, maxHeight: '92%' }, sheetHandle: { width: 42, height: 4, borderRadius: 2, backgroundColor: '#D6D9D5', alignSelf: 'center', marginBottom: 18 }, sheetTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 22, color: TEXT }, sheetText: { fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18, color: MUTED, marginTop: 5, marginBottom: 18 }, fieldLabel: { fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 1.2, color: MUTED, marginBottom: 8, marginTop: 5 }, pills: { gap: 8, paddingBottom: 4 }, currencyPill: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, backgroundColor: '#F0F2EF', borderWidth: 1, borderColor: BORDER }, currencyPillActive: { backgroundColor: GREEN, borderColor: GREEN }, currencyText: { fontFamily: 'Inter_700Bold', fontSize: 11, color: MUTED }, currencyTextActive: { color: '#FFFFFF' }, networkLoading: { paddingVertical: 12 }, noAddress: { padding: 14, backgroundColor: '#FFF7DF', borderRadius: 12, marginBottom: 12 }, noAddressText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 17, color: '#715A18' }, addressBox: { backgroundColor: '#F5F5F3', borderRadius: 18, borderWidth: 1, borderColor: BORDER, padding: 16, alignItems: 'center', marginTop: 14 }, qrWrap: { backgroundColor: '#FFFFFF', padding: 12, borderRadius: 14, marginBottom: 14 }, addressLabel: { fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 1, color: MUTED, textAlign: 'center' }, networkSelected: { fontFamily: 'Inter_800ExtraBold', fontSize: 11, color: GREEN, marginTop: 5 }, addressValue: { fontFamily: 'Inter_700Bold', fontSize: 12, color: TEXT, textAlign: 'center', marginTop: 7, lineHeight: 18 }, memo: { fontFamily: 'Inter_400Regular', fontSize: 11, color: MUTED, marginTop: 5 }, copyButton: { marginTop: 14, height: 44, paddingHorizontal: 18, borderRadius: 13, backgroundColor: LIME, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, copyText: { fontFamily: 'Inter_800ExtraBold', fontSize: 12, color: '#102016' }, warning: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 15, color: '#8A6A16', textAlign: 'center', marginTop: 12 }, cancel: { fontFamily: 'Inter_700Bold', fontSize: 13, color: MUTED, textAlign: 'center', paddingVertical: 14 }, amountInput: { height: 52, borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: BG, paddingHorizontal: 15, color: TEXT, fontFamily: 'Inter_700Bold', fontSize: 16, marginBottom: 12 }, confirm: { height: 50, borderRadius: 14, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center' }, confirmText: { fontFamily: 'Inter_800ExtraBold', fontSize: 13, color: '#102016' }
+const styles=StyleSheet.create({
+ safe:{flex:1,backgroundColor:BG},screen:{flex:1,backgroundColor:BG},content:{paddingBottom:36},container:{paddingHorizontal:20,paddingTop:8},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:18},headerIcon:{width:44,height:44,borderRadius:15,backgroundColor:CARD,borderWidth:1,borderColor:BORDER,alignItems:'center',justifyContent:'center'},eyebrow:{fontFamily:'Inter_700Bold',fontSize:10,letterSpacing:1.8,color:GREEN},title:{fontFamily:'Inter_800ExtraBold',fontSize:30,lineHeight:38,color:TEXT,marginTop:4},hero:{backgroundColor:CARD,borderRadius:23,padding:20,borderWidth:1,borderColor:BORDER,marginBottom:18},heroTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},label:{fontFamily:'Inter_700Bold',fontSize:10,letterSpacing:1.3,color:MUTED},currencyBadge:{paddingHorizontal:9,paddingVertical:5,borderRadius:8,backgroundColor:'#EEF4DF'},currencyBadgeText:{fontFamily:'Inter_800ExtraBold',fontSize:9,color:GREEN,letterSpacing:.7},balance:{fontFamily:'Inter_800ExtraBold',fontSize:34,lineHeight:43,marginTop:9,color:TEXT},balanceLoader:{alignSelf:'flex-start',marginVertical:18},converted:{fontFamily:'Inter_400Regular',fontSize:13,marginTop:3,color:MUTED},heroActions:{flexDirection:'row',gap:10,marginTop:17},receiveButton:{flex:1,height:48,borderRadius:14,backgroundColor:LIME,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},receiveText:{color:'#102016',fontFamily:'Inter_800ExtraBold',fontSize:13},withdrawButton:{flex:1,height:48,borderRadius:14,backgroundColor:'#F3F5F1',borderWidth:1,borderColor:BORDER,flexDirection:'row',gap:7,alignItems:'center',justifyContent:'center'},withdrawText:{color:GREEN,fontFamily:'Inter_800ExtraBold',fontSize:13},error:{flexDirection:'row',gap:8,alignItems:'flex-start',backgroundColor:'#FFF0F1',borderWidth:1,borderColor:'#F5CDD1',borderRadius:13,padding:12,marginBottom:16},errorText:{flex:1,color:RED,fontFamily:'Inter_600SemiBold',fontSize:12,lineHeight:18},sectionRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:11},sectionRowMore:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:28,marginBottom:11},section:{fontFamily:'Inter_800ExtraBold',color:TEXT,fontSize:18},count:{fontFamily:'Inter_700Bold',color:MUTED,fontSize:9,letterSpacing:1},loading:{backgroundColor:CARD,borderRadius:17,padding:28,alignItems:'center',gap:9,borderWidth:1,borderColor:BORDER},muted:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:12,lineHeight:18,textAlign:'center'},empty:{backgroundColor:CARD,borderRadius:17,padding:24,alignItems:'center',borderWidth:1,borderColor:BORDER},emptyIcon:{width:44,height:44,borderRadius:14,backgroundColor:'#EEF4DF',alignItems:'center',justifyContent:'center',marginBottom:10},emptyTitle:{color:TEXT,fontFamily:'Inter_800ExtraBold',fontSize:14,marginBottom:5},assetCard:{backgroundColor:CARD,borderRadius:18,borderWidth:1,borderColor:BORDER,padding:15,marginBottom:10,flexDirection:'row',justifyContent:'space-between',gap:10},assetLeft:{flexDirection:'row',alignItems:'center',gap:11,flex:1},assetIcon:{width:43,height:43,borderRadius:14,backgroundColor:'#F0F3EE',alignItems:'center',justifyContent:'center'},symbol:{color:GREEN,fontFamily:'Inter_800ExtraBold',fontSize:18},assetName:{color:TEXT,fontFamily:'Inter_800ExtraBold',fontSize:14},assetSub:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:11,marginTop:2},assetRight:{alignItems:'flex-end',flex:1},assetAmount:{color:TEXT,fontFamily:'Inter_800ExtraBold',fontSize:14},assetUnit:{color:MUTED,fontFamily:'Inter_700Bold',fontSize:9,letterSpacing:.8,marginTop:2},assetUsd:{color:GREEN,fontFamily:'Inter_600SemiBold',fontSize:10,marginTop:3},pendingPrice:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:9,marginTop:3},available:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:9,marginTop:3},locked:{color:'#A06B00',fontFamily:'Inter_600SemiBold',fontSize:9,marginTop:2},assetActions:{flexDirection:'row',gap:6,marginTop:8},smallButton:{paddingHorizontal:10,paddingVertical:6,borderRadius:8,backgroundColor:LIME},smallButtonText:{color:'#102016',fontFamily:'Inter_800ExtraBold',fontSize:9},smallOutlineButton:{paddingHorizontal:10,paddingVertical:6,borderRadius:8,borderWidth:1,borderColor:BORDER,backgroundColor:'#F8F9F7'},smallOutlineText:{color:GREEN,fontFamily:'Inter_800ExtraBold',fontSize:9},tx:{backgroundColor:CARD,borderRadius:15,borderWidth:1,borderColor:BORDER,padding:13,marginBottom:8,flexDirection:'row',alignItems:'center',gap:10},txIcon:{width:36,height:36,borderRadius:12,alignItems:'center',justifyContent:'center'},creditIcon:{backgroundColor:'#EEF4DF'},debitIcon:{backgroundColor:'#FFF0F1'},txCopy:{flex:1},txTitle:{color:TEXT,fontFamily:'Inter_700Bold',fontSize:12},txSub:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:9,marginTop:3},txRight:{alignItems:'flex-end'},txAmount:{fontFamily:'Inter_800ExtraBold',fontSize:12},statusRow:{flexDirection:'row',alignItems:'center',gap:5},statusDot:{width:6,height:6,borderRadius:3},statusComplete:{backgroundColor:GREEN},statusOther:{backgroundColor:'#B9C0BA'},overlay:{flex:1,backgroundColor:'rgba(0,0,0,0.35)',justifyContent:'flex-end'},sheet:{backgroundColor:BG,borderTopLeftRadius:26,borderTopRightRadius:26,padding:20,paddingBottom:30,maxHeight:'92%'},sheetHandle:{width:42,height:4,borderRadius:4,backgroundColor:'#C8CCC8',alignSelf:'center',marginBottom:17},sheetTitle:{color:TEXT,fontFamily:'Inter_800ExtraBold',fontSize:23},sheetText:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:12,lineHeight:18,marginTop:5,marginBottom:18},fieldLabel:{color:MUTED,fontFamily:'Inter_700Bold',fontSize:9,letterSpacing:1.2,marginTop:8,marginBottom:8},pills:{gap:8,paddingBottom:4},currencyPill:{paddingHorizontal:13,paddingVertical:9,borderRadius:10,backgroundColor:CARD,borderWidth:1,borderColor:BORDER},currencyPillActive:{backgroundColor:GREEN,borderColor:GREEN},currencyText:{color:TEXT,fontFamily:'Inter_700Bold',fontSize:11},currencyTextActive:{color:'#FFFFFF'},networkLoading:{marginVertical:15,alignSelf:'flex-start'},noAddress:{backgroundColor:'#FFF8E7',borderWidth:1,borderColor:'#F0DFAC',borderRadius:12,padding:12},noAddressText:{color:'#80611C',fontFamily:'Inter_600SemiBold',fontSize:11,lineHeight:17},addressBox:{backgroundColor:CARD,borderRadius:18,borderWidth:1,borderColor:BORDER,padding:16,alignItems:'center',marginTop:14},qrWrap:{backgroundColor:'#FFFFFF',padding:8,borderRadius:12,marginBottom:12},addressLabel:{color:MUTED,fontFamily:'Inter_700Bold',fontSize:8,letterSpacing:1.1},networkSelected:{color:GREEN,fontFamily:'Inter_800ExtraBold',fontSize:11,marginTop:4},addressValue:{color:TEXT,fontFamily:'Inter_600SemiBold',fontSize:11,textAlign:'center',lineHeight:17,marginTop:8},memo:{color:MUTED,fontFamily:'Inter_600SemiBold',fontSize:10,marginTop:6},copyButton:{backgroundColor:LIME,borderRadius:12,paddingHorizontal:18,height:42,flexDirection:'row',alignItems:'center',gap:7,marginTop:13},copyText:{color:'#102016',fontFamily:'Inter_800ExtraBold',fontSize:11},warning:{color:'#80611C',backgroundColor:'#FFF8E7',borderRadius:11,padding:10,marginTop:12,fontFamily:'Inter_600SemiBold',fontSize:10,lineHeight:15},availableBox:{backgroundColor:'#EEF4DF',borderRadius:13,padding:12,marginTop:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},availableLabel:{color:GREEN,fontFamily:'Inter_700Bold',fontSize:9,letterSpacing:1},availableValue:{color:GREEN,fontFamily:'Inter_800ExtraBold',fontSize:12},amountRow:{flexDirection:'row',gap:8,alignItems:'center'},amountInput:{flex:1,height:52,backgroundColor:CARD,borderRadius:13,borderWidth:1,borderColor:BORDER,paddingHorizontal:14,color:TEXT,fontFamily:'Inter_700Bold',fontSize:16},maxButton:{height:52,paddingHorizontal:15,borderRadius:13,backgroundColor:GREEN,alignItems:'center',justifyContent:'center'},maxText:{color:'#FFFFFF',fontFamily:'Inter_800ExtraBold',fontSize:10},validationText:{color:RED,fontFamily:'Inter_600SemiBold',fontSize:10,marginTop:7},confirm:{height:50,borderRadius:14,backgroundColor:LIME,alignItems:'center',justifyContent:'center',marginTop:18},confirmDisabled:{opacity:.45},confirmText:{color:'#102016',fontFamily:'Inter_800ExtraBold',fontSize:13},cancel:{color:MUTED,fontFamily:'Inter_700Bold',fontSize:12,textAlign:'center',paddingVertical:14}
 });
