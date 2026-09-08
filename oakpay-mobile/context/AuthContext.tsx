@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { authApi, LoginRequest, RegisterRequest, TokenResponse, UserResponse } from '../lib/api';
+import { authApi, isAuthError, LoginRequest, RegisterRequest, TokenResponse, UserResponse } from '../lib/api';
 
 const ACCESS_TOKEN_KEY = 'oakpay.accessToken';
 const REFRESH_TOKEN_KEY = 'oakpay.refreshToken';
@@ -14,6 +14,7 @@ type AuthContextValue = {
   signIn: (request: LoginRequest) => Promise<void>;
   signUp: (request: RegisterRequest) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -28,6 +29,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshSession = useCallback(async () => {
+    try {
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+      if (!refreshToken) return false;
+
+      const tokens = await authApi.refresh(refreshToken);
+      const currentUser = await authApi.me(tokens.accessToken);
+      await saveSession(tokens, currentUser);
+      setAccessToken(tokens.accessToken);
+      setUser(currentUser);
+      return true;
+    } catch (error) {
+      if (isAuthError(error)) {
+        await clearSession();
+        setAccessToken(null);
+        setUser(null);
+      }
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     async function restore() {
@@ -54,32 +76,36 @@ export function AuthProvider({ children }: PropsWithChildren) {
             const currentUser = await authApi.me(storedAccessToken);
             setUser(currentUser);
             await SecureStore.setItemAsync(USER_KEY, JSON.stringify(currentUser));
-          } catch {
-            // Keep the cached profile if the API is temporarily unavailable.
+          } catch (error) {
+            if (isAuthError(error) && storedRefreshToken) {
+              const refreshed = await refreshSession();
+              if (refreshed) return;
+              await clearSession();
+              setAccessToken(null);
+              setUser(null);
+            }
+            // For network/server failures, keep the cached session and let the screen show a friendly retry state.
           }
           return;
         }
 
         if (storedRefreshToken) {
-          const tokens = await authApi.refresh(storedRefreshToken);
-          let currentUser = cachedUser;
-          try {
-            currentUser = await authApi.me(tokens.accessToken);
-          } catch {
-            // Keep cached profile if profile refresh is temporarily unavailable.
+          const refreshed = await refreshSession();
+          if (!refreshed) {
+            // Do not force a logout for a temporary network failure.
+            if (!cachedUser) await clearSession();
           }
-          await saveSession(tokens, currentUser);
-          setAccessToken(tokens.accessToken);
-          if (currentUser) setUser(currentUser);
         }
       } catch {
         await clearSession();
+        setAccessToken(null);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     }
     restore();
-  }, []);
+  }, [refreshSession]);
 
   const signIn = useCallback(async (request: LoginRequest) => {
     const tokens = await authApi.login(request);
@@ -112,8 +138,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ accessToken, user, isLoading, signIn, signUp, signOut }),
-    [accessToken, user, isLoading, signIn, signUp, signOut],
+    () => ({ accessToken, user, isLoading, signIn, signUp, signOut, refreshSession }),
+    [accessToken, user, isLoading, signIn, signUp, signOut, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
