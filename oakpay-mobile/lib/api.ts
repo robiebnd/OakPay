@@ -80,6 +80,7 @@ export type Wallet = { id: string; userId: string; currency: string; availableBa
 export type LedgerTransaction = { id: string; walletId: string; userId: string; transactionType: string; status: string; direction: string; balanceType: string; currency: string; amount: number; balanceBefore: number; balanceAfter: number; reference: string; metadata?: string; createdAt: string };
 export type DepositAddress = { id: string; currency: string; network: string; address: string; memoTag?: string; status: string; createdAt: string };
 export type P2PAd = { id: string; ownerId: string; side: 'BUY' | 'SELL'; asset: string; fiatCurrency: string; price: number; totalQuantity: number; availableQuantity: number; minQuantity: number; maxQuantity: number; paymentMethods: string; terms: string; status: string; createdAt: string; updatedAt: string };
+export type P2PRate = { baseCurrency: string; quoteCurrency: string; rate: number; source: string; effectiveAt: string };
 export type P2PTrade = { id: string; advertisementId?: string; sellerId?: string; buyerId?: string; asset?: string; fiatCurrency?: string; quantity?: number; unitPrice?: number; fiatAmount?: number; paymentMethod?: string; status?: string; paymentReference?: string; paymentNote?: string; expiresAt?: string; createdAt?: string; updatedAt?: string };
 
 export const authApi = {
@@ -105,6 +106,7 @@ export const walletApi = {
 
 export const p2pApi = {
   ads: (token: string, side: 'BUY' | 'SELL', asset = 'USDT', fiat = 'ZWG', paymentMethod?: string) => apiGet<P2PAd[]>(`/api/v1/p2p/ads?side=${side}&asset=${encodeURIComponent(asset)}&fiatCurrency=${encodeURIComponent(fiat)}&limit=50${paymentMethod ? `&paymentMethod=${encodeURIComponent(paymentMethod)}` : ''}`, token),
+  rate: (token: string, baseCurrency = 'USDT', quoteCurrency = 'ZWG') => apiGet<P2PRate>(`/api/v1/p2p/rates?baseCurrency=${encodeURIComponent(baseCurrency)}&quoteCurrency=${encodeURIComponent(quoteCurrency)}`, token),
   take: (token: string, adId: string, quantity: number, paymentMethod: string) => apiPost<P2PTrade>(`/api/v1/p2p/ads/${adId}/take`, token, { quantity, paymentMethod, expiryMinutes: 30 }),
   trades: (token: string, status?: string, asset?: string) => apiGet<P2PTrade[]>(`/api/v1/p2p/trades?limit=50${status ? `&status=${encodeURIComponent(status)}` : ''}${asset ? `&asset=${encodeURIComponent(asset)}` : ''}`, token),
   trade: (token: string, tradeId: string) => apiGet<P2PTrade>(`/api/v1/p2p/trades/${tradeId}`, token),
