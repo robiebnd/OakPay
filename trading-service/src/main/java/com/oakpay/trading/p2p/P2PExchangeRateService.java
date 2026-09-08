@@ -27,16 +27,14 @@ public class P2PExchangeRateService {
 
     private final P2PExchangeRateRepository repository;
     private final AdvertisementRepository advertisementRepository;
-    private final RestClient restClient;
+    private final RestClient restClient = RestClient.create();
 
     private volatile ExternalRateCache externalRateCache;
 
     public P2PExchangeRateService(P2PExchangeRateRepository repository,
-                                  AdvertisementRepository advertisementRepository,
-                                  RestClient.Builder restClientBuilder) {
+                                  AdvertisementRepository advertisementRepository) {
         this.repository = repository;
         this.advertisementRepository = advertisementRepository;
-        this.restClient = restClientBuilder.build();
     }
 
     public RateSnapshot getRate(String baseCurrency, String quoteCurrency) {
