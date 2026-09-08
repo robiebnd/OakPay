@@ -27,10 +27,11 @@ public class WalletService {
 
     @Transactional
     public List<WalletDtos.WalletResponse> getUserWallets(UUID userId) {
-        // USD is OakPay's primary display/settlement balance. ZWG is the local fiat balance.
-        // Crypto wallets are provisioned when the asset is needed/received.
+        // OakPay provisions the core fiat wallets plus USDT for every user.
+        // Blockchain deposit addresses remain a separate custody/address-assignment concern.
         ensureDefaultWallet(userId, "USD");
         ensureDefaultWallet(userId, "ZWG");
+        ensureDefaultWallet(userId, "USDT");
         return walletRepository.findAllByUserId(userId).stream().map(this::toResponse).toList();
     }
 
