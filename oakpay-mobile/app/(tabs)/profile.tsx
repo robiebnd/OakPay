@@ -1,8 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { authApi, UserResponse } from '../../lib/api';
 
+const USER_KEY = 'oakpay.user';
 const BG = '#0D1017';
 const CARD = '#171B24';
 const TEXT = '#F4F6F8';
@@ -11,9 +16,37 @@ const LIME = '#D8FF3E';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
-  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'OakPay User';
-  const initial = (user?.firstName?.charAt(0) || 'O').toUpperCase();
+  const { user, accessToken, signOut } = useAuth();
+  const [profileUser, setProfileUser] = useState<UserResponse | null>(user);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function refreshProfile() {
+        if (!accessToken) return;
+        try {
+          const currentUser = await authApi.me(accessToken);
+          if (!active) return;
+          setProfileUser(currentUser);
+          await SecureStore.setItemAsync(USER_KEY, JSON.stringify(currentUser));
+        } catch {
+          // Keep the authenticated context/cache if the API is temporarily unavailable.
+        }
+      }
+
+      setProfileUser(user);
+      refreshProfile();
+
+      return () => {
+        active = false;
+      };
+    }, [accessToken, user]),
+  );
+
+  const currentUser = profileUser ?? user;
+  const fullName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'OakPay User';
+  const initial = (currentUser?.firstName?.charAt(0) || currentUser?.lastName?.charAt(0) || 'O').toUpperCase();
 
   return (
     <View style={styles.screen}>
@@ -29,13 +62,13 @@ export default function ProfileScreen() {
               <View style={styles.avatar}><Text style={styles.avatarText}>{initial}</Text></View>
               <View style={styles.identity}>
                 <Text style={styles.name}>{fullName}</Text>
-                <Text style={styles.email}>{user?.email || 'No email available'}</Text>
+                <Text style={styles.email}>{currentUser?.email || 'No email available'}</Text>
               </View>
             </View>
             <View style={styles.statusRow}>
               <View style={styles.statusPill}>
-                <Ionicons name={user?.emailVerified ? 'checkmark-circle' : 'shield-checkmark-outline'} size={15} color={LIME} />
-                <Text style={styles.statusText}>{user?.emailVerified ? 'Email verified' : 'Account active'}</Text>
+                <Ionicons name={currentUser?.emailVerified ? 'checkmark-circle' : 'shield-checkmark-outline'} size={15} color={LIME} />
+                <Text style={styles.statusText}>{currentUser?.emailVerified ? 'Email verified' : 'Account active'}</Text>
               </View>
               <Text style={styles.member}>OakPay account</Text>
             </View>
