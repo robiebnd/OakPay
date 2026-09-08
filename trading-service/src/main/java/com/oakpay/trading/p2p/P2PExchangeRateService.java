@@ -47,20 +47,10 @@ public class P2PExchangeRateService {
         Optional<RateSnapshot> liveP2p = getLiveP2pRate(base, quote);
         if (liveP2p.isPresent()) return liveP2p.get();
 
-        // When there are no OakPay offers yet, use live external market/reference data
-        // instead of the old fixed database value. The DB value remains the final fallback.
-        try {
-            return getExternalRate(base, quote);
-        } catch (RuntimeException ignored) {
-            return repository.findFirstByBaseCurrencyAndQuoteCurrencyAndActiveTrueOrderByEffectiveAtDesc(base, quote)
-                    .map(rate -> new RateSnapshot(
-                            rate.getBaseCurrency(),
-                            rate.getQuoteCurrency(),
-                            rate.getRate(),
-                            rate.getSource(),
-                            rate.getEffectiveAt()))
-                    .orElseThrow(() -> new IllegalArgumentException("No market rate available for " + base + "/" + quote));
-        }
+        // No OakPay offers yet: use current external market/reference data.
+        // We deliberately do not fall back to the old fixed database rate for USDT/ZWG,
+        // because that would make the UI claim LIVE while showing stale data.
+        return getExternalRate(base, quote);
     }
 
     public BigDecimal getRateValue(String baseCurrency, String quoteCurrency) {
@@ -87,7 +77,7 @@ public class P2PExchangeRateService {
             rate = bestBuy.get().getPrice().add(bestSell.get().getPrice())
                     .divide(BigDecimal.valueOf(2), 8, RoundingMode.HALF_UP);
         } else {
-            rate = bestBuy.orElseGet(bestSell::get).getPrice();
+            rate = bestBuy.isPresent() ? bestBuy.get().getPrice() : bestSell.get().getPrice();
         }
 
         return Optional.of(new RateSnapshot(
@@ -101,9 +91,7 @@ public class P2PExchangeRateService {
     private RateSnapshot getExternalRate(String base, String quote) {
         if (base.equals("USDT") && quote.equals("ZWG")) {
             ExternalRate external = getExternalRate();
-            BigDecimal usdtUsd = external.usdtUsd();
-            BigDecimal usdZwg = external.usdZwg();
-            BigDecimal rate = usdtUsd.multiply(usdZwg).setScale(4, RoundingMode.HALF_UP);
+            BigDecimal rate = external.usdtUsd().multiply(external.usdZwg()).setScale(4, RoundingMode.HALF_UP);
             return new RateSnapshot(base, quote, rate, "RBZ_INTERBANK_AVG + COINGECKO_USDT_USD", external.updatedAt());
         }
 
@@ -112,7 +100,14 @@ public class P2PExchangeRateService {
             return new RateSnapshot(base, quote, usdtUsd.setScale(6, RoundingMode.HALF_UP), "COINGECKO_USDT_USD", LocalDateTime.now());
         }
 
-        throw new IllegalArgumentException("No live external provider configured for " + base + "/" + quote);
+        return repository.findFirstByBaseCurrencyAndQuoteCurrencyAndActiveTrueOrderByEffectiveAtDesc(base, quote)
+                .map(rate -> new RateSnapshot(
+                        rate.getBaseCurrency(),
+                        rate.getQuoteCurrency(),
+                        rate.getRate(),
+                        rate.getSource(),
+                        rate.getEffectiveAt()))
+                .orElseThrow(() -> new IllegalArgumentException("No live market rate configured for " + base + "/" + quote));
     }
 
     private ExternalRate getExternalRate() {
