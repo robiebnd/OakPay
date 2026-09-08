@@ -76,6 +76,6 @@ public class Wallet {
     public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = money(availableBalance); }
     public BigDecimal getLockedBalance() { return lockedBalance; }
     public void setLockedBalance(BigDecimal lockedBalance) { this.lockedBalance = money(lockedBalance); }
-    public BigDecimal getCreatedAt() { return createdAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
