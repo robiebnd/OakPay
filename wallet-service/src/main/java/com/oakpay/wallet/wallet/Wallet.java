@@ -45,8 +45,8 @@ public class Wallet {
     @PrePersist
     void prePersist() {
         if (id == null) id = UUID.randomUUID();
-        if (availableBalance == null) availableBalance = BigDecimal.ZERO.setScale(scaleForCurrency());
-        if (lockedBalance == null) lockedBalance = BigDecimal.ZERO.setScale(scaleForCurrency());
+        if (availableBalance == null) availableBalance = BigDecimal.ZERO.setScale(scaleFor(currency));
+        if (lockedBalance == null) lockedBalance = BigDecimal.ZERO.setScale(scaleFor(currency));
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
@@ -59,19 +59,21 @@ public class Wallet {
         updatedAt = LocalDateTime.now();
     }
 
-    private int scaleForCurrency() {
-        return currency != null && FIAT_CURRENCIES.contains(currency.toUpperCase()) ? FIAT_SCALE : CRYPTO_SCALE;
+    public static int scaleFor(String currency) {
+        return currency != null && FIAT_CURRENCIES.contains(currency.trim().toUpperCase()) ? FIAT_SCALE : CRYPTO_SCALE;
     }
 
+    private int scaleFor(String currency) { return scaleFor((String) currency); }
+
     private BigDecimal money(BigDecimal value) {
-        return value == null ? null : value.setScale(scaleForCurrency(), RoundingMode.HALF_UP);
+        return value == null ? null : value.setScale(scaleFor(currency), RoundingMode.HALF_UP);
     }
 
     public UUID getId() { return id; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
     public String getCurrency() { return currency; }
-    public void setCurrency(String currency) { this.currency = currency; }
+    public void setCurrency(String currency) { this.currency = currency == null ? null : currency.trim().toUpperCase(); }
     public BigDecimal getAvailableBalance() { return availableBalance; }
     public void setAvailableBalance(BigDecimal availableBalance) { this.availableBalance = money(availableBalance); }
     public BigDecimal getLockedBalance() { return lockedBalance; }
