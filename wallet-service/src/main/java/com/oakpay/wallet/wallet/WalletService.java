@@ -22,16 +22,15 @@ public class WalletService {
         if (walletRepository.existsByUserIdAndCurrency(userId, normalized)) {
             throw new IllegalArgumentException("Wallet already exists for currency " + normalized);
         }
-        Wallet wallet = new Wallet();
-        wallet.setUserId(userId);
-        wallet.setCurrency(normalized);
-        wallet.setAvailableBalance(BigDecimal.ZERO);
-        wallet.setLockedBalance(BigDecimal.ZERO);
-        return toResponse(walletRepository.save(wallet));
+        return toResponse(walletRepository.save(newWallet(userId, normalized)));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<WalletDtos.WalletResponse> getUserWallets(UUID userId) {
+        // USD is OakPay's primary display/settlement balance. ZWG is the local fiat balance.
+        // Crypto wallets are provisioned when the asset is needed/received.
+        ensureDefaultWallet(userId, "USD");
+        ensureDefaultWallet(userId, "ZWG");
         return walletRepository.findAllByUserId(userId).stream().map(this::toResponse).toList();
     }
 
@@ -49,13 +48,7 @@ public class WalletService {
         BigDecimal available = wallet.getAvailableBalance();
         BigDecimal locked = wallet.getLockedBalance();
         BigDecimal total = available.add(locked);
-        return new WalletDtos.BalanceResponse(
-                wallet.getId(),
-                wallet.getUserId(),
-                wallet.getCurrency(),
-                available,
-                locked,
-                total);
+        return new WalletDtos.BalanceResponse(wallet.getId(), wallet.getUserId(), wallet.getCurrency(), available, locked, total);
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +56,21 @@ public class WalletService {
         Wallet wallet = walletRepository.findByIdAndUserId(walletId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
         return toResponse(wallet);
+    }
+
+    private void ensureDefaultWallet(UUID userId, String currency) {
+        if (!walletRepository.existsByUserIdAndCurrency(userId, currency)) {
+            walletRepository.save(newWallet(userId, currency));
+        }
+    }
+
+    private Wallet newWallet(UUID userId, String currency) {
+        Wallet wallet = new Wallet();
+        wallet.setUserId(userId);
+        wallet.setCurrency(currency);
+        wallet.setAvailableBalance(BigDecimal.ZERO);
+        wallet.setLockedBalance(BigDecimal.ZERO);
+        return wallet;
     }
 
     private String normalizeCurrency(String currency) {
