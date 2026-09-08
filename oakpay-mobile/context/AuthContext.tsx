@@ -62,6 +62,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const tokens = await authApi.login(request);
     await saveSession(tokens);
     setAccessToken(tokens.accessToken);
+
+    const currentUser = await authApi.me(tokens.accessToken);
+    setUser(currentUser);
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(currentUser));
+
     router.replace('/(tabs)');
   }, []);
 
