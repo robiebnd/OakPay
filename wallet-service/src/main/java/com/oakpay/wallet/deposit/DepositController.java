@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,9 +34,7 @@ public class DepositController {
     public DepositDtos.DepositResponse webhook(
             @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret,
             @Valid @RequestBody DepositDtos.BlockchainDepositWebhook request) {
-        if (suppliedSecret == null || !constantTimeEquals(internalSecret, suppliedSecret)) {
-            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid internal secret");
-        }
+        requireInternalSecret(suppliedSecret);
         return depositService.processWebhook(request);
     }
 
@@ -42,10 +42,10 @@ public class DepositController {
         return UUID.fromString(authentication.getName());
     }
 
-    private boolean constantTimeEquals(String expected, String actual) {
-        if (expected == null || actual == null) return false;
-        return java.security.MessageDigest.isEqual(
-                expected.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                actual.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    private void requireInternalSecret(String suppliedSecret) {
+        if (suppliedSecret == null || internalSecret == null || !MessageDigest.isEqual(
+                internalSecret.getBytes(StandardCharsets.UTF_8), suppliedSecret.getBytes(StandardCharsets.UTF_8))) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid internal secret");
+        }
     }
 }
