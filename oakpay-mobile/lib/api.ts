@@ -30,14 +30,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       const apiError = error as ApiError;
       throw new Error(`${apiError.status} — ${apiError.message}`);
     }
-    if (error instanceof TypeError) {
-      throw new Error(`Unable to reach OakPay Gateway at ${API_BASE_URL}. Make sure your phone and PC are on the same network and the Gateway is running.`);
-    }
+    if (error instanceof TypeError) throw new Error(`Unable to reach OakPay Gateway at ${API_BASE_URL}. Make sure your phone and PC are on the same network and the Gateway is running.`);
     if (error instanceof Error) throw error;
     throw new Error('OakPay request failed for an unknown reason.');
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
+  } finally { if (timeoutId) clearTimeout(timeoutId); }
 }
 
 export type LoginRequest = { email: string; password: string };
@@ -46,6 +42,7 @@ export type TokenResponse = { tokenType: string; accessToken: string; refreshTok
 export type UserResponse = { id: string; email: string; firstName: string; lastName: string; emailVerified: boolean };
 export type Wallet = { id: string; userId: string; currency: string; availableBalance: number; lockedBalance: number; totalBalance: number; createdAt: string; updatedAt: string };
 export type LedgerTransaction = { id: string; walletId: string; userId: string; transactionType: string; status: string; direction: string; balanceType: string; currency: string; amount: number; balanceBefore: number; balanceAfter: number; reference: string; metadata?: string; createdAt: string };
+export type DepositAddress = { id: string; currency: string; network: string; address: string; memoTag?: string; status: string; createdAt: string };
 export type P2PAd = { id: string; ownerId: string; side: 'BUY' | 'SELL'; asset: string; fiatCurrency: string; price: number; totalQuantity: number; availableQuantity: number; minQuantity: number; maxQuantity: number; paymentMethods: string; terms: string; status: string; createdAt: string; updatedAt: string };
 export type P2PTrade = { id: string; advertisementId?: string; sellerId?: string; buyerId?: string; asset?: string; fiatCurrency?: string; quantity?: number; unitPrice?: number; fiatAmount?: number; paymentMethod?: string; status?: string; paymentReference?: string; paymentNote?: string; expiresAt?: string; createdAt?: string; updatedAt?: string };
 
@@ -60,7 +57,9 @@ export const walletApi = {
   wallets: (token: string) => apiGet<Wallet[]>('/api/v1/wallets', token),
   transactions: (token: string, currency?: string) => apiGet<LedgerTransaction[]>(`/api/v1/wallets/transactions?limit=30${currency ? `&currency=${encodeURIComponent(currency)}` : ''}`, token),
   deposit: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/deposit`, token, { amount, reference: `MOBILE-DEPOSIT-${Date.now()}` }),
-  withdraw: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/withdraw`, token, { amount, reference: `MOBILE-WITHDRAW-${Date.now()}` })
+  withdraw: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/withdraw`, token, { amount, reference: `MOBILE-WITHDRAW-${Date.now()}` }),
+  depositAddresses: (token: string) => apiGet<DepositAddress[]>('/api/v1/wallets/deposit-addresses', token),
+  depositAddress: (token: string, currency: string, network: string) => apiGet<DepositAddress>(`/api/v1/wallets/deposit-addresses/${encodeURIComponent(currency)}/${encodeURIComponent(network)}`, token)
 };
 
 export const p2pApi = {
