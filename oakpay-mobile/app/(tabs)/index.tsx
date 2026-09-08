@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -18,8 +18,8 @@ export default function HomeScreen() {
   const { user, accessToken } = useAuth();
   const [wallets,setWallets]=useState<Wallet[]>([]); const [walletLoading,setWalletLoading]=useState(true);
   const firstName = user?.firstName?.trim() || 'there'; const initial = firstName.charAt(0).toUpperCase();
-  const loadWallets=useCallback(async()=>{if(!accessToken)return;try{setWalletLoading(true);setWallets(await walletApi.wallets(accessToken));}catch{setWallets([]);}finally{setWalletLoading(false);}},[accessToken]);
-  useEffect(()=>{loadWallets();},[loadWallets]);
+  const loadWallets=useCallback(async()=>{if(!accessToken){setWalletLoading(false);return;}try{setWalletLoading(true);setWallets(await walletApi.wallets(accessToken));}catch{setWallets([]);}finally{setWalletLoading(false);}},[accessToken]);
+  useFocusEffect(useCallback(()=>{loadWallets();},[loadWallets]));
   const portfolio=useMemo(()=>wallets.reduce((sum,w)=>{const v=usdValue(w);return v===null?sum:sum+v;},0),[wallets]);
   const visibleAssets=useMemo(()=>[...wallets].sort((a,b)=>{const rank=(c:string)=>({USD:0,USDT:1,BTC:2,ETH:3,BNB:4,SOL:5,ZWG:99}[c.toUpperCase()]??50);return rank(a.currency)-rank(b.currency);}).slice(0,3),[wallets]);
   return <View style={styles.screen}><ScrollView style={styles.screen} contentContainerStyle={{paddingTop:Math.max(insets.top+8,20),paddingBottom:42}} showsVerticalScrollIndicator={false}><View style={styles.container}>
