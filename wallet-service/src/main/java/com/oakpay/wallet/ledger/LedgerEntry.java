@@ -5,11 +5,16 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "ledger_entries", uniqueConstraints = @UniqueConstraint(name = "uk_ledger_reference", columnNames = "reference"))
 public class LedgerEntry {
+    private static final Set<String> FIAT_CURRENCIES = Set.of("USD", "ZWG");
+    private static final int FIAT_SCALE = 2;
+    private static final int CRYPTO_SCALE = 8;
+
     @Id
     @Column(nullable = false, updatable = false)
     private UUID id;
@@ -39,13 +44,13 @@ public class LedgerEntry {
     @Column(nullable = false, length = 10, updatable = false)
     private String currency;
 
-    @Column(nullable = false, precision = 20, scale = 2, updatable = false)
+    @Column(nullable = false, precision = 30, scale = 8, updatable = false)
     private BigDecimal amount;
 
-    @Column(name = "balance_before", nullable = false, precision = 20, scale = 2, updatable = false)
+    @Column(name = "balance_before", nullable = false, precision = 30, scale = 8, updatable = false)
     private BigDecimal balanceBefore;
 
-    @Column(name = "balance_after", nullable = false, precision = 20, scale = 2, updatable = false)
+    @Column(name = "balance_after", nullable = false, precision = 30, scale = 8, updatable = false)
     private BigDecimal balanceAfter;
 
     @Column(nullable = false, unique = true, length = 100, updatable = false)
@@ -68,8 +73,12 @@ public class LedgerEntry {
         balanceAfter = money(balanceAfter);
     }
 
+    private int scaleForCurrency() {
+        return currency != null && FIAT_CURRENCIES.contains(currency.toUpperCase()) ? FIAT_SCALE : CRYPTO_SCALE;
+    }
+
     private BigDecimal money(BigDecimal value) {
-        return value == null ? null : value.setScale(2, RoundingMode.HALF_UP);
+        return value == null ? null : value.setScale(scaleForCurrency(), RoundingMode.HALF_UP);
     }
 
     public UUID getId() { return id; }
