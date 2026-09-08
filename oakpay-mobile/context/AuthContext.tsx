@@ -38,16 +38,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
           SecureStore.getItemAsync(USER_KEY),
         ]);
 
-        if (storedUser) setUser(JSON.parse(storedUser));
+        let cachedUser: UserResponse | undefined;
+        if (storedUser) {
+          try {
+            cachedUser = JSON.parse(storedUser) as UserResponse;
+            setUser(cachedUser);
+          } catch {
+            await SecureStore.deleteItemAsync(USER_KEY);
+          }
+        }
+
         if (storedAccessToken) {
           setAccessToken(storedAccessToken);
+          try {
+            const currentUser = await authApi.me(storedAccessToken);
+            setUser(currentUser);
+            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(currentUser));
+          } catch {
+            // Keep the cached profile if the API is temporarily unavailable.
+          }
           return;
         }
+
         if (storedRefreshToken) {
-          const storedUserValue = storedUser ? JSON.parse(storedUser) : undefined;
           const tokens = await authApi.refresh(storedRefreshToken);
-          await saveSession(tokens, storedUserValue);
+          let currentUser = cachedUser;
+          try {
+            currentUser = await authApi.me(tokens.accessToken);
+          } catch {
+            // Keep cached profile if profile refresh is temporarily unavailable.
+          }
+          await saveSession(tokens, currentUser);
           setAccessToken(tokens.accessToken);
+          if (currentUser) setUser(currentUser);
         }
       } catch {
         await clearSession();
@@ -60,13 +83,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signIn = useCallback(async (request: LoginRequest) => {
     const tokens = await authApi.login(request);
-    await saveSession(tokens);
-    setAccessToken(tokens.accessToken);
-
     const currentUser = await authApi.me(tokens.accessToken);
+    await saveSession(tokens, currentUser);
+    setAccessToken(tokens.accessToken);
     setUser(currentUser);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(currentUser));
-
     router.replace('/(tabs)');
   }, []);
 
