@@ -126,6 +126,8 @@ public class LedgerService {
         entry.setUserId(userId);
         entry.setTransactionType(type);
         entry.setStatus(LedgerStatus.COMPLETED);
+        entry.setDirection(type == LedgerTransactionType.WITHDRAWAL ? LedgerDirection.DEBIT : LedgerDirection.CREDIT);
+        entry.setBalanceType(LedgerBalanceType.AVAILABLE);
         entry.setCurrency(normalizedCurrency);
         entry.setAmount(amount);
         entry.setBalanceBefore(before);
