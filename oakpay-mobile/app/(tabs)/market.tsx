@@ -33,6 +33,7 @@ export default function MarketScreen(){
  },[accessToken,side,asset,fiat,refreshSession]);
 
  useEffect(()=>{load();},[load]);
+ useEffect(()=>{const timer=setInterval(()=>load(),60000);return()=>clearInterval(timer);},[load]);
 
  async function take(){
   const q=Number(quantity);
