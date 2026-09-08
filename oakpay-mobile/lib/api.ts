@@ -5,34 +5,18 @@ export type ApiError = { status: number; message: string; fieldErrors?: Record<s
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!API_BASE_URL) throw new Error('EXPO_PUBLIC_API_URL is not configured.');
-  const controller = new AbortController();
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      controller.abort();
-      reject(new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Check that the OakPay Gateway is running and reachable at ${API_BASE_URL}.`));
-    }, REQUEST_TIMEOUT_MS);
-  });
+  const controller = new AbortController(); let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => { timeoutId = setTimeout(() => { controller.abort(); reject(new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Check that the OakPay Gateway is running and reachable at ${API_BASE_URL}.`)); }, REQUEST_TIMEOUT_MS); });
   try {
     const response = await Promise.race([fetch(`${API_BASE_URL}${path}`, { ...options, signal: controller.signal, headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...(options.headers ?? {}) } }), timeout]);
-    const raw = await response.text();
-    let body: unknown = null;
-    try { body = raw ? JSON.parse(raw) : null; } catch { body = raw; }
-    if (!response.ok) {
-      const data = (body ?? {}) as ApiErrorBody;
-      const message = data.message ?? data.error ?? (typeof body === 'string' ? body : `Request failed with status ${response.status}`);
-      throw { status: response.status, message, fieldErrors: data.fieldErrors } satisfies ApiError;
-    }
+    const raw = await response.text(); let body: unknown = null; try { body = raw ? JSON.parse(raw) : null; } catch { body = raw; }
+    if (!response.ok) { const data = (body ?? {}) as ApiErrorBody; const message = data.message ?? data.error ?? (typeof body === 'string' ? body : `Request failed with status ${response.status}`); throw { status: response.status, message, fieldErrors: data.fieldErrors } satisfies ApiError; }
     return body as T;
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('Request timed out')) throw error;
-    if (error && typeof error === 'object' && 'status' in error && 'message' in error) {
-      const apiError = error as ApiError;
-      throw new Error(`${apiError.status} — ${apiError.message}`);
-    }
+    if (error && typeof error === 'object' && 'status' in error && 'message' in error) { const apiError = error as ApiError; throw new Error(`${apiError.status} — ${apiError.message}`); }
     if (error instanceof TypeError) throw new Error(`Unable to reach OakPay Gateway at ${API_BASE_URL}. Make sure your phone and PC are on the same network and the Gateway is running.`);
-    if (error instanceof Error) throw error;
-    throw new Error('OakPay request failed for an unknown reason.');
+    if (error instanceof Error) throw error; throw new Error('OakPay request failed for an unknown reason.');
   } finally { if (timeoutId) clearTimeout(timeoutId); }
 }
 
@@ -59,6 +43,7 @@ export const walletApi = {
   deposit: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/deposit`, token, { amount, reference: `MOBILE-DEPOSIT-${Date.now()}` }),
   withdraw: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/withdraw`, token, { amount, reference: `MOBILE-WITHDRAW-${Date.now()}` }),
   depositAddresses: (token: string) => apiGet<DepositAddress[]>('/api/v1/wallets/deposit-addresses', token),
+  depositAddressesForAsset: (token: string, currency: string) => apiGet<DepositAddress[]>(`/api/v1/wallets/deposit-addresses/${encodeURIComponent(currency)}`, token),
   depositAddress: (token: string, currency: string, network: string) => apiGet<DepositAddress>(`/api/v1/wallets/deposit-addresses/${encodeURIComponent(currency)}/${encodeURIComponent(network)}`, token)
 };
 
