@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const OAKPAY_LOGO = require('../assets/Logo_OakPay.png');
-const SPLASH_DURATION = 1800;
+const SPLASH_DURATION = 30000;
 const CONTENT_FADE_DURATION = 550;
-const AUTH_REDIRECT_DELAY = 2200;
+const AUTH_REDIRECT_DELAY = 30000;
 
 export default function Index() {
   const { accessToken, isLoading } = useAuth();
