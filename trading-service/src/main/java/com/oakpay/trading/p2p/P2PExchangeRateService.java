@@ -19,11 +19,10 @@ public class P2PExchangeRateService {
     private static final String COINGECKO_USDT_URL = "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd";
     private static final long EXTERNAL_CACHE_SECONDS = 60;
 
-    // RBZ renders the exchange-rate table with separators such as "|" between columns.
-    // Keep the parser tolerant of HTML/table formatting changes while anchoring on USD/ZWG.
-    private static final Pattern USD_ZWG_PATTERN = Pattern.compile(
-            "USD\\s*/\\s*ZWG\\D+([0-9]+(?:\\.[0-9]+)?)\\D+([0-9]+(?:\\.[0-9]+)?)\\D+([0-9]+(?:\\.[0-9]+)?)",
-            Pattern.CASE_INSENSITIVE);
+    private static final Pattern USD_ZWG_ROW_PATTERN = Pattern.compile(
+            "USD\\s*/\\s*ZWG", Pattern.CASE_INSENSITIVE);
+    private static final Pattern NUMBER_PATTERN = Pattern.compile(
+            "(?<![A-Za-z])([0-9]+(?:\\.[0-9]+)?)(?![A-Za-z])");
     private static final Pattern USDT_USD_PATTERN = Pattern.compile(
             "\\\"usd\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)",
             Pattern.CASE_INSENSITIVE);
@@ -118,27 +117,73 @@ public class P2PExchangeRateService {
         }
 
         String rbzHtml = restClient.get().uri(RBZ_RATES_URL).retrieve().body(String.class);
-        if (rbzHtml == null || rbzHtml.isBlank()) throw new IllegalStateException("RBZ returned no rate data");
+        if (rbzHtml == null || rbzHtml.isBlank()) {
+            throw new IllegalStateException("RBZ returned no rate data");
+        }
 
-        String text = rbzHtml
-                .replace('\u00A0', ' ')
-                .replaceAll("<[^>]+>", " ")
-                .replace("&nbsp;", " ")
-                .replace("&amp;", "&")
-                .replaceAll("\\s+", " ");
-        Matcher rbzMatcher = USD_ZWG_PATTERN.matcher(text);
-        if (!rbzMatcher.find()) throw new IllegalStateException("USD/ZWG rate was not found on the RBZ page");
-        BigDecimal usdZwg = new BigDecimal(rbzMatcher.group(3));
+        BigDecimal usdZwg = extractRbzUsdZwgAverage(rbzHtml);
 
         String usdtJson = restClient.get().uri(COINGECKO_USDT_URL).retrieve().body(String.class);
-        if (usdtJson == null || usdtJson.isBlank()) throw new IllegalStateException("CoinGecko returned no USDT price");
+        if (usdtJson == null || usdtJson.isBlank()) {
+            throw new IllegalStateException("CoinGecko returned no USDT price");
+        }
+
         Matcher usdtMatcher = USDT_USD_PATTERN.matcher(usdtJson);
-        if (!usdtMatcher.find()) throw new IllegalStateException("USDT/USD price was not found in CoinGecko response");
+        if (!usdtMatcher.find()) {
+            throw new IllegalStateException("USDT/USD price was not found in CoinGecko response");
+        }
         BigDecimal usdtUsd = new BigDecimal(usdtMatcher.group(1));
 
         ExternalRate rate = new ExternalRate(usdtUsd, usdZwg, LocalDateTime.now());
         externalRateCache = new ExternalRateCache(rate, rate.updatedAt());
         return rate;
+    }
+
+    private BigDecimal extractRbzUsdZwgAverage(String html) {
+        // Do not depend on the exact HTML/table separators used by RBZ.
+        // Locate the USD/ZWG row first, strip markup/entities, then read the first
+        // three numeric cells in that row: BID, ASK, AVG. This survives changes such
+        // as pipes, non-breaking spaces, <td> tags and line breaks.
+        String normalized = html
+                .replace('&nbsp;', ' ')
+                .replace('\u00A0', ' ')
+                .replaceAll("(?is)<br\\s*/?>", " ")
+                .replaceAll("(?is)<[^>]+>", " ")
+                .replace("&amp;", "&")
+                .replaceAll("\\s+", " ");
+
+        Matcher rowMatcher = USD_ZWG_ROW_PATTERN.matcher(normalized);
+        if (!rowMatcher.find()) {
+            throw new IllegalStateException("USD/ZWG rate row was not found on the RBZ page");
+        }
+
+        int start = rowMatcher.start();
+        int end = Math.min(normalized.length(), start + 500);
+        String row = normalized.substring(start, end);
+
+        Matcher numberMatcher = NUMBER_PATTERN.matcher(row);
+        BigDecimal bid = null;
+        BigDecimal ask = null;
+        BigDecimal avg = null;
+        int count = 0;
+        while (numberMatcher.find() && count < 3) {
+            BigDecimal value = new BigDecimal(numberMatcher.group(1));
+            if (count == 0) bid = value;
+            else if (count == 1) ask = value;
+            else avg = value;
+            count++;
+        }
+
+        if (count < 3 || avg == null) {
+            throw new IllegalStateException("USD/ZWG rate values were not found on the RBZ page");
+        }
+
+        // Sanity-check the extracted row before accepting it.
+        if (bid.signum() <= 0 || ask.signum() <= 0 || avg.signum() <= 0) {
+            throw new IllegalStateException("Invalid USD/ZWG values returned by RBZ");
+        }
+
+        return avg;
     }
 
     private String normalize(String value) {
