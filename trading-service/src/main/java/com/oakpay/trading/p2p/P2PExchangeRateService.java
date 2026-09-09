@@ -43,13 +43,9 @@ public class P2PExchangeRateService {
         String base = normalize(baseCurrency);
         String quote = normalize(quoteCurrency);
 
-        // The OakPay P2P market is the primary source when there are active offers.
         Optional<RateSnapshot> liveP2p = getLiveP2pRate(base, quote);
         if (liveP2p.isPresent()) return liveP2p.get();
 
-        // No OakPay offers yet: use current external market/reference data.
-        // We deliberately do not fall back to the old fixed database rate for USDT/ZWG,
-        // because that would make the UI claim LIVE while showing stale data.
         return getExternalRate(base, quote);
     }
 
@@ -81,38 +77,35 @@ public class P2PExchangeRateService {
         }
 
         return Optional.of(new RateSnapshot(
-                base,
-                quote,
-                rate.setScale(4, RoundingMode.HALF_UP),
-                "OAKPAY_P2P",
-                LocalDateTime.now()));
+                base, quote, rate.setScale(4, RoundingMode.HALF_UP),
+                "OAKPAY_P2P", LocalDateTime.now()));
     }
 
     private RateSnapshot getExternalRate(String base, String quote) {
         if (base.equals("USDT") && quote.equals("ZWG")) {
             ExternalRate external = getExternalRate();
             BigDecimal rate = external.usdtUsd().multiply(external.usdZwg()).setScale(4, RoundingMode.HALF_UP);
-            return new RateSnapshot(base, quote, rate, "RBZ_INTERBANK_AVG + COINGECKO_USDT_USD", external.updatedAt());
+            return new RateSnapshot(base, quote, rate,
+                    "RBZ_INTERBANK_AVG + COINGECKO_USDT_USD", external.updatedAt());
         }
 
         if (base.equals("USDT") && quote.equals("USD")) {
             BigDecimal usdtUsd = getExternalRate().usdtUsd();
-            return new RateSnapshot(base, quote, usdtUsd.setScale(6, RoundingMode.HALF_UP), "COINGECKO_USDT_USD", LocalDateTime.now());
+            return new RateSnapshot(base, quote, usdtUsd.setScale(6, RoundingMode.HALF_UP),
+                    "COINGECKO_USDT_USD", LocalDateTime.now());
         }
 
         return repository.findFirstByBaseCurrencyAndQuoteCurrencyAndActiveTrueOrderByEffectiveAtDesc(base, quote)
-                .map(rate -> new RateSnapshot(
-                        rate.getBaseCurrency(),
-                        rate.getQuoteCurrency(),
-                        rate.getRate(),
-                        rate.getSource(),
-                        rate.getEffectiveAt()))
-                .orElseThrow(() -> new IllegalArgumentException("No live market rate configured for " + base + "/" + quote));
+                .map(rate -> new RateSnapshot(rate.getBaseCurrency(), rate.getQuoteCurrency(),
+                        rate.getRate(), rate.getSource(), rate.getEffectiveAt()))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No live market rate configured for " + base + "/" + quote));
     }
 
     private ExternalRate getExternalRate() {
         ExternalRateCache cached = externalRateCache;
-        if (cached != null && ChronoUnit.SECONDS.between(cached.updatedAt(), LocalDateTime.now()) < EXTERNAL_CACHE_SECONDS) {
+        if (cached != null && ChronoUnit.SECONDS.between(
+                cached.updatedAt(), LocalDateTime.now()) < EXTERNAL_CACHE_SECONDS) {
             return cached.rate();
         }
 
@@ -140,12 +133,10 @@ public class P2PExchangeRateService {
     }
 
     private BigDecimal extractRbzUsdZwgAverage(String html) {
-        // Do not depend on the exact HTML/table separators used by RBZ.
-        // Locate the USD/ZWG row first, strip markup/entities, then read the first
-        // three numeric cells in that row: BID, ASK, AVG. This survives changes such
-        // as pipes, non-breaking spaces, <td> tags and line breaks.
+        // Locate the USD/ZWG row first, then read its first three numeric cells:
+        // BID, ASK and AVG. This avoids relying on RBZ's exact HTML separators.
         String normalized = html
-                .replace('&nbsp;', ' ')
+                .replace("&nbsp;", " ")
                 .replace('\u00A0', ' ')
                 .replaceAll("(?is)<br\\s*/?>", " ")
                 .replaceAll("(?is)<[^>]+>", " ")
@@ -166,6 +157,7 @@ public class P2PExchangeRateService {
         BigDecimal ask = null;
         BigDecimal avg = null;
         int count = 0;
+
         while (numberMatcher.find() && count < 3) {
             BigDecimal value = new BigDecimal(numberMatcher.group(1));
             if (count == 0) bid = value;
@@ -178,7 +170,6 @@ public class P2PExchangeRateService {
             throw new IllegalStateException("USD/ZWG rate values were not found on the RBZ page");
         }
 
-        // Sanity-check the extracted row before accepting it.
         if (bid.signum() <= 0 || ask.signum() <= 0 || avg.signum() <= 0) {
             throw new IllegalStateException("Invalid USD/ZWG values returned by RBZ");
         }
@@ -193,12 +184,8 @@ public class P2PExchangeRateService {
         return value.trim().toUpperCase(Locale.ROOT);
     }
 
-    public record RateSnapshot(
-            String baseCurrency,
-            String quoteCurrency,
-            BigDecimal rate,
-            String source,
-            LocalDateTime effectiveAt) {
+    public record RateSnapshot(String baseCurrency, String quoteCurrency,
+                               BigDecimal rate, String source, LocalDateTime effectiveAt) {
     }
 
     private record ExternalRate(BigDecimal usdtUsd, BigDecimal usdZwg, LocalDateTime updatedAt) {
