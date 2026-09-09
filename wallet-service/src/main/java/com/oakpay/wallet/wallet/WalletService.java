@@ -27,11 +27,14 @@ public class WalletService {
 
     @Transactional
     public List<WalletDtos.WalletResponse> getUserWallets(UUID userId) {
-        // OakPay provisions the core fiat wallets plus USDT for every user.
+        // OakPay provisions core fiat and crypto wallets for a new/existing user.
         // Blockchain deposit addresses remain a separate custody/address-assignment concern.
         ensureDefaultWallet(userId, "USD");
         ensureDefaultWallet(userId, "ZWG");
         ensureDefaultWallet(userId, "USDT");
+        ensureDefaultWallet(userId, "USDC");
+        ensureDefaultWallet(userId, "BTC");
+        ensureDefaultWallet(userId, "ETH");
         return walletRepository.findAllByUserId(userId).stream().map(this::toResponse).toList();
     }
 
