@@ -1,4 +1,7 @@
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
+const rawApiBaseUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').trim();
+const API_BASE_URL = rawApiBaseUrl
+  ? (/^https?:\/\//i.test(rawApiBaseUrl) ? rawApiBaseUrl : `http://${rawApiBaseUrl}`).replace(/\/$/, '')
+  : '';
 const REQUEST_TIMEOUT_MS = 15000;
 type ApiErrorBody = { message?: string; error?: string; fieldErrors?: Record<string, string> };
 
