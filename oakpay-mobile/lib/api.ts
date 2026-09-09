@@ -12,7 +12,6 @@ export class OakPayApiError extends Error {
   constructor(status: number, message: string, fieldErrors?: Record<string, string>) {
     super(message);
     this.name = 'OakPayApiError';
-    this.status = status;
     this.fieldErrors = fieldErrors;
   }
 }
@@ -96,6 +95,7 @@ export const authApi = {
 
 export const walletApi = {
   wallets: (token: string) => apiGet<Wallet[]>('/api/v1/wallets', token),
+  createWallet: (token: string, currency: string) => apiPost<Wallet>('/api/v1/wallets', token, { currency }),
   transactions: (token: string, currency?: string) => apiGet<LedgerTransaction[]>(`/api/v1/wallets/transactions?limit=30${currency ? `&currency=${encodeURIComponent(currency)}` : ''}`, token),
   deposit: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/deposit`, token, { amount, reference: `MOBILE-DEPOSIT-${Date.now()}` }),
   withdraw: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/withdraw`, token, { amount, reference: `MOBILE-WITHDRAW-${Date.now()}` }),
