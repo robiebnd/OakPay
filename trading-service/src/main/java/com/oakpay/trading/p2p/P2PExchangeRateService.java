@@ -3,6 +3,7 @@ package com.oakpay.trading.p2p;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -15,11 +16,11 @@ import java.util.regex.Pattern;
 
 @Service
 public class P2PExchangeRateService {
-    private static final String AFRIRATE_RBZ_URL = "https://afrirate.statotec.com/api/v1/rates/latest?country=ZW";
+    private static final String FRANKFURTER_USD_ZWG_URL = "https://api.frankfurter.dev/v2/rate/USD/ZWG";
     private static final String COINGECKO_USDT_URL = "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd";
     private static final long EXTERNAL_CACHE_SECONDS = 60;
 
-    private static final Pattern AFRIRATE_RATE_PATTERN = Pattern.compile(
+    private static final Pattern FRANKFURTER_RATE_PATTERN = Pattern.compile(
             "\\\"rate\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)", Pattern.CASE_INSENSITIVE);
     private static final Pattern USDT_USD_PATTERN = Pattern.compile(
             "\\\"usd\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)", Pattern.CASE_INSENSITIVE);
@@ -66,14 +67,26 @@ public class P2PExchangeRateService {
 
     private RateSnapshot getExternalRate(String base, String quote) {
         if (base.equals("USDT") && quote.equals("ZWG")) {
-            ExternalRate external = getExternalRate();
-            BigDecimal rate = external.usdtUsd().multiply(external.usdZwg()).setScale(4, RoundingMode.HALF_UP);
-            return new RateSnapshot(base, quote, rate, "AFRIRATE_RBZ_SOURCED + COINGECKO_USDT_USD", external.updatedAt());
+            try {
+                ExternalRate external = getExternalRate();
+                BigDecimal rate = external.usdtUsd().multiply(external.usdZwg()).setScale(4, RoundingMode.HALF_UP);
+                return new RateSnapshot(base, quote, rate, "FRANKFURTER_USD_ZWG + COINGECKO_USDT_USD", external.updatedAt());
+            } catch (RestClientException | IllegalStateException ex) {
+                return getStoredRate(base, quote);
+            }
         }
         if (base.equals("USDT") && quote.equals("USD")) {
-            BigDecimal usdtUsd = getExternalRate().usdtUsd();
-            return new RateSnapshot(base, quote, usdtUsd.setScale(6, RoundingMode.HALF_UP), "COINGECKO_USDT_USD", LocalDateTime.now());
+            try {
+                BigDecimal usdtUsd = getExternalRate().usdtUsd();
+                return new RateSnapshot(base, quote, usdtUsd.setScale(6, RoundingMode.HALF_UP), "COINGECKO_USDT_USD", LocalDateTime.now());
+            } catch (RestClientException | IllegalStateException ex) {
+                return getStoredRate(base, quote);
+            }
         }
+        return getStoredRate(base, quote);
+    }
+
+    private RateSnapshot getStoredRate(String base, String quote) {
         return repository.findFirstByBaseCurrencyAndQuoteCurrencyAndActiveTrueOrderByEffectiveAtDesc(base, quote)
                 .map(rate -> new RateSnapshot(rate.getBaseCurrency(), rate.getQuoteCurrency(), rate.getRate(), rate.getSource(), rate.getEffectiveAt()))
                 .orElseThrow(() -> new IllegalArgumentException("No live market rate configured for " + base + "/" + quote));
@@ -85,22 +98,22 @@ public class P2PExchangeRateService {
             return cached.rate();
         }
 
-        String rbzJson = restClient.get()
-                .uri(AFRIRATE_RBZ_URL)
+        String frankfurterJson = restClient.get()
+                .uri(FRANKFURTER_USD_ZWG_URL)
                 .header("Accept", "application/json")
                 .retrieve()
                 .body(String.class);
-        if (rbzJson == null || rbzJson.isBlank()) {
-            throw new IllegalStateException("AfriRate returned no Zimbabwe rate data");
+        if (frankfurterJson == null || frankfurterJson.isBlank()) {
+            throw new IllegalStateException("Frankfurter returned no USD/ZWG rate data");
         }
 
-        Matcher rateMatcher = AFRIRATE_RATE_PATTERN.matcher(rbzJson);
+        Matcher rateMatcher = FRANKFURTER_RATE_PATTERN.matcher(frankfurterJson);
         if (!rateMatcher.find()) {
-            throw new IllegalStateException("USD/ZWG rate was not found in AfriRate response");
+            throw new IllegalStateException("USD/ZWG rate was not found in Frankfurter response");
         }
         BigDecimal usdZwg = new BigDecimal(rateMatcher.group(1));
         if (usdZwg.signum() <= 0) {
-            throw new IllegalStateException("Invalid USD/ZWG value returned by AfriRate");
+            throw new IllegalStateException("Invalid USD/ZWG value returned by Frankfurter");
         }
 
         String usdtJson = restClient.get()
