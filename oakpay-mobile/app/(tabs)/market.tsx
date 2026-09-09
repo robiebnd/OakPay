@@ -23,8 +23,22 @@ export default function MarketScreen(){
    setLoading(true);setRateLoading(true);setError('');setAuthRequired(false);
    const adsPromise=p2pApi.ads(accessToken,side,asset,fiat);
    const ratePromise=asset==='USDT'&&fiat==='ZWG' ? p2pApi.rate(accessToken,asset,fiat) : Promise.resolve(null);
-   const [nextAds,nextRate]=await Promise.all([adsPromise,ratePromise]);
-   setAds(nextAds);setRateData(nextRate);
+   const [adsResult,rateResult]=await Promise.allSettled([adsPromise,ratePromise]);
+
+   if(adsResult.status==='rejected'){
+    const adsError=adsResult.reason;
+    if(isAuthError(adsError)&&retry){const refreshed=await refreshSession();if(refreshed){await load(false);return;}}
+    if(isAuthError(adsError)){setAds([]);setRateData(null);setAuthRequired(true);setError('Your session has expired. Please sign in again.');return;}
+    setAds([]);setError(adsError instanceof Error?adsError.message:'Unable to load P2P market data right now.');
+    return;
+   }
+
+   setAds(adsResult.value);
+   if(rateResult.status==='fulfilled'){
+    setRateData(rateResult.value);
+   }else{
+    setRateData(null);
+   }
   }catch(e){
    if(isAuthError(e)&&retry){const refreshed=await refreshSession();if(refreshed){await load(false);return;}}
    if(isAuthError(e)){setAds([]);setRateData(null);setAuthRequired(true);setError('Your session has expired. Please sign in again.');}
