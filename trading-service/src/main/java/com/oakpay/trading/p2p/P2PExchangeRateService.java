@@ -18,8 +18,11 @@ public class P2PExchangeRateService {
     private static final String RBZ_RATES_URL = "https://www.rbz.co.zw/index.php/13-daily-exchange-rates/16-rates";
     private static final String COINGECKO_USDT_URL = "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd";
     private static final long EXTERNAL_CACHE_SECONDS = 60;
+
+    // RBZ renders the exchange-rate table with separators such as "|" between columns.
+    // Keep the parser tolerant of HTML/table formatting changes while anchoring on USD/ZWG.
     private static final Pattern USD_ZWG_PATTERN = Pattern.compile(
-            "USD/ZWG\\s+([0-9]+(?:\\.[0-9]+)?)\\s+([0-9]+(?:\\.[0-9]+)?)\\s+([0-9]+(?:\\.[0-9]+)?)",
+            "USD\\s*/\\s*ZWG\\D+([0-9]+(?:\\.[0-9]+)?)\\D+([0-9]+(?:\\.[0-9]+)?)\\D+([0-9]+(?:\\.[0-9]+)?)",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern USDT_USD_PATTERN = Pattern.compile(
             "\\\"usd\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)",
@@ -118,6 +121,7 @@ public class P2PExchangeRateService {
         if (rbzHtml == null || rbzHtml.isBlank()) throw new IllegalStateException("RBZ returned no rate data");
 
         String text = rbzHtml
+                .replace('\u00A0', ' ')
                 .replaceAll("<[^>]+>", " ")
                 .replace("&nbsp;", " ")
                 .replace("&amp;", "&")
