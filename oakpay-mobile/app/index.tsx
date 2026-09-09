@@ -1,22 +1,52 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, Animated, Easing } from 'react-native';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const OAKPAY_LOGO = require('../assets/Logo_OakPay.png');
+const SPLASH_DURATION = 1800;
+const CONTENT_FADE_DURATION = 550;
+const AUTH_REDIRECT_DELAY = 2200;
 
 export default function Index() {
   const { accessToken, isLoading } = useAuth();
+  const [showContent, setShowContent] = useState(false);
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const splashTimer = setTimeout(() => {
+      setShowContent(true);
+      Animated.timing(contentOpacity, {
+        toValue: 1,
+        duration: CONTENT_FADE_DURATION,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    }, SPLASH_DURATION);
+
+    return () => clearTimeout(splashTimer);
+  }, [contentOpacity]);
 
   useEffect(() => {
     if (!isLoading && accessToken) {
-      const timer = setTimeout(() => router.replace('/(tabs)'), 900);
+      const timer = setTimeout(() => router.replace('/(tabs)'), AUTH_REDIRECT_DELAY);
       return () => clearTimeout(timer);
     }
   }, [accessToken, isLoading]);
 
+  if (!showContent) {
+    return (
+      <View style={styles.splash}>
+        <View style={styles.glowTop} />
+        <View style={styles.glowSide} />
+        <Image source={OAKPAY_LOGO} style={styles.splashLogo} resizeMode="contain" />
+        <Text style={styles.splashTagline}>Simple. Secure. P2P.</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: contentOpacity }]}>
       <View style={styles.glowTop} />
       <View style={styles.glowSide} />
       <View style={styles.brand}>
@@ -42,11 +72,14 @@ export default function Index() {
           <Text style={styles.signIn}>Already have an account? <Text style={styles.signInAccent}>Sign in</Text></Text>
         </Pressable>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  splash: { flex: 1, backgroundColor: '#063A29', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  splashLogo: { width: 270, height: 92 },
+  splashTagline: { marginTop: 2, color: '#E8ECE9', fontFamily: 'Inter_400Regular', fontSize: 16 },
   container: { flex: 1, backgroundColor: '#063A29', paddingHorizontal: 30, paddingTop: 58, paddingBottom: 32, overflow: 'hidden' },
   glowTop: { position: 'absolute', width: 360, height: 360, borderRadius: 180, backgroundColor: '#0C5038', top: -210, right: -100 },
   glowSide: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#2A641B', opacity: 0.75, left: -105, bottom: 210 },
