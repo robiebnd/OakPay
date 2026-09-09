@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class P2PExchangeRateService {
-    private static final String AFRIRATE_RBZ_URL = "https://afrirate.com/api/v1/rates/latest?country=ZW";
+    private static final String AFRIRATE_RBZ_URL = "https://afrirate.statotec.com/api/v1/rates/latest?country=ZW";
     private static final String COINGECKO_USDT_URL = "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd";
     private static final long EXTERNAL_CACHE_SECONDS = 60;
 
