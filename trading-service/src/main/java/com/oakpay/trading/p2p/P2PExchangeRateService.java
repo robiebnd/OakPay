@@ -15,13 +15,14 @@ import java.util.regex.Pattern;
 
 @Service
 public class P2PExchangeRateService {
-    private static final String RBZ_RATES_URL = "https://www.rbz.co.zw/index.php/22-monetary-policy";
+    private static final String AFRIRATE_RBZ_URL = "https://afrirate.com/api/v1/rates/latest?country=ZW";
     private static final String COINGECKO_USDT_URL = "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd";
     private static final long EXTERNAL_CACHE_SECONDS = 60;
 
-    private static final Pattern USD_ZWG_ROW_PATTERN = Pattern.compile("USD\\s*/\\s*ZWG", Pattern.CASE_INSENSITIVE);
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("(?<![A-Za-z])([0-9]+(?:\\.[0-9]+)?)(?![A-Za-z])");
-    private static final Pattern USDT_USD_PATTERN = Pattern.compile("\\\"usd\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AFRIRATE_RATE_PATTERN = Pattern.compile(
+            "\\\"rate\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern USDT_USD_PATTERN = Pattern.compile(
+            "\\\"usd\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)", Pattern.CASE_INSENSITIVE);
 
     private final P2PExchangeRateRepository repository;
     private final AdvertisementRepository advertisementRepository;
@@ -67,7 +68,7 @@ public class P2PExchangeRateService {
         if (base.equals("USDT") && quote.equals("ZWG")) {
             ExternalRate external = getExternalRate();
             BigDecimal rate = external.usdtUsd().multiply(external.usdZwg()).setScale(4, RoundingMode.HALF_UP);
-            return new RateSnapshot(base, quote, rate, "RBZ_INTERBANK_AVG + COINGECKO_USDT_USD", external.updatedAt());
+            return new RateSnapshot(base, quote, rate, "AFRIRATE_RBZ_SOURCED + COINGECKO_USDT_USD", external.updatedAt());
         }
         if (base.equals("USDT") && quote.equals("USD")) {
             BigDecimal usdtUsd = getExternalRate().usdtUsd();
@@ -80,45 +81,48 @@ public class P2PExchangeRateService {
 
     private ExternalRate getExternalRate() {
         ExternalRateCache cached = externalRateCache;
-        if (cached != null && ChronoUnit.SECONDS.between(cached.updatedAt(), LocalDateTime.now()) < EXTERNAL_CACHE_SECONDS) return cached.rate();
+        if (cached != null && ChronoUnit.SECONDS.between(cached.updatedAt(), LocalDateTime.now()) < EXTERNAL_CACHE_SECONDS) {
+            return cached.rate();
+        }
 
-        String rbzHtml = restClient.get().uri(RBZ_RATES_URL).retrieve().body(String.class);
-        if (rbzHtml == null || rbzHtml.isBlank()) throw new IllegalStateException("RBZ returned no rate data");
-        BigDecimal usdZwg = extractRbzUsdZwgAverage(rbzHtml);
+        String rbzJson = restClient.get()
+                .uri(AFRIRATE_RBZ_URL)
+                .header("Accept", "application/json")
+                .retrieve()
+                .body(String.class);
+        if (rbzJson == null || rbzJson.isBlank()) {
+            throw new IllegalStateException("AfriRate returned no Zimbabwe rate data");
+        }
 
-        String usdtJson = restClient.get().uri(COINGECKO_USDT_URL).retrieve().body(String.class);
-        if (usdtJson == null || usdtJson.isBlank()) throw new IllegalStateException("CoinGecko returned no USDT price");
+        Matcher rateMatcher = AFRIRATE_RATE_PATTERN.matcher(rbzJson);
+        if (!rateMatcher.find()) {
+            throw new IllegalStateException("USD/ZWG rate was not found in AfriRate response");
+        }
+        BigDecimal usdZwg = new BigDecimal(rateMatcher.group(1));
+        if (usdZwg.signum() <= 0) {
+            throw new IllegalStateException("Invalid USD/ZWG value returned by AfriRate");
+        }
+
+        String usdtJson = restClient.get()
+                .uri(COINGECKO_USDT_URL)
+                .header("Accept", "application/json")
+                .retrieve()
+                .body(String.class);
+        if (usdtJson == null || usdtJson.isBlank()) {
+            throw new IllegalStateException("CoinGecko returned no USDT price");
+        }
         Matcher usdtMatcher = USDT_USD_PATTERN.matcher(usdtJson);
-        if (!usdtMatcher.find()) throw new IllegalStateException("USDT/USD price was not found in CoinGecko response");
+        if (!usdtMatcher.find()) {
+            throw new IllegalStateException("USDT/USD price was not found in CoinGecko response");
+        }
         BigDecimal usdtUsd = new BigDecimal(usdtMatcher.group(1));
+        if (usdtUsd.signum() <= 0) {
+            throw new IllegalStateException("Invalid USDT/USD value returned by CoinGecko");
+        }
 
         ExternalRate rate = new ExternalRate(usdtUsd, usdZwg, LocalDateTime.now());
         externalRateCache = new ExternalRateCache(rate, rate.updatedAt());
         return rate;
-    }
-
-    private BigDecimal extractRbzUsdZwgAverage(String html) {
-        String normalized = html.replace("&nbsp;", " ").replace("&#160;", " ").replace('\u00A0', ' ')
-                .replaceAll("(?is)<br\\s*/?>", " ").replaceAll("(?is)<[^>]+>", " ")
-                .replace("&amp;", "&").replaceAll("\\s+", " ");
-        Matcher rowMatcher = USD_ZWG_ROW_PATTERN.matcher(normalized);
-        if (!rowMatcher.find()) throw new IllegalStateException("USD/ZWG rate row was not found on the RBZ page");
-        int start = rowMatcher.start();
-        int end = Math.min(normalized.length(), start + 500);
-        String row = normalized.substring(start, end);
-        Matcher numberMatcher = NUMBER_PATTERN.matcher(row);
-        BigDecimal bid = null, ask = null, avg = null;
-        int count = 0;
-        while (numberMatcher.find() && count < 3) {
-            BigDecimal value = new BigDecimal(numberMatcher.group(1));
-            if (count == 0) bid = value;
-            else if (count == 1) ask = value;
-            else avg = value;
-            count++;
-        }
-        if (count < 3 || avg == null) throw new IllegalStateException("USD/ZWG rate values were not found on the RBZ page");
-        if (bid.signum() <= 0 || ask.signum() <= 0 || avg.signum() <= 0) throw new IllegalStateException("Invalid USD/ZWG values returned by RBZ");
-        return avg;
     }
 
     private String normalize(String value) {
