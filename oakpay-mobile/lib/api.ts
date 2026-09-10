@@ -127,7 +127,7 @@ async function authenticatedRequest<T>(path: string, accessToken: string, method
   try {
     return await request<T>(path, options);
   } catch (error) {
-    if (!(error instanceof OakPayApiError) || error.status !== 401) throw error;
+    if (!(error instanceof OakPayApiError) || ![401, 403].includes(error.status)) throw error;
     const refreshedToken = await refreshAccessToken();
     if (!refreshedToken) throw error;
     return request<T>(path, {
