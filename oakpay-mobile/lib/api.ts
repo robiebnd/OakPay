@@ -50,9 +50,9 @@ export type Wallet = { id: string; userId: string; currency: string; availableBa
 export type LedgerTransaction = { id: string; walletId: string; userId: string; transactionType: string; status: string; direction: string; balanceType: string; currency: string; amount: number; balanceBefore: number; balanceAfter: number; reference: string; metadata?: string; createdAt: string };
 export type DepositAddress = { id: string; currency: string; network: string; address: string; memoTag?: string; status: string; createdAt: string };
 export type P2PAd = { id: string; ownerId: string; side: 'BUY' | 'SELL'; asset: string; fiatCurrency: string; price: number; totalQuantity: number; availableQuantity: number; minQuantity: number; maxQuantity: number; paymentMethods: string; terms: string; status: string; createdAt: string; updatedAt: string };
-export type P2PRate = { baseCurrency: string; quoteCurrency: string; rate: number; source: string; effectiveAt: string };
-export type P2PTrade = { id: string; advertisementId?: string; sellerId?: string; buyerId?: string; asset?: string; fiatCurrency?: string; quantity?: number; unitPrice?: number; fiatAmount?: number; paymentMethod?: string; status?: string; paymentReference?: string; paymentNote?: string; expiresAt?: string; createdAt?: string; updatedAt?: string };
-export type P2PPayment = { id: string; tradeId: string; payerId: string; payeeId: string; amount: number; currency: string; paymentMethod: string; paymentReference: string; note?: string; status: string; submittedAt?: string; verifiedAt?: string };
+export type P2PRate = { baseCurrency:string; quoteCurrency:string; rate:number; source:string; effectiveAt:string };
+export type P2PTrade = { id:string; advertisementId?:string; sellerId?:string; buyerId?:string; asset?:string; fiatCurrency?:string; quantity?:number; unitPrice?:number; fiatAmount?:number; paymentMethod?:string; status?:string; paymentReference?:string; paymentNote?:string; expiresAt?:string; createdAt?:string; updatedAt?:string };
+export type P2PPayment = { id:string; tradeId:string; payerId:string; payeeId:string; amount:number; currency:string; paymentMethod:string; paymentReference:string; note?:string; status:string; submittedAt?:string; verifiedAt?:string };
 
 export const authApi = {
   login: (request: LoginRequest) => requestJson<TokenResponse>('/api/v1/auth/login', request),
@@ -90,7 +90,7 @@ export const p2pApi = {
   verifyPayment: (token: string, tradeId: string) => apiPost<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment/verify`, token),
   confirm: async (token: string, tradeId: string) => { await apiPost<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment/verify`, token); return apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/confirm`, token); },
   cancel: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/cancel`, token),
-  dispute: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/dispute`, token),
+  dispute: (token: string, tradeId: string, reason = 'Payment dispute opened from OakPay mobile app', evidence?: string) => apiPost<unknown>(`/api/v1/p2p/trades/${tradeId}/dispute`, token, { reason, evidence: evidence?.trim() || undefined }),
 };
 
 async function requestJson<T>(path: string, body: unknown, method = 'POST') { return request<T>(path, { method, body: JSON.stringify(body) }); }
