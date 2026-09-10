@@ -44,5 +44,8 @@ public class P2PTradeController {
     @PostMapping("/{tradeId}/cancel")
     public P2PTradeDtos.TradeResponse cancel(@PathVariable UUID tradeId, Authentication authentication) { return service.cancel(userId(authentication), tradeId); }
 
+    @PostMapping("/{tradeId}/dispute")
+    public P2PTradeDtos.TradeResponse dispute(@PathVariable UUID tradeId, Authentication authentication) { return service.dispute(userId(authentication), tradeId); }
+
     private UUID userId(Authentication authentication) { return UUID.fromString(authentication.getName()); }
 }
