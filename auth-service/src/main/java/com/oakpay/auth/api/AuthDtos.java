@@ -7,29 +7,12 @@ import java.util.UUID;
 
 public final class AuthDtos {
     private AuthDtos() {}
-
-    public record RegisterRequest(
-            @NotBlank @Email @Size(max = 320) String email,
-            @NotBlank @Size(min = 8, max = 72) String password,
-            @NotBlank @Size(max = 100) String firstName,
-            @NotBlank @Size(max = 100) String lastName) {}
-
-    public record LoginRequest(
-            @NotBlank @Email @Size(max = 320) String email,
-            @NotBlank String password) {}
-
+    public record RegisterRequest(@NotBlank @Email @Size(max=320) String email,@NotBlank @Size(min=8,max=72) String password,@NotBlank @Size(max=100) String firstName,@NotBlank @Size(max=100) String lastName) {}
+    public record LoginRequest(@NotBlank @Email @Size(max=320) String email,@NotBlank String password) {}
     public record RefreshRequest(@NotBlank String refreshToken) {}
-
-    public record UserResponse(
-            UUID id,
-            String email,
-            String firstName,
-            String lastName,
-            boolean emailVerified) {}
-
-    public record TokenResponse(
-            String tokenType,
-            String accessToken,
-            String refreshToken,
-            long expiresIn) {}
+    public record VerifyEmailRequest(@NotBlank @Email @Size(max=320) String email,@NotBlank @Size(min=6,max=6) String code) {}
+    public record ResendVerificationRequest(@NotBlank @Email @Size(max=320) String email) {}
+    public record VerificationResponse(String message, boolean verified) {}
+    public record UserResponse(UUID id,String email,String firstName,String lastName,boolean emailVerified) {}
+    public record TokenResponse(String tokenType,String accessToken,String refreshToken,long expiresIn) {}
 }
