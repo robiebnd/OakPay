@@ -1,10 +1,10 @@
 import {
-  Montserrat_400Regular as Inter_400Regular,
-  Montserrat_600SemiBold as Inter_600SemiBold,
-  Montserrat_700Bold as Inter_700Bold,
-  Montserrat_800ExtraBold as Inter_800ExtraBold,
+  Roboto_400Regular as Inter_400Regular,
+  Roboto_500Medium as Inter_600SemiBold,
+  Roboto_700Bold as Inter_700Bold,
+  Roboto_900Black as Inter_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/montserrat';
+} from '@expo-google-fonts/roboto';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,7 +23,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
