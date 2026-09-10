@@ -14,12 +14,16 @@ export class OakPayApiError extends Error {
   constructor(status: number, message: string, fieldErrors?: Record<string, string>) {
     super(message);
     this.name = 'OakPayApiError';
+    this.status = status;
     this.fieldErrors = fieldErrors;
   }
 }
 
 export function isAuthError(error: unknown): error is OakPayApiError {
-  return error instanceof OakPayApiError && (error.status === 401 || error.status === 403);
+  if (error instanceof OakPayApiError) return error.status === 401 || error.status === 403;
+  if (!error || typeof error !== 'object') return false;
+  const status = (error as { status?: unknown }).status;
+  return status === 401 || status === 403;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -129,7 +133,7 @@ async function authenticatedRequest<T>(path: string, accessToken: string, method
   try {
     return await request<T>(path, options);
   } catch (error) {
-    if (!(error instanceof OakPayApiError) || ![401, 403].includes(error.status)) throw error;
+    if (!isAuthError(error)) throw error;
     const refreshedToken = await refreshAccessToken();
     if (!refreshedToken) throw error;
     return request<T>(path, {
