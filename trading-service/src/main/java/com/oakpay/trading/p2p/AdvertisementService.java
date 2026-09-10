@@ -56,7 +56,11 @@ public class AdvertisementService {
         var ads = side == OrderSide.BUY
                 ? repository.findAllBySideAndAssetAndFiatCurrencyAndStatusOrderByPriceDescCreatedAtAsc(side, a, f, AdStatus.ACTIVE, PageRequest.of(0, safe))
                 : repository.findAllBySideAndAssetAndFiatCurrencyAndStatusOrderByPriceAscCreatedAtAsc(side, a, f, AdStatus.ACTIVE, PageRequest.of(0, safe));
-        return ads.stream().filter(x -> x.getAvailableQuantity().signum() > 0).map(AdvertisementDtos.AdResponse::from).toList();
+        return ads.stream()
+                .filter(x -> x.getAvailableQuantity().signum() > 0)
+                .filter(x -> x.getAvailableQuantity().compareTo(x.getMinQuantity()) >= 0)
+                .map(AdvertisementDtos.AdResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
