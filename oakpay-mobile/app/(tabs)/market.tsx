@@ -21,7 +21,8 @@ export default function MarketScreen(){
   if(!accessToken){setAds([]);setRateData(null);setAuthRequired(true);setError('');setLoading(false);setRateLoading(false);return;}
   try{
    setLoading(true);setRateLoading(true);setError('');setAuthRequired(false);
-   const adsPromise=p2pApi.ads(accessToken,side,asset,fiat);
+   const adSide=side==='BUY'?'SELL':'BUY';
+   const adsPromise=p2pApi.ads(accessToken,adSide,asset,fiat);
    const ratePromise=p2pApi.rate(accessToken,asset,fiat);
    const [adsResult,rateResult]=await Promise.allSettled([adsPromise,ratePromise]);
 
