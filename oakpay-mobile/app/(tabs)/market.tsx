@@ -22,7 +22,7 @@ export default function MarketScreen(){
   try{
    setLoading(true);setRateLoading(true);setError('');setAuthRequired(false);
    const adsPromise=p2pApi.ads(accessToken,side,asset,fiat);
-   const ratePromise=asset==='USDT'&&fiat==='ZWG' ? p2pApi.rate(accessToken,asset,fiat) : Promise.resolve(null);
+   const ratePromise=p2pApi.rate(accessToken,asset,fiat);
    const [adsResult,rateResult]=await Promise.allSettled([adsPromise,ratePromise]);
 
    if(adsResult.status==='rejected'){
