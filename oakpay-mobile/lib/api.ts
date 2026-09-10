@@ -84,6 +84,7 @@ export type DepositAddress = { id: string; currency: string; network: string; ad
 export type P2PAd = { id: string; ownerId: string; side: 'BUY' | 'SELL'; asset: string; fiatCurrency: string; price: number; totalQuantity: number; availableQuantity: number; minQuantity: number; maxQuantity: number; paymentMethods: string; terms: string; status: string; createdAt: string; updatedAt: string };
 export type P2PRate = { baseCurrency: string; quoteCurrency: string; rate: number; source: string; effectiveAt: string };
 export type P2PTrade = { id: string; advertisementId?: string; sellerId?: string; buyerId?: string; asset?: string; fiatCurrency?: string; quantity?: number; unitPrice?: number; fiatAmount?: number; paymentMethod?: string; status?: string; paymentReference?: string; paymentNote?: string; expiresAt?: string; createdAt?: string; updatedAt?: string };
+export type P2PPayment = { id: string; tradeId: string; payerId: string; payeeId: string; amount: number; currency: string; paymentMethod: string; paymentReference: string; note?: string; status: string; submittedAt?: string; verifiedAt?: string };
 
 export const authApi = {
   login: (request: LoginRequest) => requestJson<TokenResponse>('/api/v1/auth/login', request),
@@ -109,13 +110,22 @@ export const walletApi = {
 
 export const p2pApi = {
   ads: (token: string, side: 'BUY' | 'SELL', asset = 'USDT', fiat = 'ZWG', paymentMethod?: string) => apiGet<P2PAd[]>(`/api/v1/p2p/ads?side=${side}&asset=${encodeURIComponent(asset)}&fiatCurrency=${encodeURIComponent(fiat)}&limit=50${paymentMethod ? `&paymentMethod=${encodeURIComponent(paymentMethod)}` : ''}`, token),
+  mineAds: (token: string) => apiGet<P2PAd[]>('/api/v1/p2p/ads/mine', token),
+  createAd: (token: string, body: { side: 'BUY' | 'SELL'; asset: string; fiatCurrency: string; price: number; totalQuantity: number; minQuantity: number; maxQuantity: number; paymentMethods: string; terms?: string }) => apiPost<P2PAd>('/api/v1/p2p/ads', token, body),
+  updateAd: (token: string, adId: string, body: { price?: number; minQuantity?: number; maxQuantity?: number; paymentMethods?: string; terms?: string }) => apiPut<P2PAd>(`/api/v1/p2p/ads/${adId}`, token, body),
+  pauseAd: (token: string, adId: string) => apiPost<P2PAd>(`/api/v1/p2p/ads/${adId}/pause`, token),
+  resumeAd: (token: string, adId: string) => apiPost<P2PAd>(`/api/v1/p2p/ads/${adId}/resume`, token),
+  closeAd: (token: string, adId: string) => apiPost<P2PAd>(`/api/v1/p2p/ads/${adId}/close`, token),
   rate: (token: string, baseCurrency = 'USDT', quoteCurrency = 'ZWG') => apiGet<P2PRate>(`/api/v1/p2p/rates?baseCurrency=${encodeURIComponent(baseCurrency)}&quoteCurrency=${encodeURIComponent(quoteCurrency)}`, token),
   take: (token: string, adId: string, quantity: number, paymentMethod: string) => apiPost<P2PTrade>(`/api/v1/p2p/ads/${adId}/take`, token, { quantity, paymentMethod, expiryMinutes: 30 }),
   trades: (token: string, status?: string, asset?: string) => apiGet<P2PTrade[]>(`/api/v1/p2p/trades?limit=50${status ? `&status=${encodeURIComponent(status)}` : ''}${asset ? `&asset=${encodeURIComponent(asset)}` : ''}`, token),
   trade: (token: string, tradeId: string) => apiGet<P2PTrade>(`/api/v1/p2p/trades/${tradeId}`, token),
+  payment: (token: string, tradeId: string) => apiGet<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment`, token),
   markPaid: (token: string, tradeId: string, paymentReference: string, paymentNote?: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/paid`, token, { paymentReference, paymentNote }),
+  verifyPayment: (token: string, tradeId: string) => apiPost<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment/verify`, token),
   confirm: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/confirm`, token),
   cancel: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/cancel`, token),
+  dispute: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/dispute`, token),
 };
 
 async function requestJson<T>(path: string, body: unknown, method = 'POST') {
@@ -128,4 +138,8 @@ export async function apiGet<T>(path: string, accessToken: string): Promise<T> {
 
 export async function apiPost<T>(path: string, accessToken: string, body?: unknown): Promise<T> {
   return request<T>(path, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+export async function apiPut<T>(path: string, accessToken: string, body: unknown): Promise<T> {
+  return request<T>(path, { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(body) });
 }
