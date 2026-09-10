@@ -3,6 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../context/AuthContext';
 import { LedgerTransaction, Wallet, walletApi } from '../../lib/api';
 
 const BG = '#0D1017'; const CARD = '#171B24'; const CARD_2 = '#1D222C'; const TEXT = '#F4F6F8'; const MUTED = '#8D95A3'; const LIME = '#D8FF3E';
