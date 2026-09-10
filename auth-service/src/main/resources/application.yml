@@ -1,13 +1,11 @@
 spring:
   application:
     name: auth-service
-
   datasource:
     url: ${OAKPAY_DB_URL:jdbc:postgresql://127.0.0.1:5432/oakpay_auth}
     username: ${OAKPAY_DB_USERNAME:oakpay}
     password: ${OAKPAY_DB_PASSWORD:oakpay_dev_password}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
@@ -15,19 +13,26 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
   flyway:
     enabled: true
     baseline-on-migrate: false
-
   data:
     redis:
       host: ${OAKPAY_REDIS_HOST:127.0.0.1}
       port: ${OAKPAY_REDIS_PORT:6379}
-
+  mail:
+    host: ${OAKPAY_SMTP_HOST:localhost}
+    port: ${OAKPAY_SMTP_PORT:1025}
+    username: ${OAKPAY_SMTP_USERNAME:}
+    password: ${OAKPAY_SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${OAKPAY_SMTP_AUTH:false}
+          starttls:
+            enable: ${OAKPAY_SMTP_STARTTLS:false}
 server:
   port: 8083
-
 management:
   endpoints:
     web:
@@ -36,9 +41,11 @@ management:
   endpoint:
     health:
       show-details: always
-
 oakpay:
   jwt:
     secret: ${OAKPAY_JWT_SECRET:oakpay-development-secret-change-before-production-2026}
     access-token-ttl: 15m
     refresh-token-ttl: 7d
+  mail:
+    enabled: ${OAKPAY_MAIL_ENABLED:false}
+    from: ${OAKPAY_MAIL_FROM:noreply@oakpay.local}
