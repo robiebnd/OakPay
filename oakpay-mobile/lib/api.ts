@@ -1,3 +1,5 @@
+import * as SecureStore from 'expo-secure-store';
+
 const rawApiBaseUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').trim();
 const API_BASE_URL = rawApiBaseUrl
   ? (/^https?:\/\//i.test(rawApiBaseUrl) ? rawApiBaseUrl : `http://${rawApiBaseUrl}`).replace(/\/$/, '')
@@ -94,6 +96,47 @@ export const p2pApi = {
 };
 
 async function requestJson<T>(path: string, body: unknown, method = 'POST') { return request<T>(path, { method, body: JSON.stringify(body) }); }
-export async function apiGet<T>(path: string, accessToken: string): Promise<T> { return request<T>(path, { method: 'GET', headers: { Authorization: `Bearer ${accessToken}` } }); }
-export async function apiPost<T>(path: string, accessToken: string, body?: unknown): Promise<T> { return request<T>(path, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: body === undefined ? undefined : JSON.stringify(body) }); }
-export async function apiPut<T>(path: string, accessToken: string, body: unknown): Promise<T> { return request<T>(path, { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(body) }); }
+
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await SecureStore.getItemAsync('oakpay.refreshToken');
+      if (!refreshToken) return null;
+      const tokens = await authApi.refresh(refreshToken);
+      await SecureStore.setItemAsync('oakpay.accessToken', tokens.accessToken);
+      await SecureStore.setItemAsync('oakpay.refreshToken', tokens.refreshToken);
+      return tokens.accessToken;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+async function authenticatedRequest<T>(path: string, accessToken: string, method: 'GET' | 'POST' | 'PUT', body?: unknown): Promise<T> {
+  const options: RequestInit = {
+    method,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  };
+  try {
+    return await request<T>(path, options);
+  } catch (error) {
+    if (!(error instanceof OakPayApiError) || error.status !== 401) throw error;
+    const refreshedToken = await refreshAccessToken();
+    if (!refreshedToken) throw error;
+    return request<T>(path, {
+      ...options,
+      headers: { Authorization: `Bearer ${refreshedToken}` },
+    });
+  }
+}
+
+export async function apiGet<T>(path: string, accessToken: string): Promise<T> { return authenticatedRequest<T>(path, accessToken, 'GET'); }
+export async function apiPost<T>(path: string, accessToken: string, body?: unknown): Promise<T> { return authenticatedRequest<T>(path, accessToken, 'POST', body); }
+export async function apiPut<T>(path: string, accessToken: string, body: unknown): Promise<T> { return authenticatedRequest<T>(path, accessToken, 'PUT', body); }
