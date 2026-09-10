@@ -119,9 +119,11 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 async function authenticatedRequest<T>(path: string, accessToken: string, method: 'GET' | 'POST' | 'PUT', body?: unknown): Promise<T> {
+  const storedAccessToken = await SecureStore.getItemAsync('oakpay.accessToken');
+  const currentToken = storedAccessToken || accessToken;
   const options: RequestInit = {
     method,
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${currentToken}` },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   };
   try {
