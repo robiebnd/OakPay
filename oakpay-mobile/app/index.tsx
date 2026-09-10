@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const OAKPAY_LOGO = require('../assets/Logo_OakPay.png');
 const SPLASH_DURATION = 8000;
 const CONTENT_FADE_DURATION = 550;
-const AUTH_REDIRECT_DELAY = 8000;
+const AUTH_REDIRECT_DELAY = 10000;
 
 export default function Index() {
   const { accessToken, isLoading } = useAuth();
