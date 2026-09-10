@@ -50,39 +50,63 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.screen}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 8, paddingBottom: 42 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 42 }}
+        >
           <View style={styles.container}>
             <Text style={styles.title}>Profile</Text>
 
             <View style={styles.profileCard}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>{initial}</Text></View>
-              <View style={styles.profileCopy}>
-                <Text style={styles.name}>{fullName}</Text>
-                <Text style={styles.email}>{currentUser?.email || 'OakPay User'}</Text>
+              <View style={styles.profileTop}>
+                <View style={styles.avatar}><Text style={styles.avatarText}>{initial}</Text></View>
+                <View style={styles.identity}>
+                  <Text style={styles.name}>{fullName}</Text>
+                  <Text style={styles.email}>{currentUser?.email || 'No email available'}</Text>
+                </View>
+              </View>
+              <View style={styles.statusRow}>
+                <View style={styles.statusPill}>
+                  <Ionicons name={currentUser?.emailVerified ? 'checkmark-circle' : 'shield-checkmark-outline'} size={15} color={LIME} />
+                  <Text style={styles.statusText}>{currentUser?.emailVerified ? 'Email verified' : 'Account active'}</Text>
+                </View>
+                <Text style={styles.member}>OakPay account</Text>
               </View>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Account</Text>
-              <View style={styles.card}>
-                <Row icon="person-outline" label="Personal information" />
-                <Row icon="shield-checkmark-outline" label="Security" />
-                <Row icon="notifications-outline" label="Notifications" />
-              </View>
+            <Text style={styles.sectionTitle}>Account</Text>
+            <View style={styles.menuCard}>
+              <Pressable style={styles.menuRow}>
+                <View style={styles.menuIcon}><Ionicons name="person-outline" size={20} color={LIME} /></View>
+                <View style={styles.menuCopy}><Text style={styles.menuTitle}>Personal details</Text><Text style={styles.menuText}>Name and account information</Text></View>
+                <Ionicons name="chevron-forward" size={20} color={MUTED} />
+              </Pressable>
+              <View style={styles.divider} />
+              <Pressable style={styles.menuRow}>
+                <View style={styles.menuIcon}><Ionicons name="shield-checkmark-outline" size={20} color={LIME} /></View>
+                <View style={styles.menuCopy}><Text style={styles.menuTitle}>Security</Text><Text style={styles.menuText}>Protect your OakPay account</Text></View>
+                <Ionicons name="chevron-forward" size={20} color={MUTED} />
+              </Pressable>
+              <View style={styles.divider} />
+              <Pressable style={styles.menuRow}>
+                <View style={styles.menuIcon}><Ionicons name="notifications-outline" size={20} color={LIME} /></View>
+                <View style={styles.menuCopy}><Text style={styles.menuTitle}>Notifications</Text><Text style={styles.menuText}>Manage P2P and account alerts</Text></View>
+                <Ionicons name="chevron-forward" size={20} color={MUTED} />
+              </Pressable>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Support</Text>
-              <View style={styles.card}>
-                <Row icon="help-circle-outline" label="Help centre" />
-                <Row icon="document-text-outline" label="Terms & conditions" />
-                <Row icon="lock-closed-outline" label="Privacy policy" />
-              </View>
+            <Text style={styles.sectionTitle}>Support</Text>
+            <View style={styles.menuCard}>
+              <Pressable style={styles.menuRow}>
+                <View style={styles.menuIcon}><Ionicons name="help-circle-outline" size={20} color={LIME} /></View>
+                <View style={styles.menuCopy}><Text style={styles.menuTitle}>Help & support</Text><Text style={styles.menuText}>Get help with OakPay</Text></View>
+                <Ionicons name="chevron-forward" size={20} color={MUTED} />
+              </Pressable>
             </View>
 
-            <Pressable style={styles.signOut} onPress={signOut}>
-              <Ionicons name="log-out-outline" size={20} color="#FF6675" />
-              <Text style={styles.signOutText}>Sign out</Text>
+            <Pressable style={styles.logout} onPress={signOut}>
+              <Ionicons name="log-out-outline" size={20} color="#FF8F8F" />
+              <Text style={styles.logoutText}>Sign out</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -91,16 +115,30 @@ export default function ProfileScreen() {
   );
 }
 
-function Row({ icon, label }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string }) {
-  return (
-    <Pressable style={styles.row}>
-      <View style={styles.rowIcon}><Ionicons name={icon} size={18} color={LIME} /></View>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color={MUTED} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:BG},screen:{flex:1,backgroundColor:BG},container:{paddingHorizontal:20},title:{color:TEXT,fontFamily:'Inter_800ExtraBold',fontSize:28,lineHeight:35,marginBottom:20},profileCard:{backgroundColor:CARD,borderRadius:20,padding:18,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:'#242A34'},avatar:{width:58,height:58,borderRadius:18,backgroundColor:LIME,alignItems:'center',justifyContent:'center',marginRight:13},avatarText:{color:BG,fontFamily:'Inter_800ExtraBold',fontSize:22},profileCopy:{flex:1},name:{color:TEXT,fontFamily:'Inter_800ExtraBold',fontSize:18},email:{color:MUTED,fontFamily:'Inter_400Regular',fontSize:11,marginTop:4},section:{marginTop:25},sectionTitle:{color:MUTED,fontFamily:'Inter_700Bold',fontSize:11,letterSpacing:1.2,marginBottom:9},card:{backgroundColor:CARD,borderRadius:18,paddingHorizontal:14},row:{minHeight:59,flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderBottomColor:'#242A34'},rowIcon:{width:35,height:35,borderRadius:11,backgroundColor:'#242A17',alignItems:'center',justifyContent:'center',marginRight:11},rowLabel:{flex:1,color:TEXT,fontFamily:'Inter_600SemiBold',fontSize:12},signOut:{marginTop:26,height:52,borderRadius:15,backgroundColor:'#24191D',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8},signOutText:{color:'#FF6675',fontFamily:'Inter_700Bold',fontSize:13}
+  safe: { flex: 1, backgroundColor: BG },
+  screen: { flex: 1, backgroundColor: BG },
+  container: { paddingHorizontal: 20 },
+  title: { color: TEXT, fontFamily: 'Inter_800ExtraBold', fontSize: 31, lineHeight: 38, marginBottom: 18 },
+  profileCard: { backgroundColor: CARD, borderRadius: 22, padding: 19, borderWidth: 1, borderColor: '#242A34', marginBottom: 26 },
+  profileTop: { flexDirection: 'row', alignItems: 'center' },
+  avatar: { width: 58, height: 58, borderRadius: 18, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#0D1017', fontFamily: 'Inter_800ExtraBold', fontSize: 23 },
+  identity: { flex: 1, marginLeft: 14 },
+  name: { color: TEXT, fontFamily: 'Inter_800ExtraBold', fontSize: 19 },
+  email: { color: MUTED, fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 4 },
+  statusRow: { marginTop: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#242A34', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusText: { color: LIME, fontFamily: 'Inter_700Bold', fontSize: 12 },
+  member: { color: MUTED, fontFamily: 'Inter_400Regular', fontSize: 11 },
+  sectionTitle: { color: TEXT, fontFamily: 'Inter_800ExtraBold', fontSize: 18, marginBottom: 10, marginTop: 2 },
+  menuCard: { backgroundColor: CARD, borderRadius: 19, paddingHorizontal: 15, marginBottom: 25, borderWidth: 1, borderColor: '#202630' },
+  menuRow: { minHeight: 70, flexDirection: 'row', alignItems: 'center' },
+  menuIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: '#242A17', alignItems: 'center', justifyContent: 'center' },
+  menuCopy: { flex: 1, marginHorizontal: 12 },
+  menuTitle: { color: TEXT, fontFamily: 'Inter_700Bold', fontSize: 14 },
+  menuText: { color: MUTED, fontFamily: 'Inter_400Regular', fontSize: 11, marginTop: 3 },
+  divider: { height: 1, backgroundColor: '#242A34', marginLeft: 52 },
+  logout: { height: 54, borderRadius: 16, borderWidth: 1, borderColor: '#42272A', backgroundColor: '#21171B', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  logoutText: { color: '#FF8F8F', fontFamily: 'Inter_700Bold', fontSize: 14 },
 });
