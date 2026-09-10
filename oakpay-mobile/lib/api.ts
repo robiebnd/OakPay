@@ -22,56 +22,24 @@ export function isAuthError(error: unknown): error is OakPayApiError {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!API_BASE_URL) throw new Error('EXPO_PUBLIC_API_URL is not configured.');
-
   const controller = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      controller.abort();
-      reject(new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Check that the OakPay Gateway is running and reachable at ${API_BASE_URL}.`));
-    }, REQUEST_TIMEOUT_MS);
+    timeoutId = setTimeout(() => { controller.abort(); reject(new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Check that the OakPay Gateway is running and reachable at ${API_BASE_URL}.`)); }, REQUEST_TIMEOUT_MS);
   });
-
   try {
-    const response = await Promise.race([
-      fetch(`${API_BASE_URL}${path}`, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(options.headers ?? {}),
-        },
-      }),
-      timeout,
-    ]);
-
-    const raw = await response.text();
-    let body: unknown = null;
-    try {
-      body = raw ? JSON.parse(raw) : null;
-    } catch {
-      body = raw;
-    }
-
-    if (!response.ok) {
-      const data = (body ?? {}) as ApiErrorBody;
-      const message = data.message ?? data.error ?? (typeof body === 'string' ? body : `Request failed with status ${response.status}`);
-      throw new OakPayApiError(response.status, message, data.fieldErrors);
-    }
-
+    const response = await Promise.race([fetch(`${API_BASE_URL}${path}`, {...options,signal:controller.signal,headers:{Accept:'application/json','Content-Type':'application/json',...(options.headers ?? {})}}),timeout]);
+    const raw = await response.text(); let body: unknown = null;
+    try { body = raw ? JSON.parse(raw) : null; } catch { body = raw; }
+    if (!response.ok) { const data=(body ?? {}) as ApiErrorBody; const message=data.message ?? data.error ?? (typeof body==='string'?body:`Request failed with status ${response.status}`); throw new OakPayApiError(response.status,message,data.fieldErrors); }
     return body as T;
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('Request timed out')) throw error;
     if (error instanceof OakPayApiError) throw error;
-    if (error instanceof TypeError) {
-      throw new Error(`Unable to reach OakPay Gateway at ${API_BASE_URL}. Make sure your phone and PC are on the same network and the Gateway is running.`);
-    }
+    if (error instanceof TypeError) throw new Error(`Unable to reach OakPay Gateway at ${API_BASE_URL}. Make sure your phone and PC are on the same network and the Gateway is running.`);
     if (error instanceof Error) throw error;
     throw new Error('OakPay request failed for an unknown reason.');
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
+  } finally { if (timeoutId) clearTimeout(timeoutId); }
 }
 
 export type LoginRequest = { email: string; password: string };
@@ -101,10 +69,7 @@ export const walletApi = {
   deposit: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/deposit`, token, { amount, reference: `MOBILE-DEPOSIT-${Date.now()}` }),
   withdraw: (token: string, currency: string, amount: number) => apiPost<LedgerTransaction>(`/api/v1/wallets/${currency}/withdraw`, token, { amount, reference: `MOBILE-WITHDRAW-${Date.now()}` }),
   depositAddresses: (token: string) => apiGet<DepositAddress[]>('/api/v1/wallets/deposit-addresses', token),
-  depositAddressesForAsset: async (token: string, currency: string) => {
-    const addresses = await apiGet<DepositAddress[]>('/api/v1/wallets/deposit-addresses', token);
-    return addresses.filter(address => address.currency.toUpperCase() === currency.toUpperCase());
-  },
+  depositAddressesForAsset: async (token: string, currency: string) => { const addresses = await apiGet<DepositAddress[]>('/api/v1/wallets/deposit-addresses', token); return addresses.filter(address => address.currency.toUpperCase() === currency.toUpperCase()); },
   depositAddress: (token: string, currency: string, network: string) => apiGet<DepositAddress>(`/api/v1/wallets/deposit-addresses/${encodeURIComponent(currency)}/${encodeURIComponent(network)}`, token),
 };
 
@@ -123,23 +88,12 @@ export const p2pApi = {
   payment: (token: string, tradeId: string) => apiGet<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment`, token),
   markPaid: (token: string, tradeId: string, paymentReference: string, paymentNote?: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/paid`, token, { paymentReference, paymentNote }),
   verifyPayment: (token: string, tradeId: string) => apiPost<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment/verify`, token),
-  confirm: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/confirm`, token),
+  confirm: async (token: string, tradeId: string) => { await apiPost<P2PPayment>(`/api/v1/p2p/trades/${tradeId}/payment/verify`, token); return apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/confirm`, token); },
   cancel: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/cancel`, token),
   dispute: (token: string, tradeId: string) => apiPost<P2PTrade>(`/api/v1/p2p/trades/${tradeId}/dispute`, token),
 };
 
-async function requestJson<T>(path: string, body: unknown, method = 'POST') {
-  return request<T>(path, { method, body: JSON.stringify(body) });
-}
-
-export async function apiGet<T>(path: string, accessToken: string): Promise<T> {
-  return request<T>(path, { method: 'GET', headers: { Authorization: `Bearer ${accessToken}` } });
-}
-
-export async function apiPost<T>(path: string, accessToken: string, body?: unknown): Promise<T> {
-  return request<T>(path, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: body === undefined ? undefined : JSON.stringify(body) });
-}
-
-export async function apiPut<T>(path: string, accessToken: string, body: unknown): Promise<T> {
-  return request<T>(path, { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(body) });
-}
+async function requestJson<T>(path: string, body: unknown, method = 'POST') { return request<T>(path, { method, body: JSON.stringify(body) }); }
+export async function apiGet<T>(path: string, accessToken: string): Promise<T> { return request<T>(path, { method: 'GET', headers: { Authorization: `Bearer ${accessToken}` } }); }
+export async function apiPost<T>(path: string, accessToken: string, body?: unknown): Promise<T> { return request<T>(path, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: body === undefined ? undefined : JSON.stringify(body) }); }
+export async function apiPut<T>(path: string, accessToken: string, body: unknown): Promise<T> { return request<T>(path, { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(body) }); }
