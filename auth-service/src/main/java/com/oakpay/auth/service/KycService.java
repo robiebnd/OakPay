@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class KycService {
@@ -20,11 +21,13 @@ public class KycService {
     private final KycProfileRepository kycRepository;
     private final IdentityDocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final KycDocumentStorageService storageService;
 
-    public KycService(KycProfileRepository kycRepository, IdentityDocumentRepository documentRepository, UserRepository userRepository) {
+    public KycService(KycProfileRepository kycRepository, IdentityDocumentRepository documentRepository, UserRepository userRepository, KycDocumentStorageService storageService) {
         this.kycRepository = kycRepository;
         this.documentRepository = documentRepository;
         this.userRepository = userRepository;
+        this.storageService = storageService;
     }
 
     @Transactional
@@ -52,6 +55,23 @@ public class KycService {
     }
 
     @Transactional
+    public KycDtos.DocumentResponse uploadDocument(UUID userId, UUID documentId, String side, MultipartFile file) {
+        User user = findUser(userId);
+        IdentityDocument document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException("Identity document not found"));
+        KycProfile profile = kycRepository.findById(document.getKycProfileId())
+                .orElseThrow(() -> new IllegalArgumentException("KYC profile not found"));
+        if (!profile.getUserId().equals(user.getId())) throw new IllegalArgumentException("Identity document does not belong to the authenticated user");
+        if (!List.of("NOT_STARTED", "REJECTED").contains(profile.getStatus())) {
+            throw new IllegalArgumentException("Documents cannot be changed while KYC is under review or verified");
+        }
+        String path = storageService.store(user.getId(), document.getId(), side, file);
+        if ("front".equalsIgnoreCase(side)) document.setFrontDocumentPath(path);
+        else document.setBackDocumentPath(path);
+        return toDocumentResponse(documentRepository.save(document));
+    }
+
+    @Transactional
     public KycDtos.KycResponse submit(UUID userId) {
         User user = findUser(userId);
         KycProfile profile = kycRepository.findByUserId(user.getId()).orElseGet(() -> createProfile(user.getId()));
@@ -61,6 +81,8 @@ public class KycService {
         if (documents.isEmpty()) throw new IllegalArgumentException("Add at least one identity document before submitting KYC");
         boolean hasDocumentNumber = documents.stream().anyMatch(d -> d.getDocumentNumber() != null && !d.getDocumentNumber().isBlank());
         if (!hasDocumentNumber) throw new IllegalArgumentException("Provide a document number before submitting KYC");
+        boolean hasRequiredImage = documents.stream().anyMatch(d -> d.getFrontDocumentPath() != null && !d.getFrontDocumentPath().isBlank());
+        if (!hasRequiredImage) throw new IllegalArgumentException("Upload the front image of your identity document before submitting KYC");
         profile.setStatus("PENDING");
         profile.setRejectionReason(null);
         profile.setSubmittedAt(LocalDateTime.now());
