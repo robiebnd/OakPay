@@ -1,5 +1,6 @@
 package com.oakpay.auth.service;
 
+import com.oakpay.auth.user.PendingRegistration;
 import com.oakpay.auth.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,20 +27,28 @@ public class VerificationEmailService {
     public boolean isDeliveryEnabled() { return enabled; }
 
     public void send(User user, String code) {
+        sendCode(user.getEmail(), user.getFirstName(), code);
+    }
+
+    public void sendCode(String email, String firstName, String code) {
         if (!enabled) {
-            log.info("OakPay email verification code for {}: {} (mail delivery disabled)", user.getEmail(), code);
+            log.info("OakPay email verification code for {}: {} (mail delivery disabled)", email, code);
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(user.getEmail());
+        message.setTo(email);
         message.setSubject("Verify your OakPay email");
-        message.setText("Hello " + user.getFirstName() + ",\n\n"
+        message.setText("Hello " + firstName + ",\n\n"
                 + "Your OakPay verification code is: " + code + "\n\n"
                 + "This code expires in 15 minutes and can only be used once.\n\n"
-                + "If you did not create this OakPay account, you can ignore this email.\n\n"
+                + "If you did not start an OakPay registration, you can ignore this email.\n\n"
                 + "OakPay");
         mailSender.send(message);
+    }
+
+    public void sendCode(PendingRegistration registration, String code) {
+        sendCode(registration.getEmail(), registration.getFirstName(), code);
     }
 
     public void sendPasswordReset(User user, String code) {
