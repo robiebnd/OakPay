@@ -11,6 +11,7 @@
     "doctor": "expo-doctor"
   },
   "dependencies": {
+    "@expo-google-fonts/google-sans-flex": "^0.4.5",
     "@expo-google-fonts/inter": "^0.4.1",
     "@expo-google-fonts/montserrat": "^0.4.2",
     "@expo-google-fonts/roboto": "^0.4.1",
