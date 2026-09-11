@@ -39,8 +39,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="wallet" options={{ title: 'Wallet', tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} /> }} />
 
-        {/* These are full-screen account pages, not bottom-navigation tabs. */}
-        <Tabs.Screen name="account-menu" options={{ href: null }} />
+        {/* Full-screen account pages; kept out of the bottom navigation. */}
         <Tabs.Screen name="personal-details" options={{ href: null }} />
         <Tabs.Screen name="kyc" options={{ href: null }} />
         <Tabs.Screen name="identity-documents" options={{ href: null }} />
