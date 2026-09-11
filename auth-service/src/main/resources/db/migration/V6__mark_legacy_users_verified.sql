@@ -1,1 +1,0 @@
--- This placeholder must not remain as a V6 migration.
