@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -14,7 +13,7 @@ const statusColor=(s:string)=>s==='VERIFIED'?LIME:s==='REJECTED'?'#FF8F8F':s==='
 export default function KycScreen(){
  const {accessToken,refreshSession}=useAuth(); const [kyc,setKyc]=useState<KycProfile|null>(null); const [loading,setLoading]=useState(true); const [error,setError]=useState('');
  const load=useCallback(async()=>{if(!accessToken){setLoading(false);return;}setLoading(true);setError('');try{setKyc(await kycApi.get(accessToken));}catch(e){if(isAuthError(e)){const ok=await refreshSession();if(!ok)setError('Your session has expired. Please sign in again.');}else setError(e instanceof Error?e.message:'Unable to load KYC status.');}finally{setLoading(false);}},[accessToken,refreshSession]);
- useFocusEffect(useCallback(()=>{load();},[load]));
+ useEffect(()=>{load();},[load]);
  const status=kyc?.status??'NOT_STARTED'; const canStart=status==='NOT_STARTED'||status==='REJECTED';
  return <SafeAreaView style={styles.safe} edges={['top']}><ScrollView contentContainerStyle={styles.content}><View style={styles.container}><View style={styles.header}><Pressable style={styles.back} onPress={()=>router.back()}><Ionicons name="arrow-back" size={21} color={TEXT}/></Pressable><Text style={styles.title}>KYC verification</Text><View style={styles.spacer}/></View>
   <View style={styles.statusCard}><View style={styles.statusIcon}><Ionicons name={status==='VERIFIED'?'checkmark-circle-outline':status==='PENDING'?'time-outline':'shield-checkmark-outline'} size={28} color={statusColor(status)}/></View>{loading?<ActivityIndicator color={LIME}/>:<><Text style={[styles.status,{color:statusColor(status)}]}>{label(status)}</Text><Text style={styles.statusText}>{status==='VERIFIED'?'Your identity has been verified.':status==='PENDING'?'Your identity documents are under review.':status==='REJECTED'?(kyc?.rejectionReason||'Your KYC submission was rejected. Review the requirements and resubmit.'):'Complete identity verification to unlock features that require a verified OakPay account.'}</Text></>}</View>
