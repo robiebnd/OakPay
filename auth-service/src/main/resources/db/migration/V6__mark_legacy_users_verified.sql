@@ -1,2 +1,1 @@
--- Legacy users are handled by the already-applied V6 migration.
--- New registrations are stored in pending_registrations until verified.
+-- This placeholder must not remain as a V6 migration.
