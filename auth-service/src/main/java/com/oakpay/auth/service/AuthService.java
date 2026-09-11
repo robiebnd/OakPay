@@ -72,7 +72,6 @@ public class AuthService {
     @Transactional
     public AuthDtos.RegistrationResponse register(AuthDtos.RegisterRequest request) {
         String email = normalizeEmail(request.email());
-
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("An account with this email already exists");
         }
@@ -83,12 +82,12 @@ public class AuthService {
         pending.setPassword(passwordEncoder.encode(request.password()));
         pending.setFirstName(request.firstName().trim());
         pending.setLastName(request.lastName().trim());
-        issueVerification(pending);
+        String code = issueVerification(pending);
         pendingRegistrationRepository.save(pending);
 
         return new AuthDtos.RegistrationResponse(
                 new AuthDtos.UserResponse(pending.getId(), pending.getEmail(), pending.getFirstName(), pending.getLastName(), false),
-                developmentCode(extractCodeHashImpossible()));
+                developmentCode(code));
     }
 
     @Transactional
@@ -129,12 +128,8 @@ public class AuthService {
         }
 
         enforceCooldown(VERIFY_RESEND_PREFIX + sha256(email));
-        String code = generateCode();
-        pending.setVerificationCodeHash(sha256(code));
-        pending.setVerificationExpiresAt(LocalDateTime.now().plus(VERIFY_TTL));
-        pending.setUpdatedAt(LocalDateTime.now());
+        String code = issueVerification(pending);
         pendingRegistrationRepository.save(pending);
-        emailService.sendCode(pending.getEmail(), code);
         return new AuthDtos.VerificationResponse("A new verification code has been sent.", false, developmentCode(code));
     }
 
@@ -156,9 +151,7 @@ public class AuthService {
         String email = normalizeEmail(request.email());
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset code"));
-        if (!user.isEmailVerified()) {
-            throw new IllegalArgumentException("Invalid or expired password reset code");
-        }
+        if (!user.isEmailVerified()) throw new IllegalArgumentException("Invalid or expired password reset code");
         PasswordResetToken token = passwordResetRepository.findByTokenHash(sha256(request.code().trim()))
                 .filter(t -> t.getUserId().equals(user.getId()))
                 .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset code"));
@@ -175,9 +168,7 @@ public class AuthService {
     public AuthDtos.TokenResponse login(AuthDtos.LoginRequest request) {
         User user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.email()))
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-        if (!user.isEmailVerified()) {
-            throw new IllegalArgumentException("Please verify your email before signing in");
-        }
+        if (!user.isEmailVerified()) throw new IllegalArgumentException("Please verify your email before signing in");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getEmail(), request.password()));
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
@@ -201,13 +192,13 @@ public class AuthService {
         redisTemplate.delete(REFRESH_KEY_PREFIX + sha256(request.refreshToken()));
     }
 
-    private void issueVerification(PendingRegistration pending) {
+    private String issueVerification(PendingRegistration pending) {
         String code = generateCode();
         pending.setVerificationCodeHash(sha256(code));
         pending.setVerificationExpiresAt(LocalDateTime.now().plus(VERIFY_TTL));
         pending.setUpdatedAt(LocalDateTime.now());
-        emailService.sendCode(pending.getEmail(), code);
-        pending.setVerificationCodeHash(sha256(code));
+        emailService.sendCode(pending, code);
+        return code;
     }
 
     private String issuePasswordReset(User user) {
@@ -227,25 +218,15 @@ public class AuthService {
         if (!Boolean.TRUE.equals(allowed)) throw new IllegalArgumentException("Please wait before requesting another code");
     }
 
-    private String developmentCode(String code) {
-        return emailService.isDeliveryEnabled() ? null : code;
-    }
-
+    private String developmentCode(String code) { return emailService.isDeliveryEnabled() ? null : code; }
     private String generateCode() { return String.format("%06d", secureRandom.nextInt(1_000_000)); }
-
-    private String extractCodeHashImpossible() {
-        return null;
-    }
-
     private AuthDtos.TokenResponse issueTokens(UserPrincipal principal) {
         String accessToken = jwtService.generateAccessToken(principal);
         String refreshToken = jwtService.generateRefreshToken(principal);
         redisTemplate.opsForValue().set(REFRESH_KEY_PREFIX + sha256(refreshToken), principal.getUserId().toString(), refreshTokenTtl);
         return new AuthDtos.TokenResponse("Bearer", accessToken, refreshToken, jwtService.getAccessTokenTtlSeconds());
     }
-
     private String normalizeEmail(String email) { return email.trim().toLowerCase(Locale.ROOT); }
-
     private String sha256(String value) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
