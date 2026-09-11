@@ -65,9 +65,11 @@ public class KycService {
         if (!List.of("NOT_STARTED", "REJECTED").contains(profile.getStatus())) {
             throw new IllegalArgumentException("Documents cannot be changed while KYC is under review or verified");
         }
-        String path = storageService.store(user.getId(), document.getId(), side, file);
-        if ("front".equalsIgnoreCase(side)) document.setFrontDocumentPath(path);
-        else document.setBackDocumentPath(path);
+        String normalizedSide = side == null ? "" : side.trim().toLowerCase(Locale.ROOT);
+        String path = storageService.store(user.getId(), document.getId(), normalizedSide, file);
+        if ("front".equals(normalizedSide)) document.setFrontDocumentPath(path);
+        else if ("back".equals(normalizedSide)) document.setBackDocumentPath(path);
+        else throw new IllegalArgumentException("Document side must be front or back");
         return toDocumentResponse(documentRepository.save(document));
     }
 
@@ -79,10 +81,12 @@ public class KycService {
         if ("PENDING".equals(profile.getStatus())) throw new IllegalArgumentException("Your KYC is already under review");
         List<IdentityDocument> documents = documentRepository.findByKycProfileIdOrderByCreatedAtDesc(profile.getId());
         if (documents.isEmpty()) throw new IllegalArgumentException("Add at least one identity document before submitting KYC");
-        boolean hasDocumentNumber = documents.stream().anyMatch(d -> d.getDocumentNumber() != null && !d.getDocumentNumber().isBlank());
-        if (!hasDocumentNumber) throw new IllegalArgumentException("Provide a document number before submitting KYC");
-        boolean hasRequiredImage = documents.stream().anyMatch(d -> d.getFrontDocumentPath() != null && !d.getFrontDocumentPath().isBlank());
-        if (!hasRequiredImage) throw new IllegalArgumentException("Upload the front image of your identity document before submitting KYC");
+        IdentityDocument document = documents.get(0);
+        if (document.getDocumentNumber() == null || document.getDocumentNumber().isBlank()) throw new IllegalArgumentException("Provide a document number before submitting KYC");
+        if (document.getFrontDocumentPath() == null || document.getFrontDocumentPath().isBlank()) throw new IllegalArgumentException("Upload the front image of your identity document before submitting KYC");
+        if (!"PASSPORT".equals(document.getDocumentType()) && (document.getBackDocumentPath() == null || document.getBackDocumentPath().isBlank())) {
+            throw new IllegalArgumentException("Upload the back image of your identity document before submitting KYC");
+        }
         profile.setStatus("PENDING");
         profile.setRejectionReason(null);
         profile.setSubmittedAt(LocalDateTime.now());
