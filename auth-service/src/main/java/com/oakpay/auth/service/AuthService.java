@@ -86,7 +86,15 @@ public class AuthService {
         pendingRegistrationRepository.save(pending);
 
         return new AuthDtos.RegistrationResponse(
-                new AuthDtos.UserResponse(pending.getId(), pending.getEmail(), pending.getFirstName(), pending.getLastName(), false),
+                new AuthDtos.UserResponse(
+                        pending.getId(),
+                        pending.getEmail(),
+                        pending.getFirstName(),
+                        pending.getLastName(),
+                        false,
+                        null,
+                        null,
+                        null),
                 developmentCode(code));
     }
 
