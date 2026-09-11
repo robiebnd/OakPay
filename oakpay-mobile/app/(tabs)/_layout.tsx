@@ -28,6 +28,7 @@ export default function TabsLayout() {
             paddingTop: 7,
             paddingBottom: 10,
           },
+          tabBarItemStyle: { flex: 1 },
           tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 10 },
         }}
       >
@@ -37,6 +38,13 @@ export default function TabsLayout() {
         <Tabs.Screen name="orders" options={{ title: 'Orders', tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" color={color} size={size} /> }} />
         <Tabs.Screen name="wallet" options={{ title: 'Wallet', tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" color={color} size={size} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} /> }} />
+
+        {/* These are full-screen account pages, not bottom-navigation tabs. */}
+        <Tabs.Screen name="account-menu" options={{ href: null }} />
+        <Tabs.Screen name="personal-details" options={{ href: null }} />
+        <Tabs.Screen name="kyc" options={{ href: null }} />
+        <Tabs.Screen name="identity-documents" options={{ href: null }} />
+        <Tabs.Screen name="security" options={{ href: null }} />
       </Tabs>
     </>
   );
