@@ -49,3 +49,5 @@ oakpay:
   mail:
     enabled: ${OAKPAY_MAIL_ENABLED:false}
     from: ${OAKPAY_MAIL_FROM:noreply@oakpay.local}
+  kyc:
+    upload-dir: ${OAKPAY_KYC_UPLOAD_DIR:./data/kyc}
