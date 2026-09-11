@@ -1,0 +1,7 @@
+Phase 4 account profile screens added:
+- Personal details
+- KYC verification status
+- Identity documents
+- Security
+
+The identity-document upload UI is intentionally not connected to a fake storage endpoint. It will be wired to the KYC document service when that backend is implemented.
