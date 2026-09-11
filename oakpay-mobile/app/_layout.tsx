@@ -1,10 +1,8 @@
-import {
-  Roboto_400Regular as Inter_400Regular,
-  Roboto_500Medium as Inter_600SemiBold,
-  Roboto_700Bold as Inter_700Bold,
-  Roboto_900Black as Inter_800ExtraBold,
-  useFonts,
-} from '@expo-google-fonts/roboto';
+import { GoogleSansFlex_400Regular } from '@expo-google-fonts/google-sans-flex/400Regular';
+import { GoogleSansFlex_600SemiBold } from '@expo-google-fonts/google-sans-flex/600SemiBold';
+import { GoogleSansFlex_700Bold } from '@expo-google-fonts/google-sans-flex/700Bold';
+import { GoogleSansFlex_800ExtraBold } from '@expo-google-fonts/google-sans-flex/800ExtraBold';
+import { useFonts } from '@expo-google-fonts/google-sans-flex/useFonts';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -12,10 +10,10 @@ import { AuthProvider } from '../context/AuthContext';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
+    Inter_400Regular: GoogleSansFlex_400Regular,
+    Inter_600SemiBold: GoogleSansFlex_600SemiBold,
+    Inter_700Bold: GoogleSansFlex_700Bold,
+    Inter_800ExtraBold: GoogleSansFlex_800ExtraBold,
   });
 
   if (!fontsLoaded) return null;
