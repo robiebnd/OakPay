@@ -1,8 +1,10 @@
-import { GoogleSansFlex_400Regular } from '@expo-google-fonts/google-sans-flex/400Regular';
-import { GoogleSansFlex_600SemiBold } from '@expo-google-fonts/google-sans-flex/600SemiBold';
-import { GoogleSansFlex_700Bold } from '@expo-google-fonts/google-sans-flex/700Bold';
-import { GoogleSansFlex_800ExtraBold } from '@expo-google-fonts/google-sans-flex/800ExtraBold';
-import { useFonts } from '@expo-google-fonts/google-sans-flex/useFonts';
+import {
+  GoogleSansFlex_400Regular,
+  GoogleSansFlex_600SemiBold,
+  GoogleSansFlex_700Bold,
+  GoogleSansFlex_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/google-sans-flex';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
