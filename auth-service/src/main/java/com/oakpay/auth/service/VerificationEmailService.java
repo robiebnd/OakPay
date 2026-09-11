@@ -23,6 +23,8 @@ public class VerificationEmailService {
         this.from = from;
     }
 
+    public boolean isDeliveryEnabled() { return enabled; }
+
     public void send(User user, String code) {
         if (!enabled) {
             log.info("OakPay email verification code for {}: {} (mail delivery disabled)", user.getEmail(), code);
@@ -36,6 +38,23 @@ public class VerificationEmailService {
                 + "Your OakPay verification code is: " + code + "\n\n"
                 + "This code expires in 15 minutes and can only be used once.\n\n"
                 + "If you did not create this OakPay account, you can ignore this email.\n\n"
+                + "OakPay");
+        mailSender.send(message);
+    }
+
+    public void sendPasswordReset(User user, String code) {
+        if (!enabled) {
+            log.info("OakPay password reset code for {}: {} (mail delivery disabled)", user.getEmail(), code);
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(user.getEmail());
+        message.setSubject("Reset your OakPay password");
+        message.setText("Hello " + user.getFirstName() + ",\n\n"
+                + "Your OakPay password reset code is: " + code + "\n\n"
+                + "This code expires in 15 minutes and can only be used once.\n\n"
+                + "If you did not request a password reset, you can ignore this email.\n\n"
                 + "OakPay");
         mailSender.send(message);
     }
