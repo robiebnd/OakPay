@@ -2,6 +2,7 @@ package com.oakpay.auth.api;
 
 import com.oakpay.auth.security.UserPrincipal;
 import com.oakpay.auth.service.AuthService;
+import com.oakpay.auth.service.TwoFactorService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
     private final AuthService authService;
-    public AuthController(AuthService authService){this.authService=authService;}
+    private final TwoFactorService twoFactorService;
+    public AuthController(AuthService authService,TwoFactorService twoFactorService){this.authService=authService;this.twoFactorService=twoFactorService;}
     @PostMapping("/register") public ResponseEntity<AuthDtos.RegistrationResponse> register(@Valid @RequestBody AuthDtos.RegisterRequest request){return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));}
-    @PostMapping("/login") public AuthDtos.TokenResponse login(@Valid @RequestBody AuthDtos.LoginRequest request){return authService.login(request);}
+    @PostMapping("/login") public TwoFactorDtos.LoginResponse login(@Valid @RequestBody AuthDtos.LoginRequest request){return authService.login(request);}
+    @PostMapping("/verify-2fa") public AuthDtos.TokenResponse verifyTwoFactor(@Valid @RequestBody TwoFactorDtos.LoginVerifyRequest request){return authService.verifyTwoFactorLogin(request);}
     @PostMapping("/refresh") public AuthDtos.TokenResponse refresh(@Valid @RequestBody AuthDtos.RefreshRequest request){return authService.refresh(request);}
     @PostMapping("/logout") public ResponseEntity<Void> logout(@Valid @RequestBody AuthDtos.RefreshRequest request){authService.logout(request);return ResponseEntity.noContent().build();}
     @PostMapping("/verify-email") public AuthDtos.VerificationResponse verifyEmail(@Valid @RequestBody AuthDtos.VerifyEmailRequest request){return authService.verifyEmail(request);}
