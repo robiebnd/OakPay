@@ -16,6 +16,7 @@ public final class AuthDtos {
     public record ResendVerificationRequest(@NotBlank @Email @Size(max=320) String email) {}
     public record ForgotPasswordRequest(@NotBlank @Email @Size(max=320) String email) {}
     public record ResetPasswordRequest(@NotBlank @Email @Size(max=320) String email,@NotBlank @Size(min=6,max=6) String code,@NotBlank @Size(min=8,max=72) String newPassword) {}
+    public record ChangePasswordRequest(@NotBlank String currentPassword,@NotBlank @Size(min=8,max=72) String newPassword) {}
     public record VerificationResponse(String message, boolean verified, String developmentCode) {}
     public record PasswordResetResponse(String message, boolean reset, String developmentCode) {}
     public record RegistrationResponse(UserResponse user, String developmentCode) {}
