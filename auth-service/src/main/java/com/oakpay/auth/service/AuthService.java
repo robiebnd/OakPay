@@ -1,6 +1,7 @@
 package com.oakpay.auth.service;
 
 import com.oakpay.auth.api.AuthDtos;
+import com.oakpay.auth.api.TwoFactorDtos;
 import com.oakpay.auth.security.JwtService;
 import com.oakpay.auth.security.UserPrincipal;
 import com.oakpay.auth.user.PasswordResetToken;
@@ -48,6 +49,7 @@ public class AuthService {
     private final StringRedisTemplate redisTemplate;
     private final Duration refreshTokenTtl;
     private final VerificationEmailService emailService;
+    private final TwoFactorService twoFactorService;
 
     public AuthService(UserRepository userRepository,
                        PendingRegistrationRepository pendingRegistrationRepository,
@@ -57,7 +59,8 @@ public class AuthService {
                        JwtService jwtService,
                        StringRedisTemplate redisTemplate,
                        @Value("${oakpay.jwt.refresh-token-ttl:7d}") Duration refreshTokenTtl,
-                       VerificationEmailService emailService) {
+                       VerificationEmailService emailService,
+                       TwoFactorService twoFactorService) {
         this.userRepository = userRepository;
         this.pendingRegistrationRepository = pendingRegistrationRepository;
         this.passwordResetRepository = passwordResetRepository;
@@ -67,6 +70,7 @@ public class AuthService {
         this.redisTemplate = redisTemplate;
         this.refreshTokenTtl = refreshTokenTtl;
         this.emailService = emailService;
+        this.twoFactorService = twoFactorService;
     }
 
     @Transactional
@@ -122,10 +126,20 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.newPassword())); userRepository.save(user);
     }
 
-    public AuthDtos.TokenResponse login(AuthDtos.LoginRequest request) {
+    public TwoFactorDtos.LoginResponse login(AuthDtos.LoginRequest request) {
         User user=userRepository.findByEmailIgnoreCase(normalizeEmail(request.email())).orElseThrow(()->new IllegalArgumentException("Invalid email or password"));
         if(!user.isEmailVerified()) throw new IllegalArgumentException("Please verify your email before signing in");
-        Authentication authentication=authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(),request.password())); UserPrincipal principal=(UserPrincipal)authentication.getPrincipal(); return issueTokens(principal);
+        Authentication authentication=authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(),request.password()));
+        UserPrincipal principal=(UserPrincipal)authentication.getPrincipal();
+        if(user.isTwoFactorEnabled()) return new TwoFactorDtos.LoginResponse("Bearer",null,null,0,true,twoFactorService.createChallenge(user.getId()));
+        AuthDtos.TokenResponse tokens=issueTokens(principal);
+        return new TwoFactorDtos.LoginResponse(tokens.tokenType(),tokens.accessToken(),tokens.refreshToken(),tokens.expiresIn(),false,null);
+    }
+
+    public AuthDtos.TokenResponse verifyTwoFactorLogin(TwoFactorDtos.LoginVerifyRequest request) {
+        UUID userId=twoFactorService.verifyChallenge(request.challengeToken(),request.code());
+        User user=userRepository.findById(userId).orElseThrow(()->new UsernameNotFoundException("User not found"));
+        return issueTokens(UserPrincipal.from(user));
     }
 
     public AuthDtos.TokenResponse refresh(AuthDtos.RefreshRequest request) {
