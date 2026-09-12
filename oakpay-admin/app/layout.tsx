@@ -1,6 +1,19 @@
-import type { Metadata } from 'next';
-import AdminGuard from '../components/AdminGuard';
-import './globals.css';
-import './admin-actions.css';
-export const metadata:Metadata={title:'OakPay Admin',description:'OakPay operations and client management'};
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body><AdminGuard>{children}</AdminGuard></body></html>}
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "OakPay Admin",
+  description: "OakPay Operations Administration",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
