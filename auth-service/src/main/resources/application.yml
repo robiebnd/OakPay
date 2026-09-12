@@ -55,3 +55,5 @@ oakpay:
     from: ${OAKPAY_MAIL_FROM:noreply@oakpay.local}
   kyc:
     upload-dir: ${OAKPAY_KYC_UPLOAD_DIR:./data/kyc}
+  two-factor:
+    encryption-key: ${OAKPAY_2FA_ENCRYPTION_KEY:oakpay-development-2fa-key-change-before-production-2026}
