@@ -1,9 +1,11 @@
 package com.oakpay.auth.api;
 
+import com.oakpay.auth.security.UserPrincipal;
 import com.oakpay.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,4 +24,5 @@ public class AuthController {
     @PostMapping("/resend-verification") public AuthDtos.VerificationResponse resendVerification(@Valid @RequestBody AuthDtos.ResendVerificationRequest request){return authService.resendVerification(request);}
     @PostMapping("/forgot-password") public AuthDtos.PasswordResetResponse forgotPassword(@Valid @RequestBody AuthDtos.ForgotPasswordRequest request){return authService.forgotPassword(request);}
     @PostMapping("/reset-password") public AuthDtos.PasswordResetResponse resetPassword(@Valid @RequestBody AuthDtos.ResetPasswordRequest request){return authService.resetPassword(request);}
+    @PostMapping("/change-password") public ResponseEntity<Void> changePassword(@AuthenticationPrincipal UserPrincipal principal,@Valid @RequestBody AuthDtos.ChangePasswordRequest request){authService.changePassword(principal,request);return ResponseEntity.noContent().build();}
 }
