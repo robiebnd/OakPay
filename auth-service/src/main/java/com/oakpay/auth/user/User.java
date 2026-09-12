@@ -23,6 +23,8 @@ public class User {
     private LocalDate dateOfBirth;
     @Column(nullable = false) private boolean enabled = true;
     @Column(nullable = false) private boolean emailVerified = false;
+    @Column(nullable = false) private boolean twoFactorEnabled = false;
+    @Column(length = 512) private String twoFactorSecretEncrypted;
     @Column(nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(nullable = false) private LocalDateTime updatedAt;
 
@@ -36,5 +38,7 @@ public class User {
     public String getCountry(){return country;} public void setCountry(String country){this.country=country;}
     public LocalDate getDateOfBirth(){return dateOfBirth;} public void setDateOfBirth(LocalDate dateOfBirth){this.dateOfBirth=dateOfBirth;}
     public boolean isEnabled(){return enabled;} public boolean isEmailVerified(){return emailVerified;} public void setEmailVerified(boolean emailVerified){this.emailVerified=emailVerified;}
+    public boolean isTwoFactorEnabled(){return twoFactorEnabled;} public void setTwoFactorEnabled(boolean twoFactorEnabled){this.twoFactorEnabled=twoFactorEnabled;}
+    public String getTwoFactorSecretEncrypted(){return twoFactorSecretEncrypted;} public void setTwoFactorSecretEncrypted(String twoFactorSecretEncrypted){this.twoFactorSecretEncrypted=twoFactorSecretEncrypted;}
     public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;}
 }
