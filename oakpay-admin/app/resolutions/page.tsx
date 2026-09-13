@@ -1,3 +1,256 @@
-import Link from 'next/link';
-const rows=[['#R-302','P2P payment dispute','#T-9182','Urgent','Escalated'],['#R-301','KYC rejection appeal','#K-4481','High','In progress'],['#R-300','Wallet balance mismatch','#W-7732','Normal','Open'],['#R-299','Payment marked but crypto not released','#T-9174','High','In progress']];
-export default function Resolutions(){return <div className="admin-shell"><aside className="sidebar"><div className="brand">Oak<span>Pay</span></div><div className="nav-title">Operations</div><nav className="nav"><Link href="/">Overview</Link><Link href="/kyc">KYC Management</Link><Link href="/queries">Client Queries</Link><Link className="active" href="/resolutions">Resolution Centre</Link><Link href="/clients">Clients</Link><Link href="/transactions">Transactions</Link></nav><div className="sidebar-bottom"><nav className="nav"><Link href="/audit">Audit Logs</Link><Link href="/settings">Admin Settings</Link></nav></div></aside><main className="main"><header className="topbar"><div className="crumb">OakPay / <strong>Resolution Centre</strong></div><div className="admin-user"><strong style={{fontSize:12}}>Operations Admin</strong><div className="avatar">OA</div></div></header><section className="page"><div className="page-heading"><div><div className="eyebrow">Operations & disputes</div><h1>Resolution Centre</h1></div><div className="date">Resolve P2P, KYC and wallet issues</div></div><div className="cards"><div className="stat"><span className="stat-label">Open cases</span><div className="stat-value">6</div><div className="stat-meta">2 urgent</div></div><div className="stat"><span className="stat-label">Escalated</span><div className="stat-value">2</div><div className="stat-meta">Specialist review required</div></div><div className="stat"><span className="stat-label">Resolved today</span><div className="stat-value">14</div><div className="stat-meta">Across all case types</div></div><div className="stat"><span className="stat-label">SLA compliance</span><div className="stat-value">96%</div><div className="stat-meta">Current operations target</div></div></div><div className="panel"><div className="panel-head"><span className="panel-title">Active resolution cases</span><span className="badge red">2 urgent</span></div><div className="table-wrap"><table className="table"><thead><tr><th>Case</th><th>Issue</th><th>Reference</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((r,i)=><tr key={i}><td><strong>{r[0]}</strong></td><td>{r[1]}</td><td>{r[2]}</td><td><span className={'badge '+(r[3]==='Urgent'||r[3]==='High'?'red':'blue')}>{r[3]}</span></td><td><span className="badge orange">{r[4]}</span></td><td><button style={{border:0,background:'#102f24',color:'#d8ff3e',borderRadius:8,padding:'8px 11px',fontSize:10,fontWeight:800}}>Open case</button></td></tr>)}</tbody></table></div></div></section></main></div>}
+"use client";
+
+import AdminShell from "../../components/AdminShell";
+
+const rows = [
+  {
+    id: "#R-302",
+    issue: "P2P payment dispute",
+    reference: "#T-9182",
+    priority: "Urgent",
+    status: "Escalated",
+  },
+  {
+    id: "#R-301",
+    issue: "KYC rejection appeal",
+    reference: "#K-4481",
+    priority: "High",
+    status: "In progress",
+  },
+  {
+    id: "#R-300",
+    issue: "Wallet balance mismatch",
+    reference: "#W-7732",
+    priority: "Normal",
+    status: "Open",
+  },
+  {
+    id: "#R-299",
+    issue: "Payment marked but crypto not released",
+    reference: "#T-9174",
+    priority: "High",
+    status: "In progress",
+  },
+];
+
+function priorityClass(priority: string) {
+  if (priority === "Urgent" || priority === "High") {
+    return "bg-red-50 text-red-700";
+  }
+
+  return "bg-blue-50 text-blue-700";
+}
+
+function statusClass(status: string) {
+  if (status === "Escalated") {
+    return "bg-red-50 text-red-700";
+  }
+
+  if (status === "Resolved") {
+    return "bg-green-50 text-green-700";
+  }
+
+  return "bg-amber-50 text-amber-700";
+}
+
+export default function Resolutions() {
+  return (
+    <AdminShell>
+      <div className="space-y-8">
+        {/* Page heading */}
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#397b0a]">
+              Operations & disputes
+            </p>
+
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#111827]">
+              Resolution Centre
+            </h1>
+
+            <p className="mt-2 text-sm text-[#6b7280]">
+              Resolve P2P, KYC and wallet issues.
+            </p>
+          </div>
+
+          <div className="text-sm text-[#6b7280]">
+            Operational case management
+          </div>
+        </div>
+
+        {/* KPI cards */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-[#e3e8e5] bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+              Open cases
+            </p>
+
+            <p className="mt-2 text-3xl font-extrabold text-[#111827]">
+              6
+            </p>
+
+            <p className="mt-1 text-xs text-[#6b7280]">
+              2 urgent
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e8e5] bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+              Escalated
+            </p>
+
+            <p className="mt-2 text-3xl font-extrabold text-[#111827]">
+              2
+            </p>
+
+            <p className="mt-1 text-xs text-[#6b7280]">
+              Specialist review required
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e8e5] bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+              Resolved today
+            </p>
+
+            <p className="mt-2 text-3xl font-extrabold text-[#111827]">
+              14
+            </p>
+
+            <p className="mt-1 text-xs text-[#6b7280]">
+              Across all case types
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e3e8e5] bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+              SLA compliance
+            </p>
+
+            <p className="mt-2 text-3xl font-extrabold text-[#111827]">
+              96%
+            </p>
+
+            <p className="mt-1 text-xs text-[#6b7280]">
+              Current operations target
+            </p>
+          </div>
+        </div>
+
+        {/* Resolution table */}
+        <section className="overflow-hidden rounded-2xl border border-[#e3e8e5] bg-white shadow-sm">
+          <div className="flex flex-col justify-between gap-3 border-b border-[#e3e8e5] px-6 py-5 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-base font-bold text-[#111827]">
+                Active resolution cases
+              </h2>
+
+              <p className="mt-1 text-xs text-[#6b7280]">
+                Cases requiring operational attention.
+              </p>
+            </div>
+
+            <span className="inline-flex w-fit rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
+              2 urgent
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead className="bg-[#f8faf9]">
+                <tr className="border-b border-[#e3e8e5]">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]">
+                    Case
+                  </th>
+
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]">
+                    Issue
+                  </th>
+
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]">
+                    Reference
+                  </th>
+
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]">
+                    Priority
+                  </th>
+
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]">
+                    Status
+                  </th>
+
+                  <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wide text-[#6b7280]">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-[#edf1ef] last:border-b-0 hover:bg-[#fafcfb]"
+                  >
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-bold text-[#111827]">
+                      {row.id}
+                    </td>
+
+                    <td className="px-6 py-4 text-sm text-[#374151]">
+                      {row.issue}
+                    </td>
+
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-[#6b7280]">
+                      {row.reference}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${priorityClass(
+                          row.priority,
+                        )}`}
+                      >
+                        {row.priority}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(
+                          row.status,
+                        )}`}
+                      >
+                        {row.status}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        className="rounded-lg bg-[#145323] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0b3a1c]"
+                      >
+                        Open case
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Development/API notice */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <p className="text-sm font-semibold text-amber-900">
+            Resolution Centre backend integration
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-amber-800">
+            The current cases shown here are the existing prototype records.
+            We will connect this section to the actual P2P dispute and
+            resolution backend once the corresponding admin API is confirmed.
+          </p>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}

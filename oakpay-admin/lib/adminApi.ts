@@ -53,7 +53,10 @@ function getToken() {
     return null;
   }
 
-  return localStorage.getItem("oakpay.accessToken");
+  return (
+    localStorage.getItem("oakpay.admin.accessToken") ||
+    localStorage.getItem("oakpay.accessToken")
+  );
 }
 
 async function request<T>(

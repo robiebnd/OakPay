@@ -1,5 +1,37 @@
-'use client';
-import {useEffect,useState} from 'react';
-import {usePathname,useRouter} from 'next/navigation';
-import {session} from '../lib/api';
-export default function AdminGuard({children}:{children:React.ReactNode}){const path=usePathname();const router=useRouter();const[ready,setReady]=useState(path==='/login');useEffect(()=>{if(path==='/login'){setReady(true);return}if(!session.get()){router.replace('/login');return}setReady(true)},[path,router]);if(!ready)return <div className="boot-screen"><div className="brand">Oak<span>Pay</span></div><p>Loading operations portal…</p></div>;return <>{children}</>}
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { session } from "../lib/api";
+
+export default function AdminGuard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = session.get();
+
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    setChecking(false);
+  }, [router]);
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f7f6]">
+        <div className="text-sm font-medium text-[#6b7280]">
+          Loading OakPay Admin...
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}

@@ -1,4 +1,13 @@
 @import "tailwindcss";
+
+/*
+ * Explicitly tell Tailwind where the OakPay Admin source files are.
+ * This ensures all JSX/TSX utility classes are detected.
+ */
+@source "./**/*.{js,ts,jsx,tsx,mdx}";
+@source "../components/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../hooks/**/*.{js,ts,jsx,tsx,mdx}";
+
 @import "@fontsource-variable/google-sans-flex";
 
 :root {

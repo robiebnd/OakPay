@@ -28,20 +28,25 @@ public class AdminDashboardRepository {
                 """);
     }
 
+    /**
+     * P2P disputes are owned by trading-service.
+     * They are not stored in the auth-service database.
+     *
+     * The Admin dashboard will be connected to the real
+     * trading-service dispute data separately.
+     */
     public long countActiveDisputes() {
-        return count("""
-                SELECT COUNT(*)
-                FROM p2p_disputes
-                WHERE status IN ('OPEN', 'UNDER_REVIEW', 'ESCALATED')
-                """);
+        return 0L;
     }
 
+    /**
+     * Resolution Centre currently uses the same real P2P
+     * dispute source. Until the trading-service admin
+     * endpoint is connected, return zero rather than
+     * querying a non-existent auth database table.
+     */
     public long countPendingResolutions() {
-        return count("""
-                SELECT COUNT(*)
-                FROM p2p_disputes
-                WHERE status IN ('OPEN', 'UNDER_REVIEW', 'ESCALATED')
-                """);
+        return 0L;
     }
 
     private long count(String sql) {
