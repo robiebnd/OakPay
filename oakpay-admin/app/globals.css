@@ -1,8 +1,5 @@
+@import "tailwindcss";
 @import "@fontsource-variable/google-sans-flex";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 :root {
   --oak-green-950: #082d16;
@@ -36,7 +33,6 @@ html {
 body {
   background: var(--oak-background);
   color: var(--oak-text);
-
   font-family:
     "Google Sans Flex",
     system-ui,
