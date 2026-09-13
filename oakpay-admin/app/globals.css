@@ -29,9 +29,14 @@ body {
   min-height: 100%;
 }
 
+html {
+  background: var(--oak-background);
+}
+
 body {
   background: var(--oak-background);
   color: var(--oak-text);
+
   font-family:
     "Google Sans Flex",
     system-ui,
@@ -39,12 +44,15 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+
   font-feature-settings:
     "cv02" 1,
     "cv03" 1,
     "cv04" 1,
     "cv11" 1;
+
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -52,6 +60,14 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 a {
