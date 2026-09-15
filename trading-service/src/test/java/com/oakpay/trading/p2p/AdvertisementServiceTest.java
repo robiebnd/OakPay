@@ -3,6 +3,7 @@ package com.oakpay.trading.p2p;
 import com.oakpay.trading.asset.AssetStatus;
 import com.oakpay.trading.asset.SupportedAsset;
 import com.oakpay.trading.asset.SupportedAssetRepository;
+import com.oakpay.trading.security.UserStatusClient;
 import com.oakpay.trading.wallet.WalletClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +28,14 @@ class AdvertisementServiceTest {
     @Mock P2PTradeService tradeService;
     @Mock SupportedAssetRepository assetRepository;
     @Mock WalletClient walletClient;
+    @Mock UserStatusClient userStatusClient;
 
     private AdvertisementService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdvertisementService(repository, tradeService, assetRepository, walletClient);
+        when(userStatusClient.isActive(any(UUID.class))).thenReturn(true);
+        service = new AdvertisementService(repository, tradeService, assetRepository, walletClient, userStatusClient);
     }
 
     @Test
