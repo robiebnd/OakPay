@@ -1,10 +1,13 @@
 package com.oakpay.trading.p2p;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,16 +16,14 @@ import java.util.UUID;
 public class P2PDisputeController {
 
     private final P2PDisputeService service;
+    private final String adminSecret;
 
-    public P2PDisputeController(P2PDisputeService service) {
+    public P2PDisputeController(
+            P2PDisputeService service,
+            @Value("${oakpay.admin.dispute-secret}") String adminSecret) {
         this.service = service;
+        this.adminSecret = adminSecret;
     }
-
-    /*
-     * ============================================================
-     * CLIENT DISPUTES
-     * ============================================================
-     */
 
     @PostMapping("/trades/{tradeId}/dispute")
     public ResponseEntity<P2PDisputeDtos.DisputeResponse> open(
@@ -36,34 +37,24 @@ public class P2PDisputeController {
     }
 
     @GetMapping("/disputes/mine")
-    public List<P2PDisputeDtos.DisputeResponse> mine(
-            Authentication authentication) {
-
+    public List<P2PDisputeDtos.DisputeResponse> mine(Authentication authentication) {
         return service.mine(userId(authentication));
     }
 
-    /*
-     * ============================================================
-     * ADMIN DISPUTES
-     * ============================================================
-     */
-
     @GetMapping("/admin/disputes")
     public List<P2PDisputeDtos.DisputeResponse> adminDisputes(
+            @RequestHeader(value = "X-OakPay-Admin-Secret", required = false) String suppliedSecret,
             Authentication authentication) {
-
-        requireAdmin(authentication);
-
+        requireAdmin(authentication, suppliedSecret);
         return service.openDisputes();
     }
 
     @GetMapping("/admin/disputes/{disputeId}/audit")
     public List<P2PDisputeDtos.AuditResponse> audit(
             @PathVariable UUID disputeId,
+            @RequestHeader(value = "X-OakPay-Admin-Secret", required = false) String suppliedSecret,
             Authentication authentication) {
-
-        requireAdmin(authentication);
-
+        requireAdmin(authentication, suppliedSecret);
         return service.audit(disputeId);
     }
 
@@ -71,53 +62,42 @@ public class P2PDisputeController {
     public P2PDisputeDtos.DisputeResponse resolve(
             @PathVariable UUID disputeId,
             @RequestBody P2PDisputeDtos.ResolveRequest request,
+            @RequestHeader(value = "X-OakPay-Admin-Secret", required = false) String suppliedSecret,
             Authentication authentication) {
-
-        requireAdmin(authentication);
-
-        return service.resolve(
-                userId(authentication),
-                disputeId,
-                request
-        );
+        requireAdmin(authentication, suppliedSecret);
+        return service.resolve(userId(authentication), disputeId, request);
     }
-
-    /*
-     * ============================================================
-     * AUTHORIZATION
-     * ============================================================
-     */
 
     private UUID userId(Authentication authentication) {
-
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("Authentication is required");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Authentication is required");
         }
-
-        return UUID.fromString(authentication.getName());
+        try {
+            return UUID.fromString(authentication.getName());
+        } catch (IllegalArgumentException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Invalid authenticated user id");
+        }
     }
 
-    private void requireAdmin(Authentication authentication) {
-
+    /**
+     * Trading service validates the shared admin secret for admin-only operations.
+     * The auth service proxy is the public admin entry point and already enforces
+     * the ADMIN role before forwarding the request.
+     */
+    private void requireAdmin(Authentication authentication, String suppliedSecret) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Authentication is required"
-            );
+                    HttpStatus.UNAUTHORIZED, "Authentication is required");
         }
 
-        boolean admin = authentication.getAuthorities()
-                .stream()
-                .anyMatch(authority ->
-                        "ROLE_ADMIN".equals(authority.getAuthority())
-                                || "ADMIN".equals(authority.getAuthority())
-                );
-
-        if (!admin) {
+        if (suppliedSecret == null || adminSecret == null ||
+                !MessageDigest.isEqual(
+                        suppliedSecret.getBytes(StandardCharsets.UTF_8),
+                        adminSecret.getBytes(StandardCharsets.UTF_8))) {
             throw new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Administrator access required"
-            );
+                    HttpStatus.FORBIDDEN, "Administrator access required");
         }
     }
 }
