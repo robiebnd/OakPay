@@ -36,3 +36,5 @@ oakpay:
   jwt:
     secret: ${OAKPAY_JWT_SECRET:oakpay-development-secret-change-before-production-2026}
   internal-secret: ${OAKPAY_INTERNAL_SECRET:oakpay-internal-development-secret-change-before-production}
+  test-addresses:
+    enabled: ${OAKPAY_TEST_ADDRESSES_ENABLED:true}

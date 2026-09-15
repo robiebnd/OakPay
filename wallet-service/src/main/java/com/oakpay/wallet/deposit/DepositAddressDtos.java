@@ -22,11 +22,17 @@ public final class DepositAddressDtos {
         }
     }
 
-    /** Used only by a trusted custody/address provider. Never generate fake blockchain addresses here. */
+    /** Used only by a trusted custody/address provider. */
     public record AssignAddressRequest(
             @NotBlank String userId,
             @NotBlank String currency,
             @NotBlank String network,
             @NotBlank String address,
             String memoTag) {}
+
+    /** Development-only request for generating a non-blockchain test address. */
+    public record GenerateTestAddressRequest(
+            @NotBlank String userId,
+            @NotBlank String currency,
+            @NotBlank String network) {}
 }

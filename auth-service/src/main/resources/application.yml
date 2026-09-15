@@ -57,3 +57,7 @@ oakpay:
     upload-dir: ${OAKPAY_KYC_UPLOAD_DIR:./data/kyc}
   two-factor:
     encryption-key: ${OAKPAY_2FA_ENCRYPTION_KEY:oakpay-development-2fa-key-change-before-production-2026}
+  trading:
+    base-url: ${OAKPAY_TRADING_URL:http://localhost:8085}
+  admin:
+    dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET:oakpay-admin-dispute-development-secret-change-before-production}
