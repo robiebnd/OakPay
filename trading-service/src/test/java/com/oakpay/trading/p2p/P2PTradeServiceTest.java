@@ -1,6 +1,7 @@
 package com.oakpay.trading.p2p;
 
 import com.oakpay.trading.asset.SupportedAssetRepository;
+import com.oakpay.trading.security.UserStatusClient;
 import com.oakpay.trading.wallet.WalletClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,11 +29,13 @@ class P2PTradeServiceTest {
     @Mock P2PCommissionService commissionService;
     @Mock SupportedAssetRepository assetRepository;
     @Mock AdvertisementRepository advertisementRepository;
+    @Mock UserStatusClient userStatusClient;
 
     private P2PTradeService service;
 
     @BeforeEach
     void setUp() {
+        when(userStatusClient.isActive(any(UUID.class))).thenReturn(true);
         service = new P2PTradeService(
                 repository,
                 walletClient,
@@ -40,7 +43,8 @@ class P2PTradeServiceTest {
                 paymentRepository,
                 commissionService,
                 assetRepository,
-                advertisementRepository
+                advertisementRepository,
+                userStatusClient
         );
     }
 
