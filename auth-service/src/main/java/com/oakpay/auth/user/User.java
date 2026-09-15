@@ -43,4 +43,14 @@ public class User {
     public String getTwoFactorSecretEncrypted(){return twoFactorSecretEncrypted;} public void setTwoFactorSecretEncrypted(String twoFactorSecretEncrypted){this.twoFactorSecretEncrypted=twoFactorSecretEncrypted;}
     public String getRole(){return role;} public void setRole(String role){this.role=role;}
     public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;}
+    @Column(nullable = false, length = 20)
+    private String status = "ACTIVE";
+
+    public String getStatus() {
+    return status;
+    }
+
+    public void setStatus(String status) {
+    this.status = status;
+    }
 }

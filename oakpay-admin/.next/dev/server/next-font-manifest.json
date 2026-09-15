@@ -1,11 +1,10 @@
 {
   "app": {
-    "[project]/app/kyc/page": [],
+    "[project]/app/audit-logs/page": [],
     "[project]/app/login/page": [],
     "[project]/app/page": [],
-    "[project]/app/queries/page": [],
-    "[project]/app/reports/page": [],
-    "[project]/app/resolutions/page": []
+    "[project]/app/resolutions/page": [],
+    "[project]/app/settings/page": []
   },
   "appUsingSizeAdjust": true,
   "pages": {},

@@ -1,8 +1,7 @@
 {
-  "/kyc/page": "app/kyc/page.js",
+  "/audit-logs/page": "app/audit-logs/page.js",
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/queries/page": "app/queries/page.js",
-  "/reports/page": "app/reports/page.js",
-  "/resolutions/page": "app/resolutions/page.js"
+  "/resolutions/page": "app/resolutions/page.js",
+  "/settings/page": "app/settings/page.js"
 }

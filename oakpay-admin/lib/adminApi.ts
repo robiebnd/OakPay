@@ -1,12 +1,20 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+/* -------------------------------------------------------------------------- */
+/* Dashboard                                                                  */
+/* -------------------------------------------------------------------------- */
+
 export type AdminDashboardStats = {
   pendingKyc: number;
   openQueries: number;
   activeDisputes: number;
   pendingResolutions: number;
 };
+
+/* -------------------------------------------------------------------------- */
+/* KYC                                                                         */
+/* -------------------------------------------------------------------------- */
 
 export type KycStatus =
   | "NOT_STARTED"
@@ -33,6 +41,10 @@ export type KycDecisionRequest = {
   reason?: string;
 };
 
+/* -------------------------------------------------------------------------- */
+/* Client Queries                                                              */
+/* -------------------------------------------------------------------------- */
+
 export type ClientQuery = {
   id: string;
   userId: string;
@@ -48,7 +60,105 @@ export type ClientQuery = {
   resolvedAt: string | null;
 };
 
-function getToken() {
+export type ClientQueryStatus =
+  | "OPEN"
+  | "ASSIGNED"
+  | "ESCALATED"
+  | "RESOLVED";
+
+export type AssignQueryRequest = {
+  adminUserId: string;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Users & Access                                                              */
+/* -------------------------------------------------------------------------- */
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  status: "ACTIVE" | "INACTIVE";
+  emailVerified: boolean;
+  createdAt: string;
+};
+
+export type AdminUserStatus = "ACTIVE" | "INACTIVE";
+
+/* -------------------------------------------------------------------------- */
+/* P2P Disputes                                                                */
+/* -------------------------------------------------------------------------- */
+
+export type DisputeStatus =
+  | "OPEN"
+  | "RESOLVED";
+
+export type DisputeResolution =
+  | "BUYER_WINS"
+  | "SELLER_WINS";
+
+export type P2PDispute = {
+  id: string;
+  tradeId: string;
+  openedBy: string;
+  reason: string;
+  evidence: string | null;
+  status: DisputeStatus;
+  resolution: DisputeResolution | null;
+  resolutionNote: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type P2PDisputeAudit = {
+  id: string;
+  disputeId: string;
+  tradeId: string;
+  actorId: string;
+  eventType: string;
+  note: string | null;
+  createdAt: string;
+};
+
+export type ResolveDisputeRequest = {
+  resolution: DisputeResolution;
+  note?: string;
+};
+
+/* -------------------------------------------------------------------------- */
+/* P2P Trades                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type P2PTradeStatus =
+  | "CREATED"
+  | "PAYMENT_MARKED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "DISPUTED";
+
+export type P2PTrade = {
+  id: string;
+  advertisementId: string | null;
+  buyerId: string;
+  sellerId: string;
+  asset: string;
+  quantity: number | string;
+  fiatCurrency: string | null;
+  fiatAmount: number | string | null;
+  status: P2PTradeStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* -------------------------------------------------------------------------- */
+/* API Helpers                                                                 */
+/* -------------------------------------------------------------------------- */
+
+function getToken(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -67,7 +177,13 @@ async function request<T>(
 
   const headers = new Headers(options.headers);
 
-  headers.set("Content-Type", "application/json");
+  if (
+    options.body &&
+    !(options.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -85,8 +201,22 @@ async function request<T>(
   if (!response.ok) {
     const body = await response.text();
 
+    let message = body;
+
+    try {
+      const parsed = JSON.parse(body);
+
+      message =
+        parsed?.message ||
+        parsed?.error ||
+        parsed?.detail ||
+        body;
+    } catch {
+      // Keep the original response body.
+    }
+
     throw new Error(
-      body || `Request failed with status ${response.status}`,
+      message || `Request failed with status ${response.status}`,
     );
   }
 
@@ -94,24 +224,49 @@ async function request<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  if (!contentType.includes("application/json")) {
+    return undefined as T;
+  }
+
+  return response.json() as Promise<T>;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Admin API                                                                   */
+/* -------------------------------------------------------------------------- */
+
 export const adminApi = {
+  /* ------------------------------------------------------------------------ */
+  /* Dashboard                                                                */
+  /* ------------------------------------------------------------------------ */
+
   dashboard() {
     return request<AdminDashboardStats>(
       "/api/v1/admin/dashboard",
     );
   },
 
+  /* ------------------------------------------------------------------------ */
+  /* KYC                                                                      */
+  /* ------------------------------------------------------------------------ */
+
   kyc: {
     list(status?: KycStatus) {
-      const query = status
-        ? `?status=${encodeURIComponent(status)}`
-        : "";
+      const params = new URLSearchParams();
+
+      if (status) {
+        params.set("status", status);
+      }
+
+      const query = params.toString();
 
       return request<AdminKycApplication[]>(
-        `/api/v1/admin/kyc${query}`,
+        `/api/v1/admin/kyc${
+          query ? `?${query}` : ""
+        }`,
       );
     },
 
@@ -121,7 +276,10 @@ export const adminApi = {
       );
     },
 
-    decide(id: string, data: KycDecisionRequest) {
+    decide(
+      id: string,
+      data: KycDecisionRequest,
+    ) {
       return request<AdminKycApplication>(
         `/api/v1/admin/kyc/${id}/decision`,
         {
@@ -132,34 +290,169 @@ export const adminApi = {
     },
   },
 
+  /* ------------------------------------------------------------------------ */
+  /* Client Queries                                                           */
+  /* ------------------------------------------------------------------------ */
+
   queries: {
-    list(status?: string) {
-      const query = status
-        ? `?status=${encodeURIComponent(status)}`
-        : "";
+    list(status?: ClientQueryStatus | string) {
+      const params = new URLSearchParams();
+
+      if (status) {
+        params.set("status", status);
+      }
+
+      const query = params.toString();
 
       return request<ClientQuery[]>(
-        `/api/v1/admin/queries${query}`,
+        `/api/v1/admin/queries${
+          query ? `?${query}` : ""
+        }`,
       );
     },
 
-    assign(id: string, adminUserId: string) {
+    get(id: string) {
+      return request<ClientQuery>(
+        `/api/v1/admin/queries/${id}`,
+      );
+    },
+
+    assign(
+      id: string,
+      adminUserId: string,
+    ) {
       return request<ClientQuery>(
         `/api/v1/admin/queries/${id}/assign`,
         {
-          method: "POST",
-          body: JSON.stringify({ adminUserId }),
+          method: "PATCH",
+          body: JSON.stringify({
+            adminUserId,
+          }),
         },
       );
     },
 
-    resolve(id: string, resolution: string) {
+    resolve(
+      id: string,
+      resolution: string,
+    ) {
       return request<ClientQuery>(
         `/api/v1/admin/queries/${id}/resolve`,
         {
           method: "POST",
-          body: JSON.stringify({ resolution }),
+          body: JSON.stringify({
+            resolution,
+          }),
         },
+      );
+    },
+  },
+
+  /* ------------------------------------------------------------------------ */
+  /* Users & Access                                                           */
+  /* ------------------------------------------------------------------------ */
+
+  users: {
+    list(
+      status?: AdminUserStatus,
+      role?: string,
+    ) {
+      const params = new URLSearchParams();
+
+      if (status) {
+        params.set("status", status);
+      }
+
+      if (role) {
+        params.set("role", role);
+      }
+
+      const query = params.toString();
+
+      return request<AdminUser[]>(
+        `/api/v1/admin/users${
+          query ? `?${query}` : ""
+        }`,
+      );
+    },
+
+    get(id: string) {
+      return request<AdminUser>(
+        `/api/v1/admin/users/${id}`,
+      );
+    },
+
+    updateStatus(
+      id: string,
+      status: AdminUserStatus,
+    ) {
+      return request<AdminUser>(
+        `/api/v1/admin/users/${id}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status,
+          }),
+        },
+      );
+    },
+  },
+
+  /* ------------------------------------------------------------------------ */
+  /* P2P Disputes                                                             */
+  /* ------------------------------------------------------------------------ */
+
+  disputes: {
+    /**
+     * Get all currently open P2P disputes.
+     *
+     * Trading-service endpoint:
+     * GET /api/v1/p2p/admin/disputes
+     *
+     * The trading service currently protects this endpoint with
+     * X-OakPay-Admin-Secret. That header is intentionally not stored
+     * in the browser. See the note below.
+     */
+    list() {
+      return request<P2PDispute[]>(
+        "/api/v1/p2p/admin/disputes",
+      );
+    },
+
+    get(id: string) {
+      return request<P2PDispute>(
+        `/api/v1/p2p/admin/disputes/${id}`,
+      );
+    },
+
+    audit(id: string) {
+      return request<P2PDisputeAudit[]>(
+        `/api/v1/p2p/admin/disputes/${id}/audit`,
+      );
+    },
+
+    resolve(
+      id: string,
+      data: ResolveDisputeRequest,
+    ) {
+      return request<P2PDispute>(
+        `/api/v1/p2p/admin/disputes/${id}/resolve`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      );
+    },
+  },
+
+  /* ------------------------------------------------------------------------ */
+  /* P2P Trades                                                                */
+  /* ------------------------------------------------------------------------ */
+
+  trades: {
+    get(id: string) {
+      return request<P2PTrade>(
+        `/api/v1/p2p/trades/${id}`,
       );
     },
   },
