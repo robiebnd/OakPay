@@ -96,6 +96,26 @@ const adminApi = {
             body: JSON.stringify({
                 reason
             })
+        }),
+    resolutionDisputes: (token)=>json('/api/v1/admin/resolution-centre/disputes', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }),
+    resolutionAudit: (token, id)=>json(`/api/v1/admin/resolution-centre/disputes/${id}/audit`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }),
+    resolveDispute: (token, id, resolution, note)=>json(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                resolution,
+                note
+            })
         })
 };
 const session = {
@@ -808,56 +828,98 @@ __turbopack_context__.s([
     ()=>Resolutions
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminShell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/AdminShell.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api.ts [app-ssr] (ecmascript)");
 "use client";
 ;
 ;
-const rows = [
-    {
-        id: "#R-302",
-        issue: "P2P payment dispute",
-        reference: "#T-9182",
-        priority: "Urgent",
-        status: "Escalated"
-    },
-    {
-        id: "#R-301",
-        issue: "KYC rejection appeal",
-        reference: "#K-4481",
-        priority: "High",
-        status: "In progress"
-    },
-    {
-        id: "#R-300",
-        issue: "Wallet balance mismatch",
-        reference: "#W-7732",
-        priority: "Normal",
-        status: "Open"
-    },
-    {
-        id: "#R-299",
-        issue: "Payment marked but crypto not released",
-        reference: "#T-9174",
-        priority: "High",
-        status: "In progress"
-    }
-];
+;
+;
 function priorityClass(priority) {
-    if (priority === "Urgent" || priority === "High") {
-        return "bg-red-50 text-red-700";
-    }
+    if (priority === "Urgent" || priority === "High") return "bg-red-50 text-red-700";
     return "bg-blue-50 text-blue-700";
 }
 function statusClass(status) {
-    if (status === "Escalated") {
-        return "bg-red-50 text-red-700";
-    }
-    if (status === "Resolved") {
-        return "bg-green-50 text-green-700";
-    }
+    if (status === "RESOLVED") return "bg-green-50 text-green-700";
+    if (status === "DISPUTED" || status === "OPEN") return "bg-red-50 text-red-700";
     return "bg-amber-50 text-amber-700";
 }
+function formatDate(value) {
+    if (!value) return "—";
+    return new Date(value).toLocaleString();
+}
+function priorityFor(dispute) {
+    const ageHours = (Date.now() - new Date(dispute.createdAt).getTime()) / 36e5;
+    return ageHours >= 24 ? "Urgent" : "High";
+}
+function caseNumber(dispute) {
+    return `#D-${dispute.id.slice(0, 8).toUpperCase()}`;
+}
 function Resolutions() {
+    const [disputes, setDisputes] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [selected, setSelected] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [audit, setAudit] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [detailLoading, setDetailLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [resolving, setResolving] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [note, setNote] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [resolution, setResolution] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("BUYER_WINS");
+    async function loadDisputes() {
+        const token = __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["session"].get();
+        if (!token) return;
+        setLoading(true);
+        setError("");
+        try {
+            setDisputes(await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["adminApi"].resolutionDisputes(token));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Unable to load disputes.");
+        } finally{
+            setLoading(false);
+        }
+    }
+    async function openCase(dispute) {
+        const token = __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["session"].get();
+        if (!token) return;
+        setSelected(dispute);
+        setAudit([]);
+        setNote(dispute.resolutionNote ?? "");
+        setResolution("BUYER_WINS");
+        setDetailLoading(true);
+        setError("");
+        try {
+            setAudit(await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["adminApi"].resolutionAudit(token, dispute.id));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Unable to load case audit.");
+        } finally{
+            setDetailLoading(false);
+        }
+    }
+    async function resolveCase() {
+        if (!selected) return;
+        const token = __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["session"].get();
+        if (!token) return;
+        if (!note.trim()) {
+            setError("A resolution note is required before resolving the case.");
+            return;
+        }
+        setResolving(true);
+        setError("");
+        try {
+            await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["adminApi"].resolveDispute(token, selected.id, resolution, note.trim());
+            setSelected(null);
+            await loadDisputes();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Unable to resolve dispute.");
+        } finally{
+            setResolving(false);
+        }
+    }
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        void loadDisputes();
+    }, []);
+    const urgentCount = disputes.filter((d)=>priorityFor(d) === "Urgent").length;
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminShell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "space-y-8",
@@ -872,44 +934,54 @@ function Resolutions() {
                                     children: "Operations & disputes"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 63,
-                                    columnNumber: 13
+                                    lineNumber: 85,
+                                    columnNumber: 16
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
                                     className: "mt-1 text-2xl font-extrabold tracking-tight text-[#111827]",
                                     children: "Resolution Centre"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 67,
-                                    columnNumber: 13
+                                    lineNumber: 85,
+                                    columnNumber: 117
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-2 text-sm text-[#6b7280]",
-                                    children: "Resolve P2P, KYC and wallet issues."
+                                    children: "Resolve live P2P payment disputes."
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 71,
-                                    columnNumber: 13
+                                    lineNumber: 85,
+                                    columnNumber: 214
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 62,
+                            lineNumber: 85,
                             columnNumber: 11
                         }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "text-sm text-[#6b7280]",
-                            children: "Operational case management"
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                            type: "button",
+                            onClick: ()=>void loadDisputes(),
+                            className: "w-fit rounded-lg border border-[#d8dfdb] bg-white px-4 py-2 text-xs font-bold text-[#145323] hover:bg-[#f8faf9]",
+                            children: "Refresh cases"
                         }, void 0, false, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 76,
+                            lineNumber: 86,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/resolutions/page.tsx",
-                    lineNumber: 61,
+                    lineNumber: 84,
                     columnNumber: 9
+                }, this),
+                error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800",
+                    children: error
+                }, void 0, false, {
+                    fileName: "[project]/app/resolutions/page.tsx",
+                    lineNumber: 89,
+                    columnNumber: 19
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
@@ -919,32 +991,32 @@ function Resolutions() {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "text-xs font-semibold uppercase tracking-wide text-[#6b7280]",
-                                    children: "Open cases"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 84,
-                                    columnNumber: 13
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "mt-2 text-3xl font-extrabold text-[#111827]",
-                                    children: "6"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 88,
-                                    columnNumber: 13
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "mt-1 text-xs text-[#6b7280]",
-                                    children: "2 urgent"
+                                    children: "Open disputes"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
                                     lineNumber: 92,
-                                    columnNumber: 13
+                                    columnNumber: 87
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "mt-2 text-3xl font-extrabold text-[#111827]",
+                                    children: disputes.length
+                                }, void 0, false, {
+                                    fileName: "[project]/app/resolutions/page.tsx",
+                                    lineNumber: 92,
+                                    columnNumber: 180
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "mt-1 text-xs text-[#6b7280]",
+                                    children: "Live from trading service"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/resolutions/page.tsx",
+                                    lineNumber: 92,
+                                    columnNumber: 260
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 83,
+                            lineNumber: 92,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -952,32 +1024,32 @@ function Resolutions() {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "text-xs font-semibold uppercase tracking-wide text-[#6b7280]",
-                                    children: "Escalated"
+                                    children: "Urgent"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 98,
-                                    columnNumber: 13
+                                    lineNumber: 93,
+                                    columnNumber: 87
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-2 text-3xl font-extrabold text-[#111827]",
-                                    children: "2"
+                                    children: urgentCount
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 102,
-                                    columnNumber: 13
+                                    lineNumber: 93,
+                                    columnNumber: 173
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-1 text-xs text-[#6b7280]",
-                                    children: "Specialist review required"
+                                    children: "Open more than 24 hours"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 106,
-                                    columnNumber: 13
+                                    lineNumber: 93,
+                                    columnNumber: 249
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 97,
+                            lineNumber: 93,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -985,32 +1057,32 @@ function Resolutions() {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "text-xs font-semibold uppercase tracking-wide text-[#6b7280]",
-                                    children: "Resolved today"
+                                    children: "Pending resolution"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 112,
-                                    columnNumber: 13
+                                    lineNumber: 94,
+                                    columnNumber: 87
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-2 text-3xl font-extrabold text-[#111827]",
-                                    children: "14"
+                                    children: disputes.filter((d)=>d.status === "OPEN").length
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 116,
-                                    columnNumber: 13
+                                    lineNumber: 94,
+                                    columnNumber: 185
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-1 text-xs text-[#6b7280]",
-                                    children: "Across all case types"
+                                    children: "Awaiting admin decision"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 120,
-                                    columnNumber: 13
+                                    lineNumber: 94,
+                                    columnNumber: 300
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 111,
+                            lineNumber: 94,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1018,82 +1090,66 @@ function Resolutions() {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "text-xs font-semibold uppercase tracking-wide text-[#6b7280]",
-                                    children: "SLA compliance"
+                                    children: "Backend status"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 126,
-                                    columnNumber: 13
+                                    lineNumber: 95,
+                                    columnNumber: 87
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "mt-2 text-3xl font-extrabold text-[#111827]",
-                                    children: "96%"
+                                    className: "mt-2 text-lg font-extrabold text-[#145323]",
+                                    children: "Connected"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 130,
-                                    columnNumber: 13
+                                    lineNumber: 95,
+                                    columnNumber: 181
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-1 text-xs text-[#6b7280]",
-                                    children: "Current operations target"
+                                    children: "Admin proxy active"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 134,
-                                    columnNumber: 13
+                                    lineNumber: 95,
+                                    columnNumber: 252
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 125,
+                            lineNumber: 95,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/resolutions/page.tsx",
-                    lineNumber: 82,
+                    lineNumber: 91,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
                     className: "overflow-hidden rounded-2xl border border-[#e3e8e5] bg-white shadow-sm",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "flex flex-col justify-between gap-3 border-b border-[#e3e8e5] px-6 py-5 sm:flex-row sm:items-center",
+                            className: "border-b border-[#e3e8e5] px-6 py-5",
                             children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                            className: "text-base font-bold text-[#111827]",
-                                            children: "Active resolution cases"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/resolutions/page.tsx",
-                                            lineNumber: 144,
-                                            columnNumber: 15
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                            className: "mt-1 text-xs text-[#6b7280]",
-                                            children: "Cases requiring operational attention."
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/resolutions/page.tsx",
-                                            lineNumber: 148,
-                                            columnNumber: 15
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 143,
-                                    columnNumber: 13
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "inline-flex w-fit rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700",
-                                    children: "2 urgent"
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                    className: "text-base font-bold text-[#111827]",
+                                    children: "Active P2P disputes"
                                 }, void 0, false, {
                                     fileName: "[project]/app/resolutions/page.tsx",
-                                    lineNumber: 153,
-                                    columnNumber: 13
+                                    lineNumber: 99,
+                                    columnNumber: 64
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "mt-1 text-xs text-[#6b7280]",
+                                    children: "Records are retrieved from the trading service through the admin proxy."
+                                }, void 0, false, {
+                                    fileName: "[project]/app/resolutions/page.tsx",
+                                    lineNumber: 99,
+                                    columnNumber: 139
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 142,
+                            lineNumber: 99,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1111,196 +1167,580 @@ function Resolutions() {
                                                     children: "Case"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/resolutions/page.tsx",
-                                                    lineNumber: 162,
-                                                    columnNumber: 19
+                                                    lineNumber: 100,
+                                                    columnNumber: 158
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]",
-                                                    children: "Issue"
+                                                    children: "Trade"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/resolutions/page.tsx",
-                                                    lineNumber: 166,
-                                                    columnNumber: 19
+                                                    lineNumber: 100,
+                                                    columnNumber: 250
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]",
-                                                    children: "Reference"
+                                                    children: "Reason"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/resolutions/page.tsx",
-                                                    lineNumber: 170,
-                                                    columnNumber: 19
+                                                    lineNumber: 100,
+                                                    columnNumber: 343
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]",
                                                     children: "Priority"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/resolutions/page.tsx",
-                                                    lineNumber: 174,
-                                                    columnNumber: 19
+                                                    lineNumber: 100,
+                                                    columnNumber: 437
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-6 py-4 text-xs font-bold uppercase tracking-wide text-[#6b7280]",
                                                     children: "Status"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/resolutions/page.tsx",
-                                                    lineNumber: 178,
-                                                    columnNumber: 19
+                                                    lineNumber: 100,
+                                                    columnNumber: 533
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-6 py-4 text-right text-xs font-bold uppercase tracking-wide text-[#6b7280]",
                                                     children: "Action"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/resolutions/page.tsx",
-                                                    lineNumber: 182,
-                                                    columnNumber: 19
+                                                    lineNumber: 100,
+                                                    columnNumber: 627
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/resolutions/page.tsx",
-                                            lineNumber: 161,
-                                            columnNumber: 17
+                                            lineNumber: 100,
+                                            columnNumber: 116
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/resolutions/page.tsx",
-                                        lineNumber: 160,
-                                        columnNumber: 15
+                                        lineNumber: 100,
+                                        columnNumber: 84
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
-                                        children: rows.map((row)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                        children: loading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                colSpan: 6,
+                                                className: "px-6 py-10 text-center text-sm text-[#6b7280]",
+                                                children: "Loading live disputes..."
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 101,
+                                                columnNumber: 28
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/resolutions/page.tsx",
+                                            lineNumber: 101,
+                                            columnNumber: 24
+                                        }, this) : disputes.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                colSpan: 6,
+                                                className: "px-6 py-10 text-center text-sm text-[#6b7280]",
+                                                children: "No open P2P disputes."
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 101,
+                                                columnNumber: 167
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/resolutions/page.tsx",
+                                            lineNumber: 101,
+                                            columnNumber: 163
+                                        }, this) : disputes.map((dispute)=>{
+                                            const priority = priorityFor(dispute);
+                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                                 className: "border-b border-[#edf1ef] last:border-b-0 hover:bg-[#fafcfb]",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "whitespace-nowrap px-6 py-4 text-sm font-bold text-[#111827]",
-                                                        children: row.id
+                                                        children: caseNumber(dispute)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/resolutions/page.tsx",
-                                                        lineNumber: 194,
-                                                        columnNumber: 21
+                                                        lineNumber: 101,
+                                                        columnNumber: 443
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                                        className: "px-6 py-4 text-sm text-[#374151]",
-                                                        children: row.issue
+                                                        className: "whitespace-nowrap px-6 py-4 font-mono text-xs text-[#6b7280]",
+                                                        children: dispute.tradeId
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/resolutions/page.tsx",
-                                                        lineNumber: 198,
-                                                        columnNumber: 21
+                                                        lineNumber: 101,
+                                                        columnNumber: 546
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                                        className: "whitespace-nowrap px-6 py-4 text-sm text-[#6b7280]",
-                                                        children: row.reference
+                                                        className: "max-w-md px-6 py-4 text-sm text-[#374151]",
+                                                        children: dispute.reason
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/resolutions/page.tsx",
-                                                        lineNumber: 202,
-                                                        columnNumber: 21
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
-                                                        className: "px-6 py-4",
-                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: `inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${priorityClass(row.priority)}`,
-                                                            children: row.priority
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/app/resolutions/page.tsx",
-                                                            lineNumber: 207,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/resolutions/page.tsx",
-                                                        lineNumber: 206,
-                                                        columnNumber: 21
+                                                        lineNumber: 101,
+                                                        columnNumber: 645
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-6 py-4",
                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: `inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(row.status)}`,
-                                                            children: row.status
+                                                            className: `inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${priorityClass(priority)}`,
+                                                            children: priority
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/resolutions/page.tsx",
-                                                            lineNumber: 217,
-                                                            columnNumber: 23
+                                                            lineNumber: 101,
+                                                            columnNumber: 750
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/resolutions/page.tsx",
-                                                        lineNumber: 216,
-                                                        columnNumber: 21
+                                                        lineNumber: 101,
+                                                        columnNumber: 724
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                        className: "px-6 py-4",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: `inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(dispute.status)}`,
+                                                            children: dispute.status
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/resolutions/page.tsx",
+                                                            lineNumber: 101,
+                                                            columnNumber: 900
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 101,
+                                                        columnNumber: 874
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-6 py-4 text-right",
                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                             type: "button",
+                                                            onClick: ()=>void openCase(dispute),
                                                             className: "rounded-lg bg-[#145323] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0b3a1c]",
                                                             children: "Open case"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/resolutions/page.tsx",
-                                                            lineNumber: 227,
-                                                            columnNumber: 23
+                                                            lineNumber: 101,
+                                                            columnNumber: 1071
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/resolutions/page.tsx",
-                                                        lineNumber: 226,
-                                                        columnNumber: 21
+                                                        lineNumber: 101,
+                                                        columnNumber: 1034
                                                     }, this)
                                                 ]
-                                            }, row.id, true, {
+                                            }, dispute.id, true, {
                                                 fileName: "[project]/app/resolutions/page.tsx",
-                                                lineNumber: 190,
-                                                columnNumber: 19
-                                            }, this))
+                                                lineNumber: 101,
+                                                columnNumber: 349
+                                            }, this);
+                                        })
                                     }, void 0, false, {
                                         fileName: "[project]/app/resolutions/page.tsx",
-                                        lineNumber: 188,
-                                        columnNumber: 15
+                                        lineNumber: 100,
+                                        columnNumber: 745
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/resolutions/page.tsx",
-                                lineNumber: 159,
-                                columnNumber: 13
+                                lineNumber: 100,
+                                columnNumber: 44
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 158,
+                            lineNumber: 100,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/resolutions/page.tsx",
-                    lineNumber: 141,
+                    lineNumber: 98,
                     columnNumber: 9
                 }, this),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "rounded-xl border border-amber-200 bg-amber-50 px-5 py-4",
-                    children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "text-sm font-semibold text-amber-900",
-                            children: "Resolution Centre backend integration"
-                        }, void 0, false, {
-                            fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 243,
-                            columnNumber: 11
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "mt-1 text-xs leading-5 text-amber-800",
-                            children: "The current cases shown here are the existing prototype records. We will connect this section to the actual P2P dispute and resolution backend once the corresponding admin API is confirmed."
-                        }, void 0, false, {
-                            fileName: "[project]/app/resolutions/page.tsx",
-                            lineNumber: 247,
-                            columnNumber: 11
-                        }, this)
-                    ]
-                }, void 0, true, {
+                selected && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4",
+                    role: "dialog",
+                    "aria-modal": "true",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-start justify-between border-b border-[#e3e8e5] px-6 py-5",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-xs font-bold uppercase tracking-wide text-[#397b0a]",
+                                                children: "P2P dispute"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 106,
+                                                columnNumber: 102
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                                className: "mt-1 text-xl font-extrabold text-[#111827]",
+                                                children: caseNumber(selected)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 106,
+                                                columnNumber: 189
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-1 font-mono text-xs text-[#6b7280]",
+                                                children: [
+                                                    "Trade ",
+                                                    selected.tradeId
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 106,
+                                                columnNumber: 275
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 106,
+                                        columnNumber: 97
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        type: "button",
+                                        onClick: ()=>setSelected(null),
+                                        className: "rounded-lg px-3 py-2 text-sm font-bold text-[#6b7280] hover:bg-[#f3f5f4]",
+                                        children: "Close"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 106,
+                                        columnNumber: 362
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/resolutions/page.tsx",
+                                lineNumber: 106,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "space-y-6 p-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "grid gap-4 sm:grid-cols-2",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "rounded-xl bg-[#f8faf9] p-4",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "text-xs font-bold uppercase tracking-wide text-[#6b7280]",
+                                                        children: "Opened by"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 108,
+                                                        columnNumber: 101
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "mt-2 break-all text-sm text-[#111827]",
+                                                        children: selected.openedBy
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 108,
+                                                        columnNumber: 186
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 108,
+                                                columnNumber: 56
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "rounded-xl bg-[#f8faf9] p-4",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "text-xs font-bold uppercase tracking-wide text-[#6b7280]",
+                                                        children: "Created"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 108,
+                                                        columnNumber: 313
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "mt-2 text-sm text-[#111827]",
+                                                        children: formatDate(selected.createdAt)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 108,
+                                                        columnNumber: 396
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 108,
+                                                columnNumber: 268
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 108,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                className: "text-sm font-bold text-[#111827]",
+                                                children: "Dispute reason"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 109,
+                                                columnNumber: 18
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-2 rounded-xl border border-[#e3e8e5] bg-white p-4 text-sm leading-6 text-[#374151]",
+                                                children: selected.reason
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 109,
+                                                columnNumber: 86
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 109,
+                                        columnNumber: 13
+                                    }, this),
+                                    selected.evidence && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                className: "text-sm font-bold text-[#111827]",
+                                                children: "Evidence"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 110,
+                                                columnNumber: 40
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-2 break-words rounded-xl border border-[#e3e8e5] bg-white p-4 text-sm leading-6 text-[#374151]",
+                                                children: selected.evidence
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 110,
+                                                columnNumber: 102
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 110,
+                                        columnNumber: 35
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                className: "text-sm font-bold text-[#111827]",
+                                                children: "Audit trail"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 111,
+                                                columnNumber: 18
+                                            }, this),
+                                            detailLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-3 text-sm text-[#6b7280]",
+                                                children: "Loading audit..."
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 111,
+                                                columnNumber: 100
+                                            }, this) : audit.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-3 text-sm text-[#6b7280]",
+                                                children: "No audit events returned."
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 111,
+                                                columnNumber: 187
+                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mt-3 space-y-2",
+                                                children: audit.map((event)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "rounded-xl border border-[#e3e8e5] p-4",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex flex-col justify-between gap-1 sm:flex-row",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "text-xs font-bold text-[#145323]",
+                                                                        children: event.eventType
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                                        lineNumber: 111,
+                                                                        columnNumber: 452
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "text-xs text-[#6b7280]",
+                                                                        children: formatDate(event.createdAt)
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                                        lineNumber: 111,
+                                                                        columnNumber: 527
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                                lineNumber: 111,
+                                                                columnNumber: 387
+                                                            }, this),
+                                                            event.note && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "mt-2 text-sm text-[#374151]",
+                                                                children: event.note
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                                lineNumber: 111,
+                                                                columnNumber: 625
+                                                            }, this)
+                                                        ]
+                                                    }, event.id, true, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 111,
+                                                        columnNumber: 316
+                                                    }, this))
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 111,
+                                                columnNumber: 262
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 111,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "border-t border-[#e3e8e5] pt-6",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                className: "text-sm font-bold text-[#111827]",
+                                                children: "Resolve dispute"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 112,
+                                                columnNumber: 61
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-1 text-xs text-[#6b7280]",
+                                                children: "This action executes the corresponding escrow outcome and writes a resolution audit event."
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 112,
+                                                columnNumber: 130
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mt-4 grid gap-3 sm:grid-cols-2",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>setResolution("BUYER_WINS"),
+                                                        className: `rounded-xl border px-4 py-3 text-left ${resolution === "BUYER_WINS" ? "border-[#145323] bg-[#f2f8f3]" : "border-[#e3e8e5]"}`,
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "block text-sm font-bold text-[#111827]",
+                                                                children: "Buyer wins"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                                lineNumber: 112,
+                                                                columnNumber: 519
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "mt-1 block text-xs text-[#6b7280]",
+                                                                children: "Release escrow to the buyer."
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                                lineNumber: 112,
+                                                                columnNumber: 593
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 112,
+                                                        columnNumber: 315
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>setResolution("SELLER_WINS"),
+                                                        className: `rounded-xl border px-4 py-3 text-left ${resolution === "SELLER_WINS" ? "border-[#145323] bg-[#f2f8f3]" : "border-[#e3e8e5]"}`,
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "block text-sm font-bold text-[#111827]",
+                                                                children: "Seller wins"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                                lineNumber: 112,
+                                                                columnNumber: 895
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: "mt-1 block text-xs text-[#6b7280]",
+                                                                children: "Unlock the seller's escrowed asset."
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                                lineNumber: 112,
+                                                                columnNumber: 970
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/resolutions/page.tsx",
+                                                        lineNumber: 112,
+                                                        columnNumber: 689
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 112,
+                                                columnNumber: 267
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
+                                                value: note,
+                                                onChange: (e)=>setNote(e.target.value),
+                                                rows: 4,
+                                                placeholder: "Enter the reason for the decision...",
+                                                className: "mt-4 w-full rounded-xl border border-[#d8dfdb] p-4 text-sm outline-none focus:border-[#145323]"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 112,
+                                                columnNumber: 1079
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                type: "button",
+                                                disabled: resolving || detailLoading,
+                                                onClick: ()=>void resolveCase(),
+                                                className: "mt-4 w-full rounded-xl bg-[#145323] px-4 py-3 text-sm font-bold text-white hover:bg-[#0b3a1c] disabled:cursor-not-allowed disabled:opacity-60",
+                                                children: resolving ? "Resolving dispute..." : `Resolve as ${resolution === "BUYER_WINS" ? "Buyer Wins" : "Seller Wins"}`
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/resolutions/page.tsx",
+                                                lineNumber: 112,
+                                                columnNumber: 1313
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/resolutions/page.tsx",
+                                        lineNumber: 112,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/resolutions/page.tsx",
+                                lineNumber: 107,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/resolutions/page.tsx",
+                        lineNumber: 105,
+                        columnNumber: 139
+                    }, this)
+                }, void 0, false, {
                     fileName: "[project]/app/resolutions/page.tsx",
-                    lineNumber: 242,
-                    columnNumber: 9
+                    lineNumber: 105,
+                    columnNumber: 22
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/resolutions/page.tsx",
-            lineNumber: 59,
+            lineNumber: 83,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/resolutions/page.tsx",
-        lineNumber: 58,
+        lineNumber: 82,
         columnNumber: 5
     }, this);
 }

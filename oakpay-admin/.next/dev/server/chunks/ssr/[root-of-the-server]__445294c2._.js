@@ -96,6 +96,26 @@ const adminApi = {
             body: JSON.stringify({
                 reason
             })
+        }),
+    resolutionDisputes: (token)=>json('/api/v1/admin/resolution-centre/disputes', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }),
+    resolutionAudit: (token, id)=>json(`/api/v1/admin/resolution-centre/disputes/${id}/audit`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }),
+    resolveDispute: (token, id, resolution, note)=>json(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                resolution,
+                note
+            })
         })
 };
 const session = {
@@ -808,25 +828,19 @@ __turbopack_context__.s([
     ()=>adminApi
 ]);
 const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:8082") || "http://localhost:8080";
-/*
- * ============================================================
- * AUTHENTICATION
- * ============================================================
- */ function getToken() {
+/* -------------------------------------------------------------------------- */ /* API Helpers                                                                 */ /* -------------------------------------------------------------------------- */ function getToken() {
     if ("TURBOPACK compile-time truthy", 1) {
         return null;
     }
     //TURBOPACK unreachable
     ;
 }
-/*
- * ============================================================
- * GENERIC API REQUEST
- * ============================================================
- */ async function request(path, options = {}) {
+async function request(path, options = {}) {
     const token = getToken();
     const headers = new Headers(options.headers);
-    headers.set("Content-Type", "application/json");
+    if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+    }
     if (token) {
         headers.set("Authorization", `Bearer ${token}`);
     }
@@ -834,40 +848,41 @@ const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:8082") |
         ...options,
         headers
     });
-    /*
-   * Authentication / authorisation failure.
-   */ if (response.status === 401 || response.status === 403) {
+    if (response.status === 401 || response.status === 403) {
         throw new Error("ADMIN_AUTH_REQUIRED");
     }
-    /*
-   * Other API errors.
-   */ if (!response.ok) {
+    if (!response.ok) {
         const body = await response.text();
-        throw new Error(body || `Request failed with status ${response.status}`);
+        let message = body;
+        try {
+            const parsed = JSON.parse(body);
+            message = parsed?.message || parsed?.error || parsed?.detail || body;
+        } catch  {
+        // Keep the original response body.
+        }
+        throw new Error(message || `Request failed with status ${response.status}`);
     }
-    /*
-   * No content.
-   */ if (response.status === 204) {
+    if (response.status === 204) {
+        return undefined;
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
         return undefined;
     }
     return response.json();
 }
 const adminApi = {
-    /*
-   * ==========================================================
-   * DASHBOARD
-   * ==========================================================
-   */ dashboard () {
+    /* ------------------------------------------------------------------------ */ /* Dashboard                                                                */ /* ------------------------------------------------------------------------ */ dashboard () {
         return request("/api/v1/admin/dashboard");
     },
-    /*
-   * ==========================================================
-   * KYC MANAGEMENT
-   * ==========================================================
-   */ kyc: {
+    /* ------------------------------------------------------------------------ */ /* KYC                                                                      */ /* ------------------------------------------------------------------------ */ kyc: {
         list (status) {
-            const query = status ? `?status=${encodeURIComponent(status)}` : "";
-            return request(`/api/v1/admin/kyc${query}`);
+            const params = new URLSearchParams();
+            if (status) {
+                params.set("status", status);
+            }
+            const query = params.toString();
+            return request(`/api/v1/admin/kyc${query ? `?${query}` : ""}`);
         },
         get (id) {
             return request(`/api/v1/admin/kyc/${id}`);
@@ -879,21 +894,21 @@ const adminApi = {
             });
         }
     },
-    /*
-   * ==========================================================
-   * CLIENT QUERIES
-   * ==========================================================
-   */ queries: {
+    /* ------------------------------------------------------------------------ */ /* Client Queries                                                           */ /* ------------------------------------------------------------------------ */ queries: {
         list (status) {
-            const query = status ? `?status=${encodeURIComponent(status)}` : "";
-            return request(`/api/v1/admin/queries${query}`);
+            const params = new URLSearchParams();
+            if (status) {
+                params.set("status", status);
+            }
+            const query = params.toString();
+            return request(`/api/v1/admin/queries${query ? `?${query}` : ""}`);
         },
         get (id) {
             return request(`/api/v1/admin/queries/${id}`);
         },
         assign (id, adminUserId) {
             return request(`/api/v1/admin/queries/${id}/assign`, {
-                method: "POST",
+                method: "PATCH",
                 body: JSON.stringify({
                     adminUserId
                 })
@@ -908,21 +923,8 @@ const adminApi = {
             });
         }
     },
-    /*
-   * ==========================================================
-   * USERS & ACCESS
-   * ==========================================================
-   */ users: {
-        /*
-     * Get users.
-     *
-     * Examples:
-     *
-     * adminApi.users.list()
-     * adminApi.users.list("ACTIVE")
-     * adminApi.users.list("INACTIVE")
-     * adminApi.users.list(undefined, "CLIENT")
-     */ list (status, role) {
+    /* ------------------------------------------------------------------------ */ /* Users & Access                                                           */ /* ------------------------------------------------------------------------ */ users: {
+        list (status, role) {
             const params = new URLSearchParams();
             if (status) {
                 params.set("status", status);
@@ -933,20 +935,47 @@ const adminApi = {
             const query = params.toString();
             return request(`/api/v1/admin/users${query ? `?${query}` : ""}`);
         },
-        /*
-     * Get one user.
-     */ get (id) {
+        get (id) {
             return request(`/api/v1/admin/users/${id}`);
         },
-        /*
-     * Activate or deactivate a user.
-     */ updateStatus (id, status) {
+        updateStatus (id, status) {
             return request(`/api/v1/admin/users/${id}/status`, {
                 method: "PATCH",
                 body: JSON.stringify({
                     status
                 })
             });
+        }
+    },
+    /* ------------------------------------------------------------------------ */ /* P2P Disputes                                                             */ /* ------------------------------------------------------------------------ */ disputes: {
+        /**
+     * Get all currently open P2P disputes.
+     *
+     * Trading-service endpoint:
+     * GET /api/v1/p2p/admin/disputes
+     *
+     * The trading service currently protects this endpoint with
+     * X-OakPay-Admin-Secret. That header is intentionally not stored
+     * in the browser. See the note below.
+     */ list () {
+            return request("/api/v1/p2p/admin/disputes");
+        },
+        get (id) {
+            return request(`/api/v1/p2p/admin/disputes/${id}`);
+        },
+        audit (id) {
+            return request(`/api/v1/p2p/admin/disputes/${id}/audit`);
+        },
+        resolve (id, data) {
+            return request(`/api/v1/p2p/admin/disputes/${id}/resolve`, {
+                method: "POST",
+                body: JSON.stringify(data)
+            });
+        }
+    },
+    /* ------------------------------------------------------------------------ */ /* P2P Trades                                                                */ /* ------------------------------------------------------------------------ */ trades: {
+        get (id) {
+            return request(`/api/v1/p2p/trades/${id}`);
         }
     }
 };

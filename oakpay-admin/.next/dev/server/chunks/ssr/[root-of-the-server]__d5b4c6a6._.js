@@ -96,6 +96,26 @@ const adminApi = {
             body: JSON.stringify({
                 reason
             })
+        }),
+    resolutionDisputes: (token)=>json('/api/v1/admin/resolution-centre/disputes', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }),
+    resolutionAudit: (token, id)=>json(`/api/v1/admin/resolution-centre/disputes/${id}/audit`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }),
+    resolveDispute: (token, id, resolution, note)=>json(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                resolution,
+                note
+            })
         })
 };
 const session = {
