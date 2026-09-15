@@ -16,11 +16,14 @@ import java.util.UUID;
 public class DepositAddressController {
     private final DepositAddressService service;
     private final String internalSecret;
+    private final boolean testAddressesEnabled;
 
     public DepositAddressController(DepositAddressService service,
-                                    @Value("${oakpay.internal-secret}") String internalSecret) {
+                                    @Value("${oakpay.internal-secret}") String internalSecret,
+                                    @Value("${oakpay.test-addresses.enabled:false}") boolean testAddressesEnabled) {
         this.service = service;
         this.internalSecret = internalSecret;
+        this.testAddressesEnabled = testAddressesEnabled;
     }
 
     @GetMapping
@@ -43,6 +46,22 @@ public class DepositAddressController {
             @Valid @RequestBody DepositAddressDtos.AssignAddressRequest request) {
         requireInternalSecret(suppliedSecret);
         return service.assign(request);
+    }
+
+    /**
+     * Development-only endpoint. Generates a clearly-marked non-blockchain address
+     * so local Postman/mobile end-to-end deposit tests can run before custody integration exists.
+     */
+    @PostMapping("/internal/generate-test")
+    public DepositAddressDtos.DepositAddressResponse generateTestAddress(
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret,
+            @Valid @RequestBody DepositAddressDtos.GenerateTestAddressRequest request) {
+        requireInternalSecret(suppliedSecret);
+        if (!testAddressesEnabled) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Test deposit addresses are disabled");
+        }
+        return service.generateTestAddress(request);
     }
 
     private UUID userId(Authentication authentication) {
