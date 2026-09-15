@@ -30,6 +30,11 @@ public final class DepositAddressDtos {
             @NotBlank String address,
             String memoTag) {}
 
+    /** Development-only request for the authenticated mobile test-address flow. */
+    public record TestAddressRequest(
+            @NotBlank String currency,
+            @NotBlank String network) {}
+
     /** Development-only request for generating a non-blockchain test address. */
     public record GenerateTestAddressRequest(
             @NotBlank String userId,
