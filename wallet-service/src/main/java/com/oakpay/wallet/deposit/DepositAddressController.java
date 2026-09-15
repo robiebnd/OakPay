@@ -39,6 +39,22 @@ public class DepositAddressController {
         return service.getAddress(userId(authentication), currency, network);
     }
 
+    /**
+     * Development-only authenticated endpoint used by the mobile app to provision
+     * a local test address for the signed-in user. No user id is accepted from the client.
+     */
+    @PostMapping("/test")
+    public DepositAddressDtos.DepositAddressResponse generateTestAddressForCurrentUser(
+            @Valid @RequestBody DepositAddressDtos.TestAddressRequest request,
+            Authentication authentication) {
+        if (!testAddressesEnabled) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Test deposit addresses are disabled");
+        }
+        return service.generateTestAddress(new DepositAddressDtos.GenerateTestAddressRequest(
+                userId(authentication).toString(), request.currency(), request.network()));
+    }
+
     /** Trusted custody/address-provider integration only. */
     @PostMapping("/internal/assign")
     public DepositAddressDtos.DepositAddressResponse assign(
