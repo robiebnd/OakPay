@@ -33,9 +33,9 @@ oakpay:
     base-url: ${OAKPAY_WALLET_URL:http://localhost:8084}
   auth:
     base-url: ${OAKPAY_AUTH_URL:http://localhost:8083}
-  internal-secret: ${OAKPAY_INTERNAL_SECRET}
+  internal-secret: ${OAKPAY_INTERNAL_SECRET:oakpay-internal-development-secret-change-before-production}
   admin:
-    dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET}
+    dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET:oakpay-admin-dispute-development-secret-change-before-production}
   trading:
     fee-rate: ${OAKPAY_TRADING_FEE_RATE:0.001}
   p2p:
