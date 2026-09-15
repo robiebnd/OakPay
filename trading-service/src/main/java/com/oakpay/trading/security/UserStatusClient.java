@@ -13,8 +13,8 @@ public class UserStatusClient {
     private final String internalSecret;
 
     public UserStatusClient(
-            @Value("${oakpay.auth.base-url}") String authBaseUrl,
-            @Value("${oakpay.internal-secret}") String internalSecret) {
+            @Value("${oakpay.auth.base-url:http://localhost:8083}") String authBaseUrl,
+            @Value("${oakpay.internal-secret:oakpay-internal-development-secret-change-before-production}") String internalSecret) {
         this.client = RestClient.builder().baseUrl(authBaseUrl).build();
         this.internalSecret = internalSecret;
     }
