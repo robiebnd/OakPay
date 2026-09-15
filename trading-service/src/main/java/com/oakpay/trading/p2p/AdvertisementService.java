@@ -3,6 +3,7 @@ package com.oakpay.trading.p2p;
 import com.oakpay.trading.asset.AssetStatus;
 import com.oakpay.trading.asset.SupportedAsset;
 import com.oakpay.trading.asset.SupportedAssetRepository;
+import com.oakpay.trading.security.UserStatusClient;
 import com.oakpay.trading.wallet.WalletClient;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -19,15 +20,19 @@ public class AdvertisementService {
     private final P2PTradeService tradeService;
     private final SupportedAssetRepository assetRepository;
     private final WalletClient walletClient;
+    private final UserStatusClient userStatusClient;
 
     public AdvertisementService(AdvertisementRepository repository, P2PTradeService tradeService,
-                                 SupportedAssetRepository assetRepository, WalletClient walletClient) {
+                                 SupportedAssetRepository assetRepository, WalletClient walletClient,
+                                 UserStatusClient userStatusClient) {
         this.repository = repository; this.tradeService = tradeService;
         this.assetRepository = assetRepository; this.walletClient = walletClient;
+        this.userStatusClient = userStatusClient;
     }
 
     @Transactional
     public AdvertisementDtos.AdResponse create(UUID ownerId, AdvertisementDtos.CreateRequest r) {
+        if (!userStatusClient.isActive(ownerId)) throw new IllegalStateException("User account is inactive");
         if (r == null) throw new IllegalArgumentException("Advertisement request is required");
         if (r.side() == null) throw new IllegalArgumentException("Advertisement side is required");
         String asset = normalize(r.asset()), fiat = normalize(r.fiatCurrency());
@@ -59,22 +64,27 @@ public class AdvertisementService {
         return ads.stream()
                 .filter(x -> x.getAvailableQuantity().signum() > 0)
                 .filter(x -> x.getAvailableQuantity().compareTo(x.getMinQuantity()) >= 0)
+                .filter(x -> userStatusClient.isActive(x.getOwnerId()))
                 .map(AdvertisementDtos.AdResponse::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public AdvertisementDtos.AdResponse get(UUID id) {
-        return AdvertisementDtos.AdResponse.from(repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Advertisement not found")));
+        Advertisement ad = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
+        if (!userStatusClient.isActive(ad.getOwnerId())) throw new IllegalArgumentException("Advertisement not found");
+        return AdvertisementDtos.AdResponse.from(ad);
     }
 
     @Transactional(readOnly = true)
     public List<AdvertisementDtos.AdResponse> mine(UUID ownerId) {
+        if (!userStatusClient.isActive(ownerId)) return List.of();
         return repository.findAllByOwnerIdOrderByCreatedAtDesc(ownerId).stream().map(AdvertisementDtos.AdResponse::from).toList();
     }
 
     @Transactional
     public AdvertisementDtos.AdResponse update(UUID ownerId, UUID id, AdvertisementDtos.UpdateRequest r) {
+        if (!userStatusClient.isActive(ownerId)) throw new IllegalStateException("User account is inactive");
         if (r == null) throw new IllegalArgumentException("Update request is required");
         Advertisement ad = ownedForUpdate(ownerId, id);
         if (ad.getStatus() == AdStatus.CLOSED) throw new IllegalStateException("Advertisement is closed");
@@ -99,6 +109,7 @@ public class AdvertisementService {
 
     @Transactional
     public AdvertisementDtos.AdResponse resume(UUID ownerId, UUID id) {
+        if (!userStatusClient.isActive(ownerId)) throw new IllegalStateException("User account is inactive");
         Advertisement ad = ownedForUpdate(ownerId, id);
         if (ad.getStatus() == AdStatus.CLOSED) throw new IllegalStateException("Advertisement is closed");
         if (ad.getAvailableQuantity().signum() <= 0) throw new IllegalStateException("Advertisement has no available quantity");
@@ -120,8 +131,10 @@ public class AdvertisementService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse take(UUID takerId, UUID adId, AdvertisementDtos.TakeRequest r) {
+        if (!userStatusClient.isActive(takerId)) throw new IllegalStateException("User account is inactive");
         if (r == null) throw new IllegalArgumentException("Take request is required");
         Advertisement ad = ownedForUpdate(null, adId);
+        if (!userStatusClient.isActive(ad.getOwnerId())) throw new IllegalStateException("Advertisement owner is inactive");
         if (ad.getOwnerId().equals(takerId)) throw new IllegalArgumentException("You cannot take your own advertisement");
         if (ad.getStatus() != AdStatus.ACTIVE) throw new IllegalStateException("Advertisement is not active");
         BigDecimal quantity = positive(r.quantity(), "Quantity"); validateP2PAsset(ad.getAsset(), quantity);
@@ -158,6 +171,7 @@ public class AdvertisementService {
     private Advertisement ownedForUpdate(UUID ownerId, UUID id) {
         Advertisement ad = repository.findByIdForUpdate(id).orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
         if (ownerId != null && !ad.getOwnerId().equals(ownerId)) throw new IllegalArgumentException("Advertisement does not belong to user");
+        if (!userStatusClient.isActive(ad.getOwnerId())) throw new IllegalStateException("Advertisement owner is inactive");
         return ad;
     }
 

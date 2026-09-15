@@ -16,10 +16,8 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: false
-
 server:
   port: 8085
-
 management:
   endpoints:
     web:
@@ -28,12 +26,13 @@ management:
   endpoint:
     health:
       show-details: always
-
 oakpay:
   jwt:
     secret: ${OAKPAY_JWT_SECRET:oakpay-development-secret-change-before-production-2026}
   wallet:
     base-url: ${OAKPAY_WALLET_URL:http://localhost:8084}
+  auth:
+    base-url: ${OAKPAY_AUTH_URL:http://localhost:8083}
   internal-secret: ${OAKPAY_INTERNAL_SECRET:oakpay-internal-development-secret-change-before-production}
   admin:
     dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET:oakpay-admin-dispute-development-secret-change-before-production}

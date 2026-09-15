@@ -61,3 +61,4 @@ oakpay:
     base-url: ${OAKPAY_TRADING_URL:http://localhost:8085}
   admin:
     dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET:oakpay-admin-dispute-development-secret-change-before-production}
+  internal-secret: ${OAKPAY_INTERNAL_SECRET:oakpay-internal-development-secret-change-before-production}
