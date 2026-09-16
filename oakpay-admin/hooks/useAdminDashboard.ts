@@ -6,6 +6,8 @@ import {
   AdminDashboardStats,
 } from "../lib/adminApi";
 
+const DASHBOARD_REFRESH_MS = 15_000;
+
 export function useAdminDashboard() {
   const [data, setData] =
     useState<AdminDashboardStats | null>(null);
@@ -42,6 +44,25 @@ export function useAdminDashboard() {
 
   useEffect(() => {
     load();
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        load();
+      }
+    }, DASHBOARD_REFRESH_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        load();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [load]);
 
   return {
