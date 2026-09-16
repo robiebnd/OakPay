@@ -1,39 +1,46 @@
 "use client";
 
-import { Bell, Search, ShieldCheck } from "lucide-react";
+import { Bell, ChevronDown, Search } from "lucide-react";
 
 export default function AdminHeader() {
   return (
-    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-[#e3e8e5] bg-white/95 px-5 backdrop-blur md:px-8">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#397b0a]">
-          PayOak Operations
-        </p>
-
-        <h1 className="mt-0.5 text-lg font-extrabold tracking-tight text-[#111827]">
-          Administration
-        </h1>
+    <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#e7ebef] bg-white px-5 md:px-8">
+      <div className="flex min-w-0 flex-1 items-center">
+        <div className="flex h-10 w-full max-w-[500px] items-center gap-3 rounded-full bg-[#f1f3f7] px-4">
+          <Search size={18} className="shrink-0 text-[#667085]" />
+          <input
+            type="search"
+            aria-label="Search"
+            placeholder="Search users, transactions, queries, or reference numbers..."
+            className="min-w-0 flex-1 bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#7a8494]"
+          />
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="hidden h-10 items-center gap-2 rounded-xl border border-[#e3e8e5] bg-[#f8faf9] px-3 md:flex">
-          <Search size={17} className="text-[#9ca3af]" />
-          <input type="search" placeholder="Search operations..." className="w-52 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]" />
-        </div>
-
-        <div className="hidden items-center gap-2 rounded-xl bg-[#eaf3e5] px-3 py-2 text-xs font-bold text-[#397b0a] lg:flex">
-          <ShieldCheck size={16} />
-          Secure session
-        </div>
-
-        <button type="button" aria-label="Notifications" className="relative rounded-xl p-2.5 text-[#6b7280] transition hover:bg-[#f5f7f6] hover:text-[#111827]">
-          <Bell size={20} />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#f5c400]" />
+      <div className="ml-4 flex shrink-0 items-center gap-5">
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="relative rounded-full p-2 text-[#667085] transition hover:bg-[#f5f7f6] hover:text-[#111827]"
+        >
+          <Bell size={21} />
+          <span className="absolute right-1.5 top-1 h-3 w-3 rounded-full border-2 border-white bg-[#f5c400]" />
         </button>
 
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#145323] text-sm font-extrabold text-white">
-          PA
-        </div>
+        <button
+          type="button"
+          aria-label="Administrator profile"
+          className="flex items-center gap-3 rounded-xl px-1 py-1 text-left transition hover:bg-[#f8faf9]"
+        >
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#397b0a] text-sm font-extrabold text-white">
+            RB
+          </span>
+          <span className="hidden leading-tight sm:block">
+            <span className="block text-sm font-semibold text-[#111827]">Robson Banda</span>
+            <span className="mt-1 block text-xs text-[#667085]">Administrator</span>
+          </span>
+          <ChevronDown size={18} className="ml-1 text-[#667085]" />
+        </button>
       </div>
     </header>
   );
