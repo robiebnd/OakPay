@@ -36,6 +36,18 @@ public class P2PTradeController {
         return service.mine(userId(authentication), status, asset, from, to, limit);
     }
 
+    @GetMapping("/trade-limit")
+    public TradeLimitResponse tradeLimit(@RequestParam(defaultValue = "USD") String fiatCurrency,
+                                         Authentication authentication) {
+        UUID userId = userId(authentication);
+        BigDecimal maximumFiatAmount = tradeLimitService.maximumFiatAmount(userId, fiatCurrency);
+        return new TradeLimitResponse(
+                fiatCurrency.trim().toUpperCase(),
+                maximumFiatAmount == null,
+                maximumFiatAmount == null ? null : maximumFiatAmount.setScale(2, java.math.RoundingMode.HALF_UP)
+        );
+    }
+
     @GetMapping("/{tradeId}")
     public P2PTradeDtos.TradeResponse get(@PathVariable UUID tradeId, Authentication authentication) { return service.getOne(userId(authentication), tradeId); }
 
@@ -49,6 +61,8 @@ public class P2PTradeController {
 
     @PostMapping("/{tradeId}/cancel")
     public P2PTradeDtos.TradeResponse cancel(@PathVariable UUID tradeId, Authentication authentication) { return service.cancel(userId(authentication), tradeId); }
+
+    public record TradeLimitResponse(String fiatCurrency, boolean unlimited, BigDecimal maximumFiatAmount) {}
 
     private UUID userId(Authentication authentication) { return UUID.fromString(authentication.getName()); }
 }
