@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "OakPay",
-    "slug": "oakpay",
+    "name": "PayOak",
+    "slug": "payoak",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "scheme": "oakpay",
+    "scheme": "payoak",
     "plugins": ["expo-router", "expo-secure-store"],
     "android": {
       "package": "com.oakpay.mobile"
