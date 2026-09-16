@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
 
 /* -------------------------------------------------------------------------- */
 /* Dashboard                                                                  */
@@ -239,34 +239,19 @@ async function request<T>(
 /* -------------------------------------------------------------------------- */
 
 export const adminApi = {
-  /* ------------------------------------------------------------------------ */
-  /* Dashboard                                                                */
-  /* ------------------------------------------------------------------------ */
-
   dashboard() {
     return request<AdminDashboardStats>(
       "/api/v1/admin/dashboard",
     );
   },
 
-  /* ------------------------------------------------------------------------ */
-  /* KYC                                                                      */
-  /* ------------------------------------------------------------------------ */
-
   kyc: {
     list(status?: KycStatus) {
       const params = new URLSearchParams();
-
-      if (status) {
-        params.set("status", status);
-      }
-
+      if (status) params.set("status", status);
       const query = params.toString();
-
       return request<AdminKycApplication[]>(
-        `/api/v1/admin/kyc${
-          query ? `?${query}` : ""
-        }`,
+        `/api/v1/admin/kyc${query ? `?${query}` : ""}`,
       );
     },
 
@@ -276,10 +261,7 @@ export const adminApi = {
       );
     },
 
-    decide(
-      id: string,
-      data: KycDecisionRequest,
-    ) {
+    decide(id: string, data: KycDecisionRequest) {
       return request<AdminKycApplication>(
         `/api/v1/admin/kyc/${id}/decision`,
         {
@@ -290,24 +272,13 @@ export const adminApi = {
     },
   },
 
-  /* ------------------------------------------------------------------------ */
-  /* Client Queries                                                           */
-  /* ------------------------------------------------------------------------ */
-
   queries: {
     list(status?: ClientQueryStatus | string) {
       const params = new URLSearchParams();
-
-      if (status) {
-        params.set("status", status);
-      }
-
+      if (status) params.set("status", status);
       const query = params.toString();
-
       return request<ClientQuery[]>(
-        `/api/v1/admin/queries${
-          query ? `?${query}` : ""
-        }`,
+        `/api/v1/admin/queries${query ? `?${query}` : ""}`,
       );
     },
 
@@ -317,62 +288,35 @@ export const adminApi = {
       );
     },
 
-    assign(
-      id: string,
-      adminUserId: string,
-    ) {
+    assign(id: string, adminUserId: string) {
       return request<ClientQuery>(
         `/api/v1/admin/queries/${id}/assign`,
         {
           method: "PATCH",
-          body: JSON.stringify({
-            adminUserId,
-          }),
+          body: JSON.stringify({ adminUserId }),
         },
       );
     },
 
-    resolve(
-      id: string,
-      resolution: string,
-    ) {
+    resolve(id: string, resolution: string) {
       return request<ClientQuery>(
         `/api/v1/admin/queries/${id}/resolve`,
         {
           method: "POST",
-          body: JSON.stringify({
-            resolution,
-          }),
+          body: JSON.stringify({ resolution }),
         },
       );
     },
   },
 
-  /* ------------------------------------------------------------------------ */
-  /* Users & Access                                                           */
-  /* ------------------------------------------------------------------------ */
-
   users: {
-    list(
-      status?: AdminUserStatus,
-      role?: string,
-    ) {
+    list(status?: AdminUserStatus, role?: string) {
       const params = new URLSearchParams();
-
-      if (status) {
-        params.set("status", status);
-      }
-
-      if (role) {
-        params.set("role", role);
-      }
-
+      if (status) params.set("status", status);
+      if (role) params.set("role", role);
       const query = params.toString();
-
       return request<AdminUser[]>(
-        `/api/v1/admin/users${
-          query ? `?${query}` : ""
-        }`,
+        `/api/v1/admin/users${query ? `?${query}` : ""}`,
       );
     },
 
@@ -382,37 +326,18 @@ export const adminApi = {
       );
     },
 
-    updateStatus(
-      id: string,
-      status: AdminUserStatus,
-    ) {
+    updateStatus(id: string, status: AdminUserStatus) {
       return request<AdminUser>(
         `/api/v1/admin/users/${id}/status`,
         {
           method: "PATCH",
-          body: JSON.stringify({
-            status,
-          }),
+          body: JSON.stringify({ status }),
         },
       );
     },
   },
 
-  /* ------------------------------------------------------------------------ */
-  /* P2P Disputes                                                             */
-  /* ------------------------------------------------------------------------ */
-
   disputes: {
-    /**
-     * Get all currently open P2P disputes.
-     *
-     * Trading-service endpoint:
-     * GET /api/v1/p2p/admin/disputes
-     *
-     * The trading service currently protects this endpoint with
-     * X-OakPay-Admin-Secret. That header is intentionally not stored
-     * in the browser. See the note below.
-     */
     list() {
       return request<P2PDispute[]>(
         "/api/v1/p2p/admin/disputes",
@@ -431,10 +356,7 @@ export const adminApi = {
       );
     },
 
-    resolve(
-      id: string,
-      data: ResolveDisputeRequest,
-    ) {
+    resolve(id: string, data: ResolveDisputeRequest) {
       return request<P2PDispute>(
         `/api/v1/p2p/admin/disputes/${id}/resolve`,
         {
@@ -444,10 +366,6 @@ export const adminApi = {
       );
     },
   },
-
-  /* ------------------------------------------------------------------------ */
-  /* P2P Trades                                                                */
-  /* ------------------------------------------------------------------------ */
 
   trades: {
     get(id: string) {
