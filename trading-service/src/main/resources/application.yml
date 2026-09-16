@@ -40,3 +40,4 @@ oakpay:
     fee-rate: ${OAKPAY_TRADING_FEE_RATE:0.001}
   p2p:
     commission-rate: ${OAKPAY_P2P_COMMISSION_RATE:0.001}
+    unverified-usd-limit: ${OAKPAY_P2P_UNVERIFIED_USD_LIMIT:50.00}
