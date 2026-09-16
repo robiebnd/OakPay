@@ -12,9 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,20 +33,18 @@ class AdvertisementServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(userStatusClient.isActive(any(UUID.class))).thenReturn(true);
+        lenient().when(userStatusClient.isActive(any(UUID.class))).thenReturn(true);
         service = new AdvertisementService(repository, tradeService, assetRepository, walletClient, userStatusClient);
     }
 
     @Test
-    void sellerCannotCreateAdvertisementWhenExistingOpenAdsConsumeBalance() {
+    void sellerCannotCreateAdvertisementWhenWalletReservationFails() {
         UUID sellerId = UUID.randomUUID();
         SupportedAsset asset = usdtAsset();
 
         when(assetRepository.findBySymbolIgnoreCase("USDT")).thenReturn(Optional.of(asset));
-        when(walletClient.availableBalance(sellerId, "USDT")).thenReturn(new BigDecimal("100"));
-        when(repository.sumAvailableQuantityByOwnerAndSideAndAssetAndStatuses(
-                eq(sellerId), eq(OrderSide.SELL), eq("USDT"), anyList()))
-                .thenReturn(new BigDecimal("80"));
+        doThrow(new IllegalStateException("Insufficient available USDT balance. Existing open advertisements reserve 80 USDT and this advertisement requires 30 USDT"))
+                .when(walletClient).reserveAdvertisement(eq(sellerId), eq("USDT"), eq(new BigDecimal("30.00")), anyString());
 
         AdvertisementDtos.CreateRequest request = new AdvertisementDtos.CreateRequest(
                 OrderSide.SELL, "USDT", "ZWL", new BigDecimal("35000"),
@@ -69,15 +66,16 @@ class AdvertisementServiceTest {
 
         when(repository.findByIdForUpdate(adId)).thenReturn(Optional.of(ad));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.close(sellerId, adId));
+        AdvertisementDtos.AdResponse response = service.close(sellerId, adId);
 
-        assertEquals("Advertisement is already closed", ex.getMessage());
+        assertEquals(AdStatus.CLOSED, ad.getStatus());
+        assertEquals(adId, response.id());
         verify(repository, never()).save(any(Advertisement.class));
+        verifyNoInteractions(walletClient);
     }
 
     @Test
-    void pauseTogglesBetweenActiveAndPaused() {
+    void pauseAndResumeToggleAdvertisementStatus() {
         UUID sellerId = UUID.randomUUID();
         UUID adId = UUID.randomUUID();
         Advertisement ad = advertisement(adId, sellerId, AdStatus.ACTIVE);
@@ -88,7 +86,7 @@ class AdvertisementServiceTest {
         service.pause(sellerId, adId);
         assertEquals(AdStatus.PAUSED, ad.getStatus());
 
-        service.pause(sellerId, adId);
+        service.resume(sellerId, adId);
         assertEquals(AdStatus.ACTIVE, ad.getStatus());
         verify(repository, times(2)).save(ad);
     }
