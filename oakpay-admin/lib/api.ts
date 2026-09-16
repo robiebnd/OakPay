@@ -1,4 +1,4 @@
-const BASE=(process.env.NEXT_PUBLIC_API_URL??'http://localhost:8080').replace(/\/$/,'');
+const BASE=(process.env.NEXT_PUBLIC_API_URL??'http://localhost:8082').replace(/\/$/,'');
 export type TokenResponse={accessToken:string;refreshToken:string;expiresIn:number;requiresTwoFactor?:boolean;challengeToken?:string|null};
 export type KycDocument={id:string;documentType:string;documentNumber:string|null;status:string;rejectionReason:string|null;frontUploaded:boolean;backUploaded:boolean;createdAt:string;updatedAt:string};
 export type KycItem={kycId:string;userId:string;clientName:string;email:string;country:string|null;status:string;submittedAt:string|null;documents:KycDocument[]};
@@ -22,4 +22,4 @@ export const adminApi={
  resolutionAudit:(token:string,id:string)=>json<ResolutionAudit[]>(`/api/v1/admin/resolution-centre/disputes/${id}/audit`,{headers:{Authorization:`Bearer ${token}`}}),
  resolveDispute:(token:string,id:string,resolution:'BUYER_WINS'|'SELLER_WINS',note:string)=>json<ResolutionDispute>(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:JSON.stringify({resolution,note})}),
 };
-export const session={get:()=>typeof window==='undefined'?null:localStorage.getItem('oakpay.admin.accessToken'),getRefresh:()=>typeof window==='undefined'?null:localStorage.getItem('oakpay.admin.refreshToken'),set:(t:TokenResponse)=>{localStorage.setItem('oakpay.admin.accessToken',t.accessToken);if(t.refreshToken)localStorage.setItem('oakpay.admin.refreshToken',t.refreshToken)},clear:()=>{localStorage.removeItem('oakpay.admin.accessToken');localStorage.removeItem('oakpay.admin.refreshToken')}};
+export const session={get:()=>typeof window==='undefined'?null:localStorage.getItem('oakpay.admin.accessToken')||localStorage.getItem('oakpay.accessToken'),getRefresh:()=>typeof window==='undefined'?null:localStorage.getItem('oakpay.admin.refreshToken')||localStorage.getItem('oakpay.refreshToken'),set:(t:TokenResponse)=>{localStorage.setItem('oakpay.admin.accessToken',t.accessToken);if(t.refreshToken)localStorage.setItem('oakpay.admin.refreshToken',t.refreshToken)},clear:()=>{localStorage.removeItem('oakpay.admin.accessToken');localStorage.removeItem('oakpay.admin.refreshToken');localStorage.removeItem('oakpay.accessToken');localStorage.removeItem('oakpay.refreshToken')}};
