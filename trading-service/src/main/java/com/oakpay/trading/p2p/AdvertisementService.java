@@ -48,10 +48,10 @@ public class AdvertisementService {
         if (r.side() == OrderSide.SELL) {
             String reservationReference = "AD-" + UUID.randomUUID(); ad.setReservationReference(reservationReference);
             walletClient.reserveAdvertisement(ownerId, asset, total, reservationReference);
-            try { return AdvertisementDtos.AdResponse.from(repository.save(ad)); }
+            try { Advertisement saved = repository.save(ad); return toResponse(saved); }
             catch (RuntimeException ex) { try { walletClient.releaseAdvertisementReservation(ownerId, asset, reservationReference); } catch (RuntimeException ignored) {} throw ex; }
         }
-        return AdvertisementDtos.AdResponse.from(repository.save(ad));
+        return toResponse(repository.save(ad));
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +65,7 @@ public class AdvertisementService {
                 .filter(x -> x.getAvailableQuantity().signum() > 0)
                 .filter(x -> x.getAvailableQuantity().compareTo(x.getMinQuantity()) >= 0)
                 .filter(x -> userStatusClient.isActive(x.getOwnerId()))
-                .map(AdvertisementDtos.AdResponse::from)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -73,13 +73,13 @@ public class AdvertisementService {
     public AdvertisementDtos.AdResponse get(UUID id) {
         Advertisement ad = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Advertisement not found"));
         if (!userStatusClient.isActive(ad.getOwnerId())) throw new IllegalArgumentException("Advertisement not found");
-        return AdvertisementDtos.AdResponse.from(ad);
+        return toResponse(ad);
     }
 
     @Transactional(readOnly = true)
     public List<AdvertisementDtos.AdResponse> mine(UUID ownerId) {
         if (!userStatusClient.isActive(ownerId)) return List.of();
-        return repository.findAllByOwnerIdOrderByCreatedAtDesc(ownerId).stream().map(AdvertisementDtos.AdResponse::from).toList();
+        return repository.findAllByOwnerIdOrderByCreatedAtDesc(ownerId).stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -95,16 +95,16 @@ public class AdvertisementService {
         if (ad.getMinQuantity().compareTo(ad.getMaxQuantity()) > 0 || ad.getMaxQuantity().compareTo(ad.getTotalQuantity()) > 0) throw new IllegalArgumentException("Quantity limits are invalid");
         if (r.paymentMethods() != null && !r.paymentMethods().isBlank()) ad.setPaymentMethods(normalizePaymentMethods(r.paymentMethods()));
         if (r.terms() != null) ad.setTerms(r.terms());
-        return AdvertisementDtos.AdResponse.from(repository.save(ad));
+        return toResponse(repository.save(ad));
     }
 
     @Transactional
     public AdvertisementDtos.AdResponse pause(UUID ownerId, UUID id) {
         Advertisement ad = ownedForUpdate(ownerId, id);
         if (ad.getStatus() == AdStatus.CLOSED) throw new IllegalStateException("Advertisement is closed");
-        if (ad.getStatus() == AdStatus.PAUSED) return AdvertisementDtos.AdResponse.from(ad);
+        if (ad.getStatus() == AdStatus.PAUSED) return toResponse(ad);
         ad.setStatus(AdStatus.PAUSED);
-        return AdvertisementDtos.AdResponse.from(repository.save(ad));
+        return toResponse(repository.save(ad));
     }
 
     @Transactional
@@ -113,20 +113,20 @@ public class AdvertisementService {
         Advertisement ad = ownedForUpdate(ownerId, id);
         if (ad.getStatus() == AdStatus.CLOSED) throw new IllegalStateException("Advertisement is closed");
         if (ad.getAvailableQuantity().signum() <= 0) throw new IllegalStateException("Advertisement has no available quantity");
-        if (ad.getStatus() == AdStatus.ACTIVE) return AdvertisementDtos.AdResponse.from(ad);
+        if (ad.getStatus() == AdStatus.ACTIVE) return toResponse(ad);
         ad.setStatus(AdStatus.ACTIVE);
-        return AdvertisementDtos.AdResponse.from(repository.save(ad));
+        return toResponse(repository.save(ad));
     }
 
     @Transactional
     public AdvertisementDtos.AdResponse close(UUID ownerId, UUID id) {
         Advertisement ad = ownedForUpdate(ownerId, id);
-        if (ad.getStatus() == AdStatus.CLOSED) return AdvertisementDtos.AdResponse.from(ad);
+        if (ad.getStatus() == AdStatus.CLOSED) return toResponse(ad);
         if (ad.getSide() == OrderSide.SELL && ad.getReservationReference() != null) {
             walletClient.releaseAdvertisementReservation(ownerId, ad.getAsset(), ad.getReservationReference());
         }
         ad.setStatus(AdStatus.CLOSED); ad.setAutoClosed(false);
-        return AdvertisementDtos.AdResponse.from(repository.save(ad));
+        return toResponse(repository.save(ad));
     }
 
     @Transactional
@@ -145,6 +145,10 @@ public class AdvertisementService {
         return tradeService.create(takerId, new P2PTradeDtos.CreateRequest(
                 ad.getSide() == OrderSide.BUY ? ad.getOwnerId() : null,
                 ad.getAsset(), ad.getFiatCurrency(), quantity, ad.getPrice(), paymentMethod, r.expiryMinutes(), ad.getId()));
+    }
+
+    private AdvertisementDtos.AdResponse toResponse(Advertisement ad) {
+        return AdvertisementDtos.AdResponse.from(ad, userStatusClient.displayName(ad.getOwnerId()));
     }
 
     private void validateP2PAsset(String symbol, BigDecimal quantity) {
