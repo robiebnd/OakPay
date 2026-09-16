@@ -2,6 +2,7 @@ package com.oakpay.trading.p2p;
 
 import com.oakpay.trading.asset.SupportedAssetRepository;
 import com.oakpay.trading.security.UserStatusClient;
+import com.oakpay.trading.security.KycStatusClient;
 import com.oakpay.trading.wallet.WalletClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,8 @@ class P2PTradeServiceTest {
     @Mock SupportedAssetRepository assetRepository;
     @Mock AdvertisementRepository advertisementRepository;
     @Mock UserStatusClient userStatusClient;
+    @Mock KycStatusClient kycStatusClient;
+    @Mock TradeLimitService tradeLimitService;
 
     private P2PTradeService service;
 
@@ -44,7 +47,8 @@ class P2PTradeServiceTest {
                 commissionService,
                 assetRepository,
                 advertisementRepository,
-                userStatusClient
+                userStatusClient,
+                tradeLimitService
         );
     }
 
@@ -110,8 +114,6 @@ class P2PTradeServiceTest {
         when(repository.findAllByStatusOrderByCreatedAtAsc(P2PTradeStatus.PAYMENT_PENDING))
                 .thenReturn(List.of(trade));
         when(repository.findByIdForUpdate(tradeId)).thenReturn(Optional.of(trade));
-        when(advertisementRepository.findByIdForUpdate(adId)).thenReturn(Optional.of(ad));
-        when(repository.save(trade)).thenReturn(trade);
         when(advertisementRepository.save(ad)).thenReturn(ad);
 
         service.expirePendingTrades();
