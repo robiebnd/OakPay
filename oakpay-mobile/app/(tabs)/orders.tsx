@@ -241,7 +241,7 @@ export default function OrdersScreen() {
           <View style={styles.container}>
             <View style={styles.header}>
               <View>
-                <Text style={styles.eyebrow}>OAKPAY ACCOUNT</Text>
+                <Text style={styles.eyebrow}>PAYOAK ACCOUNT</Text>
                 <Text style={styles.title}>P2P Orders</Text>
               </View>
               <View style={styles.iconButton}>
@@ -426,23 +426,30 @@ export default function OrdersScreen() {
 
         <Modal visible={disputeVisible} transparent animationType="fade" onRequestClose={() => !disputeSubmitting && setDisputeVisible(false)}>
           <KeyboardAvoidingView style={styles.disputeOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <ScrollView contentContainerStyle={styles.disputeCard} keyboardShouldPersistTaps="handled">
-              <View style={styles.disputeHeader}>
-                <View style={styles.disputeIcon}><Ionicons name="alert-circle-outline" size={24} color={RED} /></View>
-                <View style={styles.disputeTitleWrap}><Text style={styles.disputeTitle}>Open dispute</Text><Text style={styles.disputeSubtitle}>Tell us what happened with this payment.</Text></View>
-                <Pressable disabled={disputeSubmitting} onPress={() => setDisputeVisible(false)}><Ionicons name="close" size={22} color={MUTED} /></Pressable>
-              </View>
+            <View style={styles.disputeCard}>
+              <ScrollView
+                style={styles.disputeScroll}
+                contentContainerStyle={styles.disputeContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.disputeHeader}>
+                  <View style={styles.disputeIcon}><Ionicons name="alert-circle-outline" size={24} color={RED} /></View>
+                  <View style={styles.disputeTitleWrap}><Text style={styles.disputeTitle}>Open dispute</Text><Text style={styles.disputeSubtitle}>Tell us what happened with this payment.</Text></View>
+                  <Pressable disabled={disputeSubmitting} onPress={() => setDisputeVisible(false)}><Ionicons name="close" size={22} color={MUTED} /></Pressable>
+                </View>
 
-              {disputeError ? <View style={styles.disputeError}><Ionicons name="alert-circle-outline" size={17} color={RED} /><Text style={styles.disputeErrorText}>{disputeError}</Text></View> : null}
-              <Text style={styles.inputLabel}>Reason *</Text>
-              <TextInput value={disputeReason} onChangeText={setDisputeReason} placeholder="e.g. Payment was made but seller has not confirmed it" placeholderTextColor={MUTED} style={[styles.input, styles.multiline]} multiline textAlignVertical="top" maxLength={500} />
-              <Text style={styles.inputLabel}>Evidence / additional details</Text>
-              <TextInput value={disputeEvidence} onChangeText={setDisputeEvidence} placeholder="Payment reference, screenshots description, or other relevant details" placeholderTextColor={MUTED} style={[styles.input, styles.multilineSmall]} multiline textAlignVertical="top" maxLength={1000} />
-              <Pressable style={[styles.primary, disputeSubmitting && styles.disabled]} disabled={disputeSubmitting} onPress={submitDispute}>
-                {disputeSubmitting ? <ActivityIndicator color={BG} /> : <><Ionicons name="shield-checkmark-outline" size={18} color={BG} /><Text style={styles.primaryText}>Submit dispute</Text></>}
-              </Pressable>
-              <Pressable disabled={disputeSubmitting} onPress={() => setDisputeVisible(false)}><Text style={styles.cancel}>Cancel</Text></Pressable>
-            </ScrollView>
+                {disputeError ? <View style={styles.disputeError}><Ionicons name="alert-circle-outline" size={17} color={RED} /><Text style={styles.disputeErrorText}>{disputeError}</Text></View> : null}
+                <Text style={styles.inputLabel}>Reason *</Text>
+                <TextInput value={disputeReason} onChangeText={setDisputeReason} placeholder="e.g. Payment was made but seller has not confirmed it" placeholderTextColor={MUTED} style={[styles.input, styles.multiline]} multiline textAlignVertical="top" maxLength={500} />
+                <Text style={styles.inputLabel}>Evidence / additional details</Text>
+                <TextInput value={disputeEvidence} onChangeText={setDisputeEvidence} placeholder="Payment reference, screenshots description, or other relevant details" placeholderTextColor={MUTED} style={[styles.input, styles.multilineSmall]} multiline textAlignVertical="top" maxLength={1000} />
+                <Pressable style={[styles.primary, disputeSubmitting && styles.disabled]} disabled={disputeSubmitting} onPress={submitDispute}>
+                  {disputeSubmitting ? <ActivityIndicator color={BG} /> : <><Ionicons name="shield-checkmark-outline" size={18} color={BG} /><Text style={styles.primaryText}>Submit dispute</Text></>}
+                </Pressable>
+                <Pressable disabled={disputeSubmitting} onPress={() => setDisputeVisible(false)}><Text style={styles.cancel}>Cancel</Text></Pressable>
+              </ScrollView>
+            </View>
           </KeyboardAvoidingView>
         </Modal>
       </View>
@@ -523,7 +530,9 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.6 },
   cancel: { color: MUTED, fontWeight: '700', fontSize: 13, textAlign: 'center', paddingVertical: 13 },
   disputeOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'center', padding: 20 },
-  disputeCard: { backgroundColor: CARD, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#252B35', maxHeight: '92%' },
+  disputeCard: { width: '100%', maxHeight: '82%', backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: '#252B35', overflow: 'hidden' },
+  disputeScroll: { flexGrow: 0 },
+  disputeContent: { padding: 20, paddingBottom: 24 },
   disputeHeader: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 16 },
   disputeIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#24191D', alignItems: 'center', justifyContent: 'center' },
   disputeTitleWrap: { flex: 1 },
