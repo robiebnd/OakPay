@@ -1,6 +1,7 @@
 "use client";
 
-import AdminGuard from "./AdminGuard";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AdminHeader from "./AdminHeader";
 import AdminSidebar from "./AdminSidebar";
 
@@ -9,21 +10,51 @@ export default function AdminShell({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <AdminGuard>
-      <div className="min-h-screen bg-[#f5f7f6]">
-        <AdminSidebar />
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
 
-        <div className="lg:pl-64">
-          <AdminHeader />
+  useEffect(() => {
+    const token =
+      localStorage.getItem("oakpay.admin.accessToken") ||
+      localStorage.getItem("oakpay.accessToken");
 
-          <main className="min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-[1600px]">
-              {children}
-            </div>
-          </main>
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    // Migrate the legacy key to the current admin key so navigation
+    // between admin pages does not appear to sign the administrator out.
+    if (!localStorage.getItem("oakpay.admin.accessToken")) {
+      localStorage.setItem("oakpay.admin.accessToken", token);
+    }
+
+    setChecking(false);
+  }, [router]);
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f7f6]">
+        <div className="text-sm font-medium text-[#6b7280]">
+          Loading PayOak Admin...
         </div>
       </div>
-    </AdminGuard>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f5f7f6]">
+      <AdminSidebar />
+
+      <div className="lg:pl-64">
+        <AdminHeader />
+
+        <main className="min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1600px]">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
