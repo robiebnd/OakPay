@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -13,7 +14,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/p2p/trades")
 public class P2PTradeController {
     private final P2PTradeService service;
-    public P2PTradeController(P2PTradeService service) { this.service = service; }
+    private final TradeLimitService tradeLimitService;
+
+    public P2PTradeController(P2PTradeService service, TradeLimitService tradeLimitService) {
+        this.service = service;
+        this.tradeLimitService = tradeLimitService;
+    }
 
     @PostMapping
     public ResponseEntity<P2PTradeDtos.TradeResponse> create(@RequestBody P2PTradeDtos.CreateRequest request, Authentication authentication) {
