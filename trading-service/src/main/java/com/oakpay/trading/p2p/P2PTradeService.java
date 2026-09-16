@@ -26,15 +26,16 @@ public class P2PTradeService {
     private final SupportedAssetRepository assetRepository;
     private final AdvertisementRepository advertisementRepository;
     private final UserStatusClient userStatusClient;
+    private final TradeLimitService tradeLimitService;
 
     public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient, P2PPaymentService paymentService,
                            P2PPaymentRepository paymentRepository, P2PCommissionService commissionService,
                            SupportedAssetRepository assetRepository, AdvertisementRepository advertisementRepository,
-                           UserStatusClient userStatusClient) {
+                           UserStatusClient userStatusClient, TradeLimitService tradeLimitService) {
         this.repository = repository; this.walletClient = walletClient; this.paymentService = paymentService;
         this.paymentRepository = paymentRepository; this.commissionService = commissionService;
         this.assetRepository = assetRepository; this.advertisementRepository = advertisementRepository;
-        this.userStatusClient = userStatusClient;
+        this.userStatusClient = userStatusClient; this.tradeLimitService = tradeLimitService;
     }
 
     @Transactional
@@ -74,6 +75,10 @@ public class P2PTradeService {
         if (sellerId.equals(buyerId)) throw new IllegalArgumentException("A different buyer is required");
         validateP2PAsset(asset, quantity);
         BigDecimal fiatAmount = quantity.multiply(price).setScale(2, RoundingMode.HALF_UP);
+
+        // The USD 50 restriction applies independently to each unverified participant.
+        tradeLimitService.validate(sellerId, fiat, fiatAmount);
+        tradeLimitService.validate(buyerId, fiat, fiatAmount);
 
         P2PTrade trade = new P2PTrade();
         trade.setSellerId(sellerId); trade.setBuyerId(buyerId); trade.setAdvertisementId(request.advertisementId());
