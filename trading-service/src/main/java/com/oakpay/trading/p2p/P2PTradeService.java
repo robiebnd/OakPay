@@ -60,7 +60,15 @@ public class P2PTradeService {
             if (!userStatusClient.isActive(ad.getOwnerId())) throw new IllegalStateException("Advertisement owner is inactive");
             if (ad.getStatus() != AdStatus.ACTIVE) throw new IllegalStateException("Advertisement is not active");
             asset = ad.getAsset(); fiat = ad.getFiatCurrency(); price = ad.getPrice();
-            if (quantity.compareTo(ad.getMinQuantity()) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0 || quantity.compareTo(ad.getAvailableQuantity()) > 0) throw new IllegalArgumentException("Quantity is outside the advertisement limits");
+
+            // The remaining inventory is the effective upper bound. When an active
+            // advertisement has less remaining inventory than its original minimum,
+            // that remaining amount becomes the effective minimum too, so the final
+            // balance can still be traded instead of becoming stranded.
+            BigDecimal effectiveMinQuantity = ad.getAvailableQuantity().min(ad.getMinQuantity());
+            if (quantity.compareTo(effectiveMinQuantity) < 0 || quantity.compareTo(ad.getMaxQuantity()) > 0 || quantity.compareTo(ad.getAvailableQuantity()) > 0) {
+                throw new IllegalArgumentException("Quantity is outside the advertisement limits");
+            }
             if (!containsPaymentMethod(ad.getPaymentMethods(), paymentMethod)) throw new IllegalArgumentException("Selected payment method is not supported by this advertisement");
             if (ad.getSide() == OrderSide.SELL) { sellerId = ad.getOwnerId(); buyerId = authenticatedUserId; }
             else { if (authenticatedUserId.equals(ad.getOwnerId())) throw new IllegalArgumentException("A different seller is required"); sellerId = authenticatedUserId; buyerId = ad.getOwnerId(); }
