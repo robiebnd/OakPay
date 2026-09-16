@@ -33,6 +33,7 @@ public final class AdvertisementDtos {
     public record AdResponse(
             UUID id,
             UUID ownerId,
+            String ownerName,
             OrderSide side,
             String asset,
             String fiatCurrency,
@@ -46,8 +47,8 @@ public final class AdvertisementDtos {
             AdStatus status,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {
-        static AdResponse from(Advertisement a) {
-            return new AdResponse(a.getId(), a.getOwnerId(), a.getSide(), a.getAsset(), a.getFiatCurrency(),
+        static AdResponse from(Advertisement a, String ownerName) {
+            return new AdResponse(a.getId(), a.getOwnerId(), ownerName, a.getSide(), a.getAsset(), a.getFiatCurrency(),
                     a.getPrice(), a.getTotalQuantity(), a.getAvailableQuantity(), a.getMinQuantity(),
                     a.getMaxQuantity(), a.getPaymentMethods(), a.getTerms(), a.getStatus(),
                     a.getCreatedAt(), a.getUpdatedAt());
