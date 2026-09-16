@@ -1,10 +1,6 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
 
-/* -------------------------------------------------------------------------- */
-/* Dashboard                                                                  */
-/* -------------------------------------------------------------------------- */
-
 export type AdminDashboardStats = {
   pendingKyc: number;
   openQueries: number;
@@ -12,237 +8,68 @@ export type AdminDashboardStats = {
   pendingResolutions: number;
 };
 
-/* -------------------------------------------------------------------------- */
-/* KYC                                                                         */
-/* -------------------------------------------------------------------------- */
+export type KycStatus = "NOT_STARTED" | "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+export type AdminKycApplication = { id: string; userId: string; email: string; firstName: string; lastName: string; status: KycStatus; documentType: string | null; documentNumberMasked: string | null; submittedAt: string | null; updatedAt: string | null };
+export type KycDecisionRequest = { decision: "APPROVED" | "REJECTED"; reason?: string };
 
-export type KycStatus =
-  | "NOT_STARTED"
-  | "PENDING"
-  | "UNDER_REVIEW"
-  | "APPROVED"
-  | "REJECTED";
+export type ClientQuery = { id: string; userId: string; subject: string; category: string; status: string; priority: string; description: string; resolution: string | null; assignedAdminId: string | null; createdAt: string; updatedAt: string; resolvedAt: string | null };
+export type ClientQueryStatus = "OPEN" | "ASSIGNED" | "ESCALATED" | "RESOLVED";
 
-export type AdminKycApplication = {
-  id: string;
-  userId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  status: KycStatus;
-  documentType: string | null;
-  documentNumberMasked: string | null;
-  submittedAt: string | null;
-  updatedAt: string | null;
-};
-
-export type KycDecisionRequest = {
-  decision: "APPROVED" | "REJECTED";
-  reason?: string;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Client Queries                                                              */
-/* -------------------------------------------------------------------------- */
-
-export type ClientQuery = {
-  id: string;
-  userId: string;
-  subject: string;
-  category: string;
-  status: string;
-  priority: string;
-  description: string;
-  resolution: string | null;
-  assignedAdminId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  resolvedAt: string | null;
-};
-
-export type ClientQueryStatus =
-  | "OPEN"
-  | "ASSIGNED"
-  | "ESCALATED"
-  | "RESOLVED";
-
-export type AssignQueryRequest = {
-  adminUserId: string;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Users & Access                                                              */
-/* -------------------------------------------------------------------------- */
-
-export type AdminUser = {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  status: "ACTIVE" | "INACTIVE";
-  emailVerified: boolean;
-  createdAt: string;
-};
-
+export type AdminUser = { id: string; email: string; firstName: string; lastName: string; role: string; status: "ACTIVE" | "INACTIVE"; emailVerified: boolean; createdAt: string };
 export type AdminUserStatus = "ACTIVE" | "INACTIVE";
 
-/* -------------------------------------------------------------------------- */
-/* P2P Disputes                                                                */
-/* -------------------------------------------------------------------------- */
+export type DisputeStatus = "OPEN" | "RESOLVED";
+export type DisputeResolution = "BUYER_WINS" | "SELLER_WINS";
+export type P2PDispute = { id: string; tradeId: string; openedBy: string; reason: string; evidence: string | null; status: DisputeStatus; resolution: DisputeResolution | null; resolutionNote: string | null; resolvedBy: string | null; resolvedAt: string | null; createdAt: string; updatedAt: string };
+export type P2PDisputeAudit = { id: string; disputeId: string; tradeId: string; actorId: string; eventType: string; note: string | null; createdAt: string };
+export type ResolveDisputeRequest = { resolution: DisputeResolution; note?: string };
 
-export type DisputeStatus =
-  | "OPEN"
-  | "RESOLVED";
-
-export type DisputeResolution =
-  | "BUYER_WINS"
-  | "SELLER_WINS";
-
-export type P2PDispute = {
-  id: string;
-  tradeId: string;
-  openedBy: string;
-  reason: string;
-  evidence: string | null;
-  status: DisputeStatus;
-  resolution: DisputeResolution | null;
-  resolutionNote: string | null;
-  resolvedBy: string | null;
-  resolvedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type P2PDisputeAudit = {
-  id: string;
-  disputeId: string;
-  tradeId: string;
-  actorId: string;
-  eventType: string;
-  note: string | null;
-  createdAt: string;
-};
-
-export type ResolveDisputeRequest = {
-  resolution: DisputeResolution;
-  note?: string;
-};
-
-/* -------------------------------------------------------------------------- */
-/* P2P Trades                                                                  */
-/* -------------------------------------------------------------------------- */
-
-export type P2PTradeStatus =
-  | "CREATED"
-  | "PAYMENT_MARKED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "DISPUTED";
-
-export type P2PTrade = {
-  id: string;
-  advertisementId: string | null;
-  buyerId: string;
-  sellerId: string;
-  asset: string;
-  quantity: number | string;
-  fiatCurrency: string | null;
-  fiatAmount: number | string | null;
-  status: P2PTradeStatus;
-  createdAt: string;
-  updatedAt: string;
-};
-
-/* -------------------------------------------------------------------------- */
-/* API Helpers                                                                 */
-/* -------------------------------------------------------------------------- */
+export type P2PTradeStatus = "CREATED" | "PAYMENT_MARKED" | "COMPLETED" | "CANCELLED" | "DISPUTED";
+export type P2PTrade = { id: string; advertisementId: string | null; buyerId: string; sellerId: string; asset: string; quantity: number | string; fiatCurrency: string | null; fiatAmount: number | string | null; status: P2PTradeStatus; createdAt: string; updatedAt: string };
 
 function getToken(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return (
-    localStorage.getItem("oakpay.admin.accessToken") ||
-    localStorage.getItem("oakpay.accessToken")
-  );
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-
   const headers = new Headers(options.headers);
 
-  if (
-    options.body &&
-    !(options.body instanceof FormData) &&
-    !headers.has("Content-Type")
-  ) {
+  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    cache: "no-store",
     headers,
   });
 
-  if (response.status === 401 || response.status === 403) {
-    throw new Error("ADMIN_AUTH_REQUIRED");
-  }
+  if (response.status === 401 || response.status === 403) throw new Error("ADMIN_AUTH_REQUIRED");
 
   if (!response.ok) {
     const body = await response.text();
-
     let message = body;
-
     try {
       const parsed = JSON.parse(body);
-
-      message =
-        parsed?.message ||
-        parsed?.error ||
-        parsed?.detail ||
-        body;
+      message = parsed?.message || parsed?.error || parsed?.detail || body;
     } catch {
-      // Keep the original response body.
+      // Keep original response body.
     }
-
-    throw new Error(
-      message || `Request failed with status ${response.status}`,
-    );
+    throw new Error(message || `Request failed with status ${response.status}`);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const contentType =
-    response.headers.get("content-type") || "";
-
-  if (!contentType.includes("application/json")) {
-    return undefined as T;
-  }
-
+  if (response.status === 204) return undefined as T;
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return undefined as T;
   return response.json() as Promise<T>;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Admin API                                                                   */
-/* -------------------------------------------------------------------------- */
-
 export const adminApi = {
   dashboard() {
-    return request<AdminDashboardStats>(
-      "/api/v1/admin/dashboard",
-    );
+    return request<AdminDashboardStats>("/api/v1/admin/dashboard");
   },
 
   kyc: {
@@ -250,25 +77,13 @@ export const adminApi = {
       const params = new URLSearchParams();
       if (status) params.set("status", status);
       const query = params.toString();
-      return request<AdminKycApplication[]>(
-        `/api/v1/admin/kyc${query ? `?${query}` : ""}`,
-      );
+      return request<AdminKycApplication[]>(`/api/v1/admin/kyc${query ? `?${query}` : ""}`);
     },
-
     get(id: string) {
-      return request<AdminKycApplication>(
-        `/api/v1/admin/kyc/${id}`,
-      );
+      return request<AdminKycApplication>(`/api/v1/admin/kyc/${id}`);
     },
-
     decide(id: string, data: KycDecisionRequest) {
-      return request<AdminKycApplication>(
-        `/api/v1/admin/kyc/${id}/decision`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        },
-      );
+      return request<AdminKycApplication>(`/api/v1/admin/kyc/${id}/decision`, { method: "POST", body: JSON.stringify(data) });
     },
   },
 
@@ -277,35 +92,16 @@ export const adminApi = {
       const params = new URLSearchParams();
       if (status) params.set("status", status);
       const query = params.toString();
-      return request<ClientQuery[]>(
-        `/api/v1/admin/queries${query ? `?${query}` : ""}`,
-      );
+      return request<ClientQuery[]>(`/api/v1/admin/queries${query ? `?${query}` : ""}`);
     },
-
     get(id: string) {
-      return request<ClientQuery>(
-        `/api/v1/admin/queries/${id}`,
-      );
+      return request<ClientQuery>(`/api/v1/admin/queries/${id}`);
     },
-
     assign(id: string, adminUserId: string) {
-      return request<ClientQuery>(
-        `/api/v1/admin/queries/${id}/assign`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({ adminUserId }),
-        },
-      );
+      return request<ClientQuery>(`/api/v1/admin/queries/${id}/assign`, { method: "PATCH", body: JSON.stringify({ adminUserId }) });
     },
-
     resolve(id: string, resolution: string) {
-      return request<ClientQuery>(
-        `/api/v1/admin/queries/${id}/resolve`,
-        {
-          method: "POST",
-          body: JSON.stringify({ resolution }),
-        },
-      );
+      return request<ClientQuery>(`/api/v1/admin/queries/${id}/resolve`, { method: "POST", body: JSON.stringify({ resolution }) });
     },
   },
 
@@ -315,63 +111,34 @@ export const adminApi = {
       if (status) params.set("status", status);
       if (role) params.set("role", role);
       const query = params.toString();
-      return request<AdminUser[]>(
-        `/api/v1/admin/users${query ? `?${query}` : ""}`,
-      );
+      return request<AdminUser[]>(`/api/v1/admin/users${query ? `?${query}` : ""}`);
     },
-
     get(id: string) {
-      return request<AdminUser>(
-        `/api/v1/admin/users/${id}`,
-      );
+      return request<AdminUser>(`/api/v1/admin/users/${id}`);
     },
-
     updateStatus(id: string, status: AdminUserStatus) {
-      return request<AdminUser>(
-        `/api/v1/admin/users/${id}/status`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({ status }),
-        },
-      );
+      return request<AdminUser>(`/api/v1/admin/users/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
     },
   },
 
   disputes: {
     list() {
-      return request<P2PDispute[]>(
-        "/api/v1/p2p/admin/disputes",
-      );
+      return request<P2PDispute[]>("/api/v1/p2p/admin/disputes");
     },
-
     get(id: string) {
-      return request<P2PDispute>(
-        `/api/v1/p2p/admin/disputes/${id}`,
-      );
+      return request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}`);
     },
-
     audit(id: string) {
-      return request<P2PDisputeAudit[]>(
-        `/api/v1/p2p/admin/disputes/${id}/audit`,
-      );
+      return request<P2PDisputeAudit[]>(`/api/v1/p2p/admin/disputes/${id}/audit`);
     },
-
     resolve(id: string, data: ResolveDisputeRequest) {
-      return request<P2PDispute>(
-        `/api/v1/p2p/admin/disputes/${id}/resolve`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        },
-      );
+      return request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}/resolve`, { method: "POST", body: JSON.stringify(data) });
     },
   },
 
   trades: {
     get(id: string) {
-      return request<P2PTrade>(
-        `/api/v1/p2p/trades/${id}`,
-      );
+      return request<P2PTrade>(`/api/v1/p2p/trades/${id}`);
     },
   },
 };
