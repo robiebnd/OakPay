@@ -13,12 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 public class InternalAdminDashboardController {
 
     private final P2PDisputeService disputeService;
+    private final P2PTradeRepository tradeRepository;
     private final String internalSecret;
 
     public InternalAdminDashboardController(
             P2PDisputeService disputeService,
+            P2PTradeRepository tradeRepository,
             @Value("${oakpay.internal-secret}") String internalSecret) {
         this.disputeService = disputeService;
+        this.tradeRepository = tradeRepository;
         this.internalSecret = internalSecret;
     }
 
@@ -26,8 +29,13 @@ public class InternalAdminDashboardController {
     public DashboardDisputeCounts disputeCounts(
             @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
         requireInternalSecret(suppliedSecret);
-        long open = disputeService.openDisputes().size();
-        return new DashboardDisputeCounts(open, open);
+
+        long disputedTrades = tradeRepository.countByStatus(P2PTradeStatus.DISPUTED);
+        long openDisputes = disputeService.openDisputes().size();
+
+        // The dashboard's Active Disputes metric follows the trade's live DISPUTED status.
+        // Pending Resolutions remains tied to unresolved dispute records.
+        return new DashboardDisputeCounts(disputedTrades, openDisputes);
     }
 
     private void requireInternalSecret(String suppliedSecret) {
