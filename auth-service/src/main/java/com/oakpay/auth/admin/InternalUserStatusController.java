@@ -1,7 +1,5 @@
 package com.oakpay.auth.admin;
 
-import com.oakpay.auth.user.KycProfile;
-import com.oakpay.auth.user.KycProfileRepository;
 import com.oakpay.auth.user.User;
 import com.oakpay.auth.user.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,15 +19,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/internal/users")
 public class InternalUserStatusController {
     private final UserRepository userRepository;
-    private final KycProfileRepository kycProfileRepository;
     private final String internalSecret;
 
     public InternalUserStatusController(
             UserRepository userRepository,
-            KycProfileRepository kycProfileRepository,
             @Value("${oakpay.internal-secret:oakpay-internal-development-secret-change-before-production}") String internalSecret) {
         this.userRepository = userRepository;
-        this.kycProfileRepository = kycProfileRepository;
         this.internalSecret = internalSecret;
     }
 
@@ -55,21 +50,6 @@ public class InternalUserStatusController {
         return new UserProfileResponse(userId, displayName);
     }
 
-    @GetMapping("/{userId}/kyc-status")
-    public KycStatusResponse kycStatus(
-            @PathVariable UUID userId,
-            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
-        requireInternalSecret(suppliedSecret);
-
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return new KycStatusResponse(userId, "NOT_STARTED");
-        }
-
-        KycProfile profile = kycProfileRepository.findByUserId(userId).orElse(null);
-        return new KycStatusResponse(userId, profile == null ? "NOT_STARTED" : profile.getStatus());
-    }
-
     private void requireInternalSecret(String suppliedSecret) {
         if (suppliedSecret == null || !MessageDigest.isEqual(
                 suppliedSecret.getBytes(StandardCharsets.UTF_8),
@@ -80,5 +60,4 @@ public class InternalUserStatusController {
 
     public record ActiveUserResponse(UUID userId, boolean active) {}
     public record UserProfileResponse(UUID userId, String displayName) {}
-    public record KycStatusResponse(UUID userId, String status) {}
 }
