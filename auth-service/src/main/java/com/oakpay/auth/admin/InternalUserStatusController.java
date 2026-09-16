@@ -42,6 +42,19 @@ public class InternalUserStatusController {
         return new ActiveUserResponse(userId, user != null && user.isEnabled());
     }
 
+    @GetMapping("/{userId}/profile")
+    public UserProfileResponse profile(
+            @PathVariable UUID userId,
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
+        requireInternalSecret(suppliedSecret);
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        String displayName = ((user.getFirstName() == null ? "" : user.getFirstName().trim()) + " "
+                + (user.getLastName() == null ? "" : user.getLastName().trim())).trim();
+        if (displayName.isBlank()) displayName = user.getEmail();
+        return new UserProfileResponse(userId, displayName);
+    }
+
     @GetMapping("/{userId}/kyc-status")
     public KycStatusResponse kycStatus(
             @PathVariable UUID userId,
@@ -66,5 +79,6 @@ public class InternalUserStatusController {
     }
 
     public record ActiveUserResponse(UUID userId, boolean active) {}
+    public record UserProfileResponse(UUID userId, String displayName) {}
     public record KycStatusResponse(UUID userId, String status) {}
 }
