@@ -38,19 +38,14 @@ public class User {
     public String getPhoneNumber(){return phoneNumber;} public void setPhoneNumber(String phoneNumber){this.phoneNumber=phoneNumber;}
     public String getCountry(){return country;} public void setCountry(String country){this.country=country;}
     public LocalDate getDateOfBirth(){return dateOfBirth;} public void setDateOfBirth(LocalDate dateOfBirth){this.dateOfBirth=dateOfBirth;}
-    public boolean isEnabled(){return enabled;} public boolean isEmailVerified(){return emailVerified;} public void setEmailVerified(boolean emailVerified){this.emailVerified=emailVerified;}
+    public boolean isEnabled(){return enabled;} public void setEnabled(boolean enabled){this.enabled=enabled;}
+    public boolean isEmailVerified(){return emailVerified;} public void setEmailVerified(boolean emailVerified){this.emailVerified=emailVerified;}
     public boolean isTwoFactorEnabled(){return twoFactorEnabled;} public void setTwoFactorEnabled(boolean twoFactorEnabled){this.twoFactorEnabled=twoFactorEnabled;}
     public String getTwoFactorSecretEncrypted(){return twoFactorSecretEncrypted;} public void setTwoFactorSecretEncrypted(String twoFactorSecretEncrypted){this.twoFactorSecretEncrypted=twoFactorSecretEncrypted;}
     public String getRole(){return role;} public void setRole(String role){this.role=role;}
     public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;}
     @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
-
-    public String getStatus() {
-    return status;
-    }
-
-    public void setStatus(String status) {
-    this.status = status;
-    }
+    public String getStatus(){return status;}
+    public void setStatus(String status){this.status=status;}
 }
