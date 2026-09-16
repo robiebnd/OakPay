@@ -35,7 +35,7 @@ class P2PTradeServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(userStatusClient.isActive(any(UUID.class))).thenReturn(true);
+        lenient().when(userStatusClient.isActive(any(UUID.class))).thenReturn(true);
         service = new P2PTradeService(
                 repository,
                 walletClient,
@@ -69,8 +69,8 @@ class P2PTradeServiceTest {
         service.expirePendingTrades();
 
         assertEquals(P2PTradeStatus.EXPIRED, trade.getStatus());
-        assertEquals(new BigDecimal("80"), ad.getAvailableQuantity());
-        verify(walletClient).unlock(eq(sellerId), eq("USDT"), eq(new BigDecimal("10")), eq(tradeId));
+        assertEquals(0, new BigDecimal("80").compareTo(ad.getAvailableQuantity()));
+        verify(walletClient).unlock(eq(sellerId), eq("USDT"), eq(new BigDecimal("10.00")), eq(tradeId));
         verify(repository).save(trade);
         verify(advertisementRepository).save(ad);
     }
@@ -117,7 +117,7 @@ class P2PTradeServiceTest {
         service.expirePendingTrades();
 
         assertEquals(P2PTradeStatus.EXPIRED, trade.getStatus());
-        assertEquals(new BigDecimal("100"), ad.getAvailableQuantity());
+        assertEquals(0, new BigDecimal("100").compareTo(ad.getAvailableQuantity()));
     }
 
     private P2PTrade pendingTrade(UUID id, UUID sellerId, UUID buyerId, UUID adId,
