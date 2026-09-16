@@ -8,6 +8,7 @@ import {
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Text, TextInput } from 'react-native';
 import { AuthProvider } from '../context/AuthContext';
 
 export default function RootLayout() {
@@ -19,6 +20,14 @@ export default function RootLayout() {
   });
 
   if (!fontsLoaded) return null;
+
+  // Google Sans Flex is the app-wide typography default.
+  // Existing Inter_* aliases remain mapped to Google Sans Flex so older
+  // screen styles continue to render with the same font family.
+  Text.defaultProps = Text.defaultProps || {};
+  Text.defaultProps.style = [{ fontFamily: 'Inter_400Regular' }, Text.defaultProps.style];
+  TextInput.defaultProps = TextInput.defaultProps || {};
+  TextInput.defaultProps.style = [{ fontFamily: 'Inter_400Regular' }, TextInput.defaultProps.style];
 
   return (
     <SafeAreaProvider>
