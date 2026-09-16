@@ -16,17 +16,81 @@ export type ResolveDisputeRequest = { resolution:DisputeResolution; note?:string
 export type P2PTradeStatus = "ESCROWED"|"PAYMENT_PENDING"|"PAYMENT_MARKED"|"COMPLETED"|"CANCELLED"|"DISPUTED"|"EXPIRED";
 export type AdminTransaction = { id:string; buyerId:string; sellerId:string; advertisementId:string|null; asset:string; fiatCurrency:string; quantity:number|string; unitPrice:number|string; fiatAmount:number|string; paymentMethod:string; status:P2PTradeStatus|string; paymentReference:string|null; expiresAt:string; createdAt:string; updatedAt:string };
 
-function getToken():string|null { if(typeof window === "undefined") return null; return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken"); }
+function getAccessToken():string|null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
+}
+
+function getRefreshToken():string|null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("oakpay.admin.refreshToken") || localStorage.getItem("oakpay.refreshToken");
+}
+
+function storeTokens(token:{accessToken:string;refreshToken?:string|null}) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("oakpay.admin.accessToken", token.accessToken);
+  if (token.refreshToken) localStorage.setItem("oakpay.admin.refreshToken", token.refreshToken);
+}
+
+function clearSession() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("oakpay.admin.accessToken");
+  localStorage.removeItem("oakpay.admin.refreshToken");
+  localStorage.removeItem("oakpay.accessToken");
+  localStorage.removeItem("oakpay.refreshToken");
+}
+
+async function refreshAccessToken():Promise<string|null>{
+  const refreshToken=getRefreshToken();
+  if(!refreshToken)return null;
+  try{
+    const response=await fetch(`${API_BASE_URL}/api/v1/auth/refresh`,{
+      method:"POST",
+      headers:{Accept:"application/json","Content-Type":"application/json"},
+      cache:"no-store",
+      body:JSON.stringify({refreshToken})
+    });
+    if(!response.ok)return null;
+    const token=await response.json() as {accessToken:string;refreshToken?:string|null};
+    if(!token?.accessToken)return null;
+    storeTokens(token);
+    return token.accessToken;
+  }catch{
+    return null;
+  }
+}
+
 async function request<T>(path:string, options:RequestInit={}):Promise<T>{
-  const token=getToken(); const headers=new Headers(options.headers);
+  let token=getAccessToken();
+  let headers=new Headers(options.headers);
   if(options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type","application/json");
+  headers.set("Accept","application/json");
   if(token) headers.set("Authorization",`Bearer ${token}`);
-  const response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
-  if(response.status===401) throw new Error("ADMIN_AUTH_REQUIRED");
+
+  let response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
+
+  if(response.status===401){
+    const refreshed=await refreshAccessToken();
+    if(refreshed){
+      token=refreshed;
+      headers=new Headers(options.headers);
+      if(options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type","application/json");
+      headers.set("Accept","application/json");
+      headers.set("Authorization",`Bearer ${token}`);
+      response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
+    }
+    if(response.status===401){
+      clearSession();
+      throw new Error("ADMIN_AUTH_REQUIRED");
+    }
+  }
+
   if(response.status===403) throw new Error("ADMIN_ACCESS_FORBIDDEN");
   if(!response.ok){const body=await response.text();let message=body;try{const parsed=JSON.parse(body);message=parsed?.message||parsed?.error||parsed?.detail||body;}catch{}throw new Error(message||`Request failed with status ${response.status}`);}
   if(response.status===204) return undefined as T;
-  const contentType=response.headers.get("content-type")||""; if(!contentType.includes("application/json")) return undefined as T; return response.json() as Promise<T>;
+  const contentType=response.headers.get("content-type")||"";
+  if(!contentType.includes("application/json")) return undefined as T;
+  return response.json() as Promise<T>;
 }
 
 export const adminApi={
