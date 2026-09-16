@@ -22,7 +22,8 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
   if(options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type","application/json");
   if(token) headers.set("Authorization",`Bearer ${token}`);
   const response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
-  if(response.status===401||response.status===403) throw new Error("ADMIN_AUTH_REQUIRED");
+  if(response.status===401) throw new Error("ADMIN_AUTH_REQUIRED");
+  if(response.status===403) throw new Error("ADMIN_ACCESS_FORBIDDEN");
   if(!response.ok){const body=await response.text();let message=body;try{const parsed=JSON.parse(body);message=parsed?.message||parsed?.error||parsed?.detail||body;}catch{}throw new Error(message||`Request failed with status ${response.status}`);}
   if(response.status===204) return undefined as T;
   const contentType=response.headers.get("content-type")||""; if(!contentType.includes("application/json")) return undefined as T; return response.json() as Promise<T>;
