@@ -31,7 +31,8 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/actuator/scheduledtasks",
                                 "/api/v1/p2p/rates",
-                                "/api/v1/p2p/rates/**"
+                                "/api/v1/p2p/rates/**",
+                                "/api/v1/internal/admin/dashboard/**"
                         ).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
