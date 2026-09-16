@@ -34,5 +34,24 @@ public class UserStatusClient {
         }
     }
 
+    public String displayName(UUID userId) {
+        if (userId == null) return "PayOak user";
+        try {
+            UserProfileResponse response = client.get()
+                    .uri("/api/v1/internal/users/{userId}/profile", userId)
+                    .header("X-OakPay-Internal-Secret", internalSecret)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .body(UserProfileResponse.class);
+            if (response == null || response.displayName() == null || response.displayName().isBlank()) {
+                return "PayOak user";
+            }
+            return response.displayName();
+        } catch (RuntimeException ex) {
+            return "PayOak user";
+        }
+    }
+
     private record ActiveUserResponse(UUID userId, boolean active) {}
+    private record UserProfileResponse(UUID userId, String displayName) {}
 }
