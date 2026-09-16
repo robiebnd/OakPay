@@ -14,6 +14,7 @@ import java.util.UUID;
 public interface P2PTradeRepository extends JpaRepository<P2PTrade, UUID> {
     List<P2PTrade> findAllByBuyerIdOrSellerIdOrderByCreatedAtDesc(UUID buyerId, UUID sellerId);
     List<P2PTrade> findAllByStatusOrderByCreatedAtAsc(P2PTradeStatus status);
+    long countByStatus(P2PTradeStatus status);
 
     List<P2PTrade> findAllByStatusAndExpiresAtBefore(P2PTradeStatus status, LocalDateTime cutoff);
 
