@@ -1059,27 +1059,37 @@ function TransactionsPage() {
     _s();
     const [items, setItems] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [refreshing, setRefreshing] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
     const [search, setSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
-    async function load() {
+    async function load(initial = false) {
         try {
-            setLoading(true);
+            if (initial) setLoading(true);
+            else setRefreshing(true);
             setError("");
-            setItems(await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$adminApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["adminApi"].transactions.list(200));
+            const result = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$adminApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["adminApi"].transactions.list(200);
+            setItems(result);
         } catch (e) {
             if (e instanceof Error && e.message === "ADMIN_AUTH_REQUIRED") {
-                window.location.href = "/login";
+                setError("Your administrator session has expired. Please sign in again.");
+                return;
+            }
+            if (e instanceof Error && e.message === "ADMIN_ACCESS_FORBIDDEN") {
+                setError("Administrator access required for P2P transactions.");
                 return;
             }
             setError(e instanceof Error ? e.message : "Unable to load transactions.");
         } finally{
-            setLoading(false);
+            if (initial) setLoading(false);
+            setRefreshing(false);
         }
     }
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "TransactionsPage.useEffect": ()=>{
-            load();
-            const t = window.setInterval(load, 15000);
+            load(true);
+            const t = window.setInterval({
+                "TransactionsPage.useEffect.t": ()=>load(false)
+            }["TransactionsPage.useEffect.t"], 15000);
             return ({
                 "TransactionsPage.useEffect": ()=>window.clearInterval(t)
             })["TransactionsPage.useEffect"];
@@ -1136,64 +1146,64 @@ function TransactionsPage() {
                                     children: "Administration"
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 91
+                                    lineNumber: 65,
+                                    columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
                                     className: "mt-1 text-3xl font-extrabold tracking-tight text-[#111827]",
                                     children: "P2P & Transactions"
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 185
+                                    lineNumber: 66,
+                                    columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]",
                                     children: "Monitor live PayOak P2P trades and transaction activity."
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 283
+                                    lineNumber: 67,
+                                    columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 16,
-                            columnNumber: 86
+                            lineNumber: 64,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            onClick: load,
-                            disabled: loading,
-                            className: "inline-flex items-center gap-2 rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#082d16] shadow-sm",
+                            onClick: ()=>load(false),
+                            disabled: refreshing,
+                            className: "inline-flex items-center gap-2 rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#082d16] shadow-sm disabled:opacity-60",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
                                     size: 15,
-                                    className: loading ? "animate-spin" : ""
+                                    className: refreshing ? "animate-spin" : ""
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 16,
-                                    columnNumber: 596
+                                    lineNumber: 74,
+                                    columnNumber: 13
                                 }, this),
                                 "Refresh"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 16,
-                            columnNumber: 412
+                            lineNumber: 69,
+                            columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 16,
-                    columnNumber: 5
+                    lineNumber: 63,
+                    columnNumber: 9
                 }, this),
                 error ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700",
                     children: error
                 }, void 0, false, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 17,
-                    columnNumber: 12
+                    lineNumber: 79,
+                    columnNumber: 18
                 }, this) : null,
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
@@ -1205,13 +1215,13 @@ function TransactionsPage() {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 18,
-                                columnNumber: 122
+                                lineNumber: 82,
+                                columnNumber: 74
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 18,
-                            columnNumber: 63
+                            lineNumber: 82,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Card, {
                             label: "P2P Trades",
@@ -1220,13 +1230,13 @@ function TransactionsPage() {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 18,
-                                columnNumber: 204
+                                lineNumber: 83,
+                                columnNumber: 72
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 18,
-                            columnNumber: 147
+                            lineNumber: 83,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Card, {
                             label: "Incoming",
@@ -1235,13 +1245,13 @@ function TransactionsPage() {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 18,
-                                columnNumber: 284
+                                lineNumber: 84,
+                                columnNumber: 73
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 18,
-                            columnNumber: 226
+                            lineNumber: 84,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Card, {
                             label: "Outgoing",
@@ -1250,19 +1260,19 @@ function TransactionsPage() {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 18,
-                                columnNumber: 371
+                                lineNumber: 85,
+                                columnNumber: 73
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 18,
-                            columnNumber: 313
+                            lineNumber: 85,
+                            columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 18,
-                    columnNumber: 5
+                    lineNumber: 81,
+                    columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
                     className: "overflow-hidden rounded-2xl border border-[#e3e8e5] bg-white shadow-sm",
@@ -1277,8 +1287,8 @@ function TransactionsPage() {
                                         className: "absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]"
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 19,
-                                        columnNumber: 179
+                                        lineNumber: 91,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                         value: search,
@@ -1287,34 +1297,34 @@ function TransactionsPage() {
                                         className: "w-full rounded-xl border border-[#dce3df] bg-[#fafcfb] py-3 pl-11 pr-4 text-sm outline-none focus:border-[#397b0a]"
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 19,
-                                        columnNumber: 266
+                                        lineNumber: 92,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 19,
-                                columnNumber: 144
+                                lineNumber: 90,
+                                columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 19,
-                            columnNumber: 97
+                            lineNumber: 89,
+                            columnNumber: 11
                         }, this),
                         loading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex min-h-[300px] items-center justify-center text-sm text-[#6b7280]",
                             children: "Loading live transaction data..."
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 20,
-                            columnNumber: 16
+                            lineNumber: 102,
+                            columnNumber: 13
                         }, this) : filtered.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex min-h-[300px] items-center justify-center text-sm text-[#6b7280]",
                             children: "No transactions found."
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 20,
-                            columnNumber: 162
+                            lineNumber: 104,
+                            columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "overflow-x-auto",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("table", {
@@ -1329,59 +1339,59 @@ function TransactionsPage() {
                                                     children: "Transaction"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 20,
-                                                    columnNumber: 407
+                                                    lineNumber: 110,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]",
                                                     children: "Asset"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 20,
-                                                    columnNumber: 496
+                                                    lineNumber: 111,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]",
                                                     children: "Amount"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 20,
-                                                    columnNumber: 579
+                                                    lineNumber: 112,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]",
                                                     children: "Fiat total"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 20,
-                                                    columnNumber: 663
+                                                    lineNumber: 113,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]",
                                                     children: "Status"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 20,
-                                                    columnNumber: 751
+                                                    lineNumber: 114,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                     className: "px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]",
                                                     children: "Created"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 20,
-                                                    columnNumber: 835
+                                                    lineNumber: 115,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/transactions/page.tsx",
-                                            lineNumber: 20,
-                                            columnNumber: 359
+                                            lineNumber: 109,
+                                            columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 20,
-                                        columnNumber: 352
+                                        lineNumber: 108,
+                                        columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
                                         children: filtered.map((x)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
@@ -1398,8 +1408,8 @@ function TransactionsPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 20,
-                                                                columnNumber: 1052
+                                                                lineNumber: 122,
+                                                                columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                                 className: "mt-1 text-[10px] text-[#9ca3af]",
@@ -1411,14 +1421,14 @@ function TransactionsPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 20,
-                                                                columnNumber: 1126
+                                                                lineNumber: 123,
+                                                                columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 20,
-                                                        columnNumber: 1026
+                                                        lineNumber: 121,
+                                                        columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-5 py-4",
@@ -1428,22 +1438,22 @@ function TransactionsPage() {
                                                                 children: x.asset
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 20,
-                                                                columnNumber: 1269
+                                                                lineNumber: 125,
+                                                                columnNumber: 49
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                                 className: "text-xs text-[#6b7280]",
                                                                 children: x.paymentMethod
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 20,
-                                                                columnNumber: 1330
+                                                                lineNumber: 125,
+                                                                columnNumber: 110
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 20,
-                                                        columnNumber: 1243
+                                                        lineNumber: 125,
+                                                        columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-5 py-4 text-sm font-bold",
@@ -1454,8 +1464,8 @@ function TransactionsPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 20,
-                                                        columnNumber: 1394
+                                                        lineNumber: 126,
+                                                        columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-5 py-4 text-sm font-bold",
@@ -1466,8 +1476,8 @@ function TransactionsPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 20,
-                                                        columnNumber: 1470
+                                                        lineNumber: 127,
+                                                        columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-5 py-4",
@@ -1476,63 +1486,63 @@ function TransactionsPage() {
                                                             children: x.status
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/transactions/page.tsx",
-                                                            lineNumber: 20,
-                                                            columnNumber: 1581
+                                                            lineNumber: 128,
+                                                            columnNumber: 49
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 20,
-                                                        columnNumber: 1555
+                                                        lineNumber: 128,
+                                                        columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                         className: "px-5 py-4 text-xs text-[#6b7280]",
                                                         children: dt(x.createdAt)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 20,
-                                                        columnNumber: 1820
+                                                        lineNumber: 129,
+                                                        columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, x.id, true, {
                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                lineNumber: 20,
-                                                columnNumber: 957
+                                                lineNumber: 120,
+                                                columnNumber: 21
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 20,
-                                        columnNumber: 933
+                                        lineNumber: 118,
+                                        columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 20,
-                                columnNumber: 311
+                                lineNumber: 107,
+                                columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 20,
-                            columnNumber: 278
+                            lineNumber: 106,
+                            columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 19,
-                    columnNumber: 5
+                    lineNumber: 88,
+                    columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/transactions/page.tsx",
-            lineNumber: 15,
-            columnNumber: 22
+            lineNumber: 62,
+            columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/transactions/page.tsx",
-        lineNumber: 15,
-        columnNumber: 10
+        lineNumber: 61,
+        columnNumber: 5
     }, this);
 }
-_s(TransactionsPage, "5KxI7bKUy+ELgwa5PVXHa5sy5OY=");
+_s(TransactionsPage, "IyJ6cgDDFSCp+m63er06X6SD5WY=");
 _c = TransactionsPage;
 function Card({ label, value, icon }) {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1547,41 +1557,41 @@ function Card({ label, value, icon }) {
                             children: label
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 24,
-                            columnNumber: 229
+                            lineNumber: 146,
+                            columnNumber: 14
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             className: "mt-3 text-3xl font-extrabold text-[#111827]",
                             children: value
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 24,
-                            columnNumber: 313
+                            lineNumber: 146,
+                            columnNumber: 98
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 24,
-                    columnNumber: 224
+                    lineNumber: 146,
+                    columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "rounded-xl bg-[#edf5ee] p-3 text-[#397b0a]",
                     children: icon
                 }, void 0, false, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 24,
-                    columnNumber: 389
+                    lineNumber: 147,
+                    columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/transactions/page.tsx",
-            lineNumber: 24,
-            columnNumber: 174
+            lineNumber: 145,
+            columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/transactions/page.tsx",
-        lineNumber: 24,
-        columnNumber: 98
+        lineNumber: 144,
+        columnNumber: 5
     }, this);
 }
 _c1 = Card;
