@@ -10,8 +10,8 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 const BASE = (("TURBOPACK compile-time value", "http://localhost:8082") ?? 'http://localhost:8080').replace(/\/$/, '');
-async function json(path, init = {}) {
-    const r = await fetch(`${BASE}${path}`, {
+async function rawJson(path, init = {}) {
+    return fetch(`${BASE}${path}`, {
         ...init,
         headers: {
             Accept: 'application/json',
@@ -19,6 +19,8 @@ async function json(path, init = {}) {
             ...init.headers ?? {}
         }
     });
+}
+async function parse(r) {
     const text = await r.text();
     let body = null;
     try {
@@ -28,6 +30,44 @@ async function json(path, init = {}) {
     }
     if (!r.ok) throw new Error(body?.message ?? body?.error ?? `Request failed with status ${r.status}`);
     return body;
+}
+async function refreshAccessToken() {
+    const refreshToken = session.getRefresh();
+    if (!refreshToken) return null;
+    try {
+        const response = await rawJson('/api/v1/auth/refresh', {
+            method: 'POST',
+            body: JSON.stringify({
+                refreshToken
+            })
+        });
+        if (!response.ok) {
+            session.clear();
+            return null;
+        }
+        const token = await parse(response);
+        session.set(token);
+        return token.accessToken;
+    } catch  {
+        session.clear();
+        return null;
+    }
+}
+async function json(path, init = {}) {
+    let response = await rawJson(path, init);
+    const authHeader = new Headers(init.headers).get('Authorization');
+    if (response.status === 401 && authHeader) {
+        const token = await refreshAccessToken();
+        if (token) {
+            const headers = new Headers(init.headers);
+            headers.set('Authorization', `Bearer ${token}`);
+            response = await rawJson(path, {
+                ...init,
+                headers
+            });
+        }
+    }
+    return parse(response);
 }
 const adminApi = {
     login: (email, password)=>json('/api/v1/auth/login', {
@@ -97,9 +137,10 @@ const adminApi = {
 };
 const session = {
     get: ()=>("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : localStorage.getItem('oakpay.admin.accessToken'),
+    getRefresh: ()=>("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : localStorage.getItem('oakpay.admin.refreshToken'),
     set: (t)=>{
         localStorage.setItem('oakpay.admin.accessToken', t.accessToken);
-        localStorage.setItem('oakpay.admin.refreshToken', t.refreshToken);
+        if (t.refreshToken) localStorage.setItem('oakpay.admin.refreshToken', t.refreshToken);
     },
     clear: ()=>{
         localStorage.removeItem('oakpay.admin.accessToken');
@@ -185,122 +226,133 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bell$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bell$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/bell.js [app-client] (ecmascript) <export default as Bell>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-down.js [app-client] (ecmascript) <export default as ChevronDown>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/search.js [app-client] (ecmascript) <export default as Search>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/shield-check.js [app-client] (ecmascript) <export default as ShieldCheck>");
 "use client";
 ;
 ;
 function AdminHeader() {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("header", {
-        className: "sticky top-0 z-30 flex h-20 items-center justify-between border-b border-[#e3e8e5] bg-white/95 px-5 backdrop-blur md:px-8",
+        className: "sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#e7ebef] bg-white px-5 md:px-8",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        className: "text-xs font-bold uppercase tracking-[0.12em] text-[#397b0a]",
-                        children: "OakPay Operations"
-                    }, void 0, false, {
-                        fileName: "[project]/components/AdminHeader.tsx",
-                        lineNumber: 9,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                        className: "mt-0.5 text-lg font-extrabold tracking-tight text-[#111827]",
-                        children: "Administration"
-                    }, void 0, false, {
-                        fileName: "[project]/components/AdminHeader.tsx",
-                        lineNumber: 13,
-                        columnNumber: 9
-                    }, this)
-                ]
-            }, void 0, true, {
+                className: "flex min-w-0 flex-1 items-center",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "flex h-10 w-full max-w-[500px] items-center gap-3 rounded-full bg-[#f1f3f7] px-4",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"], {
+                            size: 18,
+                            className: "shrink-0 text-[#667085]"
+                        }, void 0, false, {
+                            fileName: "[project]/components/AdminHeader.tsx",
+                            lineNumber: 10,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                            type: "search",
+                            "aria-label": "Search",
+                            placeholder: "Search users, transactions, queries, or reference numbers...",
+                            className: "min-w-0 flex-1 bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#7a8494]"
+                        }, void 0, false, {
+                            fileName: "[project]/components/AdminHeader.tsx",
+                            lineNumber: 11,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/components/AdminHeader.tsx",
+                    lineNumber: 9,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
                 fileName: "[project]/components/AdminHeader.tsx",
                 lineNumber: 8,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "flex items-center gap-3",
+                className: "ml-4 flex shrink-0 items-center gap-5",
                 children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "hidden h-10 items-center gap-2 rounded-xl border border-[#e3e8e5] bg-[#f8faf9] px-3 md:flex",
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        type: "button",
+                        "aria-label": "Notifications",
+                        className: "relative rounded-full p-2 text-[#667085] transition hover:bg-[#f5f7f6] hover:text-[#111827]",
                         children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"], {
-                                size: 17,
-                                className: "text-[#9ca3af]"
-                            }, void 0, false, {
-                                fileName: "[project]/components/AdminHeader.tsx",
-                                lineNumber: 21,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                type: "search",
-                                placeholder: "Search operations...",
-                                className: "w-52 bg-transparent text-sm outline-none placeholder:text-[#9ca3af]"
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bell$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bell$3e$__["Bell"], {
+                                size: 21
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminHeader.tsx",
                                 lineNumber: 26,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "absolute right-1.5 top-1 h-3 w-3 rounded-full border-2 border-white bg-[#f5c400]"
+                            }, void 0, false, {
+                                fileName: "[project]/components/AdminHeader.tsx",
+                                lineNumber: 27,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminHeader.tsx",
-                        lineNumber: 20,
+                        lineNumber: 21,
                         columnNumber: 9
                     }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "hidden items-center gap-2 rounded-xl bg-[#eaf3e5] px-3 py-2 text-xs font-bold text-[#397b0a] lg:flex",
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        type: "button",
+                        "aria-label": "Administrator profile",
+                        className: "flex items-center gap-3 rounded-xl px-1 py-1 text-left transition hover:bg-[#f8faf9]",
                         children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__["ShieldCheck"], {
-                                size: 16
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "flex h-11 w-11 items-center justify-center rounded-full bg-[#397b0a] text-sm font-extrabold text-white",
+                                children: "RB"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminHeader.tsx",
                                 lineNumber: 35,
                                 columnNumber: 11
                             }, this),
-                            "Secure session"
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/components/AdminHeader.tsx",
-                        lineNumber: 34,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        type: "button",
-                        "aria-label": "Notifications",
-                        className: "relative rounded-xl p-2.5 text-[#6b7280] transition hover:bg-[#f5f7f6] hover:text-[#111827]",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bell$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bell$3e$__["Bell"], {
-                                size: 20
-                            }, void 0, false, {
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                className: "hidden leading-tight sm:block",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "block text-sm font-semibold text-[#111827]",
+                                        children: "Robson Banda"
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/AdminHeader.tsx",
+                                        lineNumber: 39,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "mt-1 block text-xs text-[#667085]",
+                                        children: "Administrator"
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/AdminHeader.tsx",
+                                        lineNumber: 40,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
                                 fileName: "[project]/components/AdminHeader.tsx",
-                                lineNumber: 45,
+                                lineNumber: 38,
                                 columnNumber: 11
                             }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                className: "absolute right-2 top-2 h-2 w-2 rounded-full bg-[#f5c400]"
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
+                                size: 18,
+                                className: "ml-1 text-[#667085]"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminHeader.tsx",
-                                lineNumber: 47,
+                                lineNumber: 42,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminHeader.tsx",
-                        lineNumber: 40,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex h-10 w-10 items-center justify-center rounded-xl bg-[#145323] text-sm font-extrabold text-white",
-                        children: "OA"
-                    }, void 0, false, {
-                        fileName: "[project]/components/AdminHeader.tsx",
-                        lineNumber: 51,
+                        lineNumber: 30,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/AdminHeader.tsx",
-                lineNumber: 18,
+                lineNumber: 20,
                 columnNumber: 7
             }, this)
         ]
@@ -405,20 +457,58 @@ function AdminSidebar() {
     const pathname = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePathname"])();
     const [loggingOut, setLoggingOut] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [mobileOpen, setMobileOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    function handleLogout() {
+    const isActive = (href)=>href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+    const closeMobileMenu = ()=>setMobileOpen(false);
+    const handleLogout = ()=>{
         setLoggingOut(true);
         __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["session"].clear();
         router.replace("/login");
-    }
-    function isActive(href) {
-        if (href === "/") {
-            return pathname === "/";
-        }
-        return pathname === href || pathname.startsWith(`${href}/`);
-    }
-    function closeMobileMenu() {
-        setMobileOpen(false);
-    }
+    };
+    const renderNav = (items)=>items.map((item)=>{
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                href: item.href,
+                onClick: closeMobileMenu,
+                className: [
+                    "group flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-semibold transition-all",
+                    active ? "bg-[#397b0a] text-white shadow-sm" : "text-white/65 hover:bg-white/7 hover:text-white"
+                ].join(" "),
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Icon, {
+                        size: 18,
+                        strokeWidth: active ? 2.3 : 2,
+                        className: active ? "text-white" : "text-white/45 group-hover:text-white/80"
+                    }, void 0, false, {
+                        fileName: "[project]/components/AdminSidebar.tsx",
+                        lineNumber: 31,
+                        columnNumber: 402
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                        children: item.label
+                    }, void 0, false, {
+                        fileName: "[project]/components/AdminSidebar.tsx",
+                        lineNumber: 31,
+                        columnNumber: 520
+                    }, this),
+                    item.label === "Client Queries" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                        className: [
+                            "ml-auto rounded-full px-2 py-0.5 text-[9px] font-bold",
+                            active ? "bg-white/15 text-white" : "bg-white/8 text-white/45"
+                        ].join(" "),
+                        children: "LIVE"
+                    }, void 0, false, {
+                        fileName: "[project]/components/AdminSidebar.tsx",
+                        lineNumber: 31,
+                        columnNumber: 577
+                    }, this)
+                ]
+            }, item.href, true, {
+                fileName: "[project]/components/AdminSidebar.tsx",
+                lineNumber: 31,
+                columnNumber: 126
+            }, this);
+        });
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -427,17 +517,16 @@ function AdminSidebar() {
                 onClick: ()=>setMobileOpen(true),
                 className: "fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-[#082d16] text-white shadow-lg lg:hidden",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$panel$2d$left$2d$open$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__PanelLeftOpen$3e$__["PanelLeftOpen"], {
-                    size: 20,
-                    strokeWidth: 2
+                    size: 20
                 }, void 0, false, {
                     fileName: "[project]/components/AdminSidebar.tsx",
-                    lineNumber: 117,
-                    columnNumber: 9
+                    lineNumber: 32,
+                    columnNumber: 254
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 111,
-                columnNumber: 7
+                lineNumber: 32,
+                columnNumber: 12
             }, this),
             mobileOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                 type: "button",
@@ -446,8 +535,8 @@ function AdminSidebar() {
                 className: "fixed inset-0 z-40 bg-black/40 lg:hidden"
             }, void 0, false, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 122,
-                columnNumber: 9
+                lineNumber: 32,
+                columnNumber: 302
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("aside", {
                 className: [
@@ -466,71 +555,69 @@ function AdminSidebar() {
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex h-10 w-10 items-center justify-center rounded-xl bg-[#397b0a] shadow-sm",
                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__["ShieldCheck"], {
-                                            size: 23,
-                                            strokeWidth: 2.2,
-                                            className: "text-white"
+                                            size: 23
                                         }, void 0, false, {
                                             fileName: "[project]/components/AdminSidebar.tsx",
-                                            lineNumber: 147,
-                                            columnNumber: 15
+                                            lineNumber: 32,
+                                            columnNumber: 904
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 146,
-                                        columnNumber: 13
+                                        lineNumber: 32,
+                                        columnNumber: 810
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "text-[17px] font-extrabold tracking-tight",
-                                                children: "OakPay"
+                                                children: "PayOak"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 155,
-                                                columnNumber: 15
+                                                lineNumber: 32,
+                                                columnNumber: 939
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50",
                                                 children: "Admin Portal"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 159,
-                                                columnNumber: 15
+                                                lineNumber: 32,
+                                                columnNumber: 1010
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 154,
-                                        columnNumber: 13
+                                        lineNumber: 32,
+                                        columnNumber: 934
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 141,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 733
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 type: "button",
                                 "aria-label": "Close navigation",
                                 onClick: closeMobileMenu,
-                                className: "flex h-9 w-9 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white lg:hidden",
+                                className: "flex h-9 w-9 items-center justify-center rounded-lg text-white/60 lg:hidden",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
                                     size: 19
                                 }, void 0, false, {
                                     fileName: "[project]/components/AdminSidebar.tsx",
-                                    lineNumber: 172,
-                                    columnNumber: 13
+                                    lineNumber: 32,
+                                    columnNumber: 1299
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 166,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 1133
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 140,
-                        columnNumber: 9
+                        lineNumber: 32,
+                        columnNumber: 647
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex-1 overflow-y-auto px-3 py-6",
@@ -540,115 +627,38 @@ function AdminSidebar() {
                                 children: "Operations"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 179,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 1378
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
                                 className: "space-y-1",
-                                children: mainNavigation.map((item)=>{
-                                    const Icon = item.icon;
-                                    const active = isActive(item.href);
-                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                                        href: item.href,
-                                        onClick: closeMobileMenu,
-                                        className: [
-                                            "group flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-semibold transition-all",
-                                            active ? "bg-[#397b0a] text-white shadow-sm" : "text-white/65 hover:bg-white/7 hover:text-white"
-                                        ].join(" "),
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Icon, {
-                                                size: 18,
-                                                strokeWidth: active ? 2.3 : 2,
-                                                className: active ? "text-white" : "text-white/45 group-hover:text-white/80"
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 200,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                children: item.label
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 210,
-                                                columnNumber: 19
-                                            }, this),
-                                            item.label === "Client Queries" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: [
-                                                    "ml-auto rounded-full px-2 py-0.5 text-[9px] font-bold",
-                                                    active ? "bg-white/15 text-white" : "bg-white/8 text-white/45"
-                                                ].join(" "),
-                                                children: "LIVE"
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 213,
-                                                columnNumber: 21
-                                            }, this)
-                                        ]
-                                    }, item.href, true, {
-                                        fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 189,
-                                        columnNumber: 17
-                                    }, this);
-                                })
+                                children: renderNav(mainNavigation)
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 183,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 1485
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35",
                                 children: "Administration"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 230,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 1545
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
                                 className: "space-y-1",
-                                children: administrationNavigation.map((item)=>{
-                                    const Icon = item.icon;
-                                    const active = isActive(item.href);
-                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                                        href: item.href,
-                                        onClick: closeMobileMenu,
-                                        className: [
-                                            "group flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-semibold transition-all",
-                                            active ? "bg-[#397b0a] text-white shadow-sm" : "text-white/65 hover:bg-white/7 hover:text-white"
-                                        ].join(" "),
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Icon, {
-                                                size: 18,
-                                                strokeWidth: active ? 2.3 : 2,
-                                                className: active ? "text-white" : "text-white/45 group-hover:text-white/80"
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 251,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                children: item.label
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 261,
-                                                columnNumber: 19
-                                            }, this)
-                                        ]
-                                    }, item.href, true, {
-                                        fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 240,
-                                        columnNumber: 17
-                                    }, this);
-                                })
+                                children: renderNav(administrationNavigation)
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 234,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 1661
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 177,
-                        columnNumber: 9
+                        lineNumber: 32,
+                        columnNumber: 1328
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "border-t border-white/10 p-3",
@@ -656,100 +666,89 @@ function AdminSidebar() {
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "mb-3 flex items-center gap-3 rounded-xl bg-white/5 px-3 py-3",
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex h-8 w-8 items-center justify-center rounded-lg bg-[#397b0a]/30",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__["ShieldCheck"], {
-                                            size: 16,
-                                            strokeWidth: 2,
-                                            className: "text-[#f5c400]"
-                                        }, void 0, false, {
-                                            fileName: "[project]/components/AdminSidebar.tsx",
-                                            lineNumber: 273,
-                                            columnNumber: 15
-                                        }, this)
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldCheck$3e$__["ShieldCheck"], {
+                                        size: 16,
+                                        className: "text-[#f5c400]"
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 272,
-                                        columnNumber: 13
+                                        lineNumber: 32,
+                                        columnNumber: 1861
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "min-w-0",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 className: "text-[11px] font-bold text-white",
                                                 children: "Secure Session"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 281,
-                                                columnNumber: 15
+                                                lineNumber: 32,
+                                                columnNumber: 1917
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "mt-0.5 truncate text-[10px] text-white/40",
+                                                className: "text-[10px] text-white/40",
                                                 children: "Administrator access"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 285,
-                                                columnNumber: 15
+                                                lineNumber: 32,
+                                                columnNumber: 1983
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 280,
-                                        columnNumber: 13
+                                        lineNumber: 32,
+                                        columnNumber: 1912
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 271,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 1783
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 type: "button",
                                 onClick: handleLogout,
                                 disabled: loggingOut,
-                                className: "group flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[13px] font-semibold text-white/60 transition hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50",
+                                className: "group flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[13px] font-semibold text-white/60 hover:text-red-300 disabled:opacity-50",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__["LogOut"], {
-                                        size: 18,
-                                        strokeWidth: 2,
-                                        className: "text-white/45 group-hover:text-red-300"
+                                        size: 18
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 298,
-                                        columnNumber: 13
+                                        lineNumber: 32,
+                                        columnNumber: 2276
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: loggingOut ? "Signing out..." : "Sign out"
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 304,
-                                        columnNumber: 13
+                                        lineNumber: 32,
+                                        columnNumber: 2295
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 292,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 2060
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "px-3 pb-1 pt-3 text-[9px] font-medium uppercase tracking-[0.16em] text-white/25",
-                                children: "OakPay Admin • Operations"
+                                children: "PayOak Admin • Operations"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 310,
-                                columnNumber: 11
+                                lineNumber: 32,
+                                columnNumber: 2357
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 269,
-                        columnNumber: 9
+                        lineNumber: 32,
+                        columnNumber: 1737
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 131,
-                columnNumber: 7
+                lineNumber: 32,
+                columnNumber: 435
             }, this)
         ]
     }, void 0, true);
@@ -949,8 +948,8 @@ __turbopack_context__.s([
     ()=>adminApi
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:8082") || "http://localhost:8080";
-/* -------------------------------------------------------------------------- */ /* API Helpers                                                                 */ /* -------------------------------------------------------------------------- */ function getToken() {
+const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:8082") || "http://localhost:8082";
+function getToken() {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
     return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
@@ -958,145 +957,94 @@ const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:8082") |
 async function request(path, options = {}) {
     const token = getToken();
     const headers = new Headers(options.headers);
-    if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-    }
-    if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-    }
+    if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
     const response = await fetch(`${API_BASE_URL}${path}`, {
         ...options,
+        cache: "no-store",
         headers
     });
-    if (response.status === 401 || response.status === 403) {
-        throw new Error("ADMIN_AUTH_REQUIRED");
-    }
+    if (response.status === 401 || response.status === 403) throw new Error("ADMIN_AUTH_REQUIRED");
     if (!response.ok) {
         const body = await response.text();
         let message = body;
         try {
             const parsed = JSON.parse(body);
             message = parsed?.message || parsed?.error || parsed?.detail || body;
-        } catch  {
-        // Keep the original response body.
-        }
+        } catch  {}
         throw new Error(message || `Request failed with status ${response.status}`);
     }
-    if (response.status === 204) {
-        return undefined;
-    }
+    if (response.status === 204) return undefined;
     const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-        return undefined;
-    }
+    if (!contentType.includes("application/json")) return undefined;
     return response.json();
 }
 const adminApi = {
-    /* ------------------------------------------------------------------------ */ /* Dashboard                                                                */ /* ------------------------------------------------------------------------ */ dashboard () {
-        return request("/api/v1/admin/dashboard");
-    },
-    /* ------------------------------------------------------------------------ */ /* KYC                                                                      */ /* ------------------------------------------------------------------------ */ kyc: {
-        list (status) {
-            const params = new URLSearchParams();
-            if (status) {
-                params.set("status", status);
-            }
-            const query = params.toString();
-            return request(`/api/v1/admin/kyc${query ? `?${query}` : ""}`);
+    dashboard: ()=>request("/api/v1/admin/dashboard"),
+    kyc: {
+        list: (status)=>{
+            const p = new URLSearchParams();
+            if (status) p.set("status", status);
+            const q = p.toString();
+            return request(`/api/v1/admin/kyc${q ? `?${q}` : ""}`);
         },
-        get (id) {
-            return request(`/api/v1/admin/kyc/${id}`);
-        },
-        decide (id, data) {
-            return request(`/api/v1/admin/kyc/${id}/decision`, {
+        get: (id)=>request(`/api/v1/admin/kyc/${id}`),
+        decide: (id, data)=>request(`/api/v1/admin/kyc/${id}/decision`, {
                 method: "POST",
                 body: JSON.stringify(data)
-            });
-        }
+            })
     },
-    /* ------------------------------------------------------------------------ */ /* Client Queries                                                           */ /* ------------------------------------------------------------------------ */ queries: {
-        list (status) {
-            const params = new URLSearchParams();
-            if (status) {
-                params.set("status", status);
-            }
-            const query = params.toString();
-            return request(`/api/v1/admin/queries${query ? `?${query}` : ""}`);
+    queries: {
+        list: (status)=>{
+            const p = new URLSearchParams();
+            if (status) p.set("status", status);
+            const q = p.toString();
+            return request(`/api/v1/admin/queries${q ? `?${q}` : ""}`);
         },
-        get (id) {
-            return request(`/api/v1/admin/queries/${id}`);
-        },
-        assign (id, adminUserId) {
-            return request(`/api/v1/admin/queries/${id}/assign`, {
+        get: (id)=>request(`/api/v1/admin/queries/${id}`),
+        assign: (id, adminUserId)=>request(`/api/v1/admin/queries/${id}/assign`, {
                 method: "PATCH",
                 body: JSON.stringify({
                     adminUserId
                 })
-            });
-        },
-        resolve (id, resolution) {
-            return request(`/api/v1/admin/queries/${id}/resolve`, {
+            }),
+        resolve: (id, resolution)=>request(`/api/v1/admin/queries/${id}/resolve`, {
                 method: "POST",
                 body: JSON.stringify({
                     resolution
                 })
-            });
-        }
+            })
     },
-    /* ------------------------------------------------------------------------ */ /* Users & Access                                                           */ /* ------------------------------------------------------------------------ */ users: {
-        list (status, role) {
-            const params = new URLSearchParams();
-            if (status) {
-                params.set("status", status);
-            }
-            if (role) {
-                params.set("role", role);
-            }
-            const query = params.toString();
-            return request(`/api/v1/admin/users${query ? `?${query}` : ""}`);
+    users: {
+        list: (status, role)=>{
+            const p = new URLSearchParams();
+            if (status) p.set("status", status);
+            if (role) p.set("role", role);
+            const q = p.toString();
+            return request(`/api/v1/admin/users${q ? `?${q}` : ""}`);
         },
-        get (id) {
-            return request(`/api/v1/admin/users/${id}`);
-        },
-        updateStatus (id, status) {
-            return request(`/api/v1/admin/users/${id}/status`, {
+        get: (id)=>request(`/api/v1/admin/users/${id}`),
+        updateStatus: (id, status)=>request(`/api/v1/admin/users/${id}/status`, {
                 method: "PATCH",
                 body: JSON.stringify({
                     status
                 })
-            });
-        }
+            })
     },
-    /* ------------------------------------------------------------------------ */ /* P2P Disputes                                                             */ /* ------------------------------------------------------------------------ */ disputes: {
-        /**
-     * Get all currently open P2P disputes.
-     *
-     * Trading-service endpoint:
-     * GET /api/v1/p2p/admin/disputes
-     *
-     * The trading service currently protects this endpoint with
-     * X-OakPay-Admin-Secret. That header is intentionally not stored
-     * in the browser. See the note below.
-     */ list () {
-            return request("/api/v1/p2p/admin/disputes");
-        },
-        get (id) {
-            return request(`/api/v1/p2p/admin/disputes/${id}`);
-        },
-        audit (id) {
-            return request(`/api/v1/p2p/admin/disputes/${id}/audit`);
-        },
-        resolve (id, data) {
-            return request(`/api/v1/p2p/admin/disputes/${id}/resolve`, {
+    disputes: {
+        list: ()=>request("/api/v1/p2p/admin/disputes"),
+        get: (id)=>request(`/api/v1/p2p/admin/disputes/${id}`),
+        audit: (id)=>request(`/api/v1/p2p/admin/disputes/${id}/audit`),
+        resolve: (id, data)=>request(`/api/v1/p2p/admin/disputes/${id}/resolve`, {
                 method: "POST",
                 body: JSON.stringify(data)
-            });
-        }
+            })
     },
-    /* ------------------------------------------------------------------------ */ /* P2P Trades                                                                */ /* ------------------------------------------------------------------------ */ trades: {
-        get (id) {
-            return request(`/api/v1/p2p/trades/${id}`);
-        }
+    trades: {
+        get: (id)=>request(`/api/v1/p2p/trades/${id}`)
+    },
+    transactions: {
+        list: (limit = 100)=>request(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit, 1), 200)}`)
     }
 };
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
@@ -1116,6 +1064,7 @@ var _s = __turbopack_context__.k.signature();
 "use client";
 ;
 ;
+const DASHBOARD_REFRESH_MS = 15_000;
 function useAdminDashboard() {
     _s();
     const [data, setData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
@@ -1142,6 +1091,27 @@ function useAdminDashboard() {
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "useAdminDashboard.useEffect": ()=>{
             load();
+            const interval = window.setInterval({
+                "useAdminDashboard.useEffect.interval": ()=>{
+                    if (document.visibilityState === "visible") {
+                        load();
+                    }
+                }
+            }["useAdminDashboard.useEffect.interval"], DASHBOARD_REFRESH_MS);
+            const handleVisibilityChange = {
+                "useAdminDashboard.useEffect.handleVisibilityChange": ()=>{
+                    if (document.visibilityState === "visible") {
+                        load();
+                    }
+                }
+            }["useAdminDashboard.useEffect.handleVisibilityChange"];
+            document.addEventListener("visibilitychange", handleVisibilityChange);
+            return ({
+                "useAdminDashboard.useEffect": ()=>{
+                    window.clearInterval(interval);
+                    document.removeEventListener("visibilitychange", handleVisibilityChange);
+                }
+            })["useAdminDashboard.useEffect"];
         }
     }["useAdminDashboard.useEffect"], [
         load
@@ -1185,60 +1155,127 @@ var _s = __turbopack_context__.k.signature();
 function Dashboard() {
     _s();
     const { data, loading, error, reload } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$hooks$2f$useAdminDashboard$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAdminDashboard"])();
+    const rows = [
+        [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$file$2d$check$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__FileCheck2$3e$__["FileCheck2"],
+            "KYC verification queue",
+            "Review pending identity applications.",
+            data?.pendingKyc ?? 0,
+            "/kyc"
+        ],
+        [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__["MessageSquare"],
+            "Client queries",
+            "Review requests requiring support attention.",
+            data?.openQueries ?? 0,
+            "/queries"
+        ],
+        [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$triangle$2d$alert$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertTriangle$3e$__["AlertTriangle"],
+            "Active P2P disputes",
+            "Monitor disputes requiring intervention.",
+            data?.activeDisputes ?? 0,
+            "/resolutions"
+        ],
+        [
+            __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$clock$2d$3$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Clock3$3e$__["Clock3"],
+            "Pending resolutions",
+            "Cases awaiting operational resolution.",
+            data?.pendingResolutions ?? 0,
+            "/resolutions"
+        ]
+    ];
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminShell$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "space-y-8",
             children: [
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "flex flex-col justify-between gap-4 md:flex-row md:items-end",
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
+                    className: "flex min-h-[156px] flex-col justify-between gap-6 rounded-[22px] border border-[#edf0f2] bg-[#f8faf9] px-7 py-7 shadow-[0_1px_2px_rgba(16,24,40,0.02)] md:flex-row md:items-center md:px-8 lg:px-9",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "text-xs font-bold uppercase tracking-[0.14em] text-[#397b0a]",
-                                    children: "Operations overview"
+                                    className: "text-xs font-bold uppercase tracking-[0.16em] text-[#397b0a]",
+                                    children: "PayOak Operations"
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 30,
+                                    lineNumber: 22,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                                    className: "mt-1 text-3xl font-extrabold tracking-tight text-[#111827]",
-                                    children: "Dashboard"
+                                    className: "mt-1 text-[42px] font-extrabold leading-none tracking-[-0.035em] text-[#101828] md:text-[46px]",
+                                    children: "Overview"
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 34,
+                                    lineNumber: 23,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "mt-2 max-w-2xl text-sm text-[#6b7280]",
-                                    children: "Monitor OakPay client operations, compliance activity, queries and P2P resolutions from one workspace."
+                                    className: "mt-3 text-[16px] text-[#667085]",
+                                    children: "Monitor KYC, client support, P2P disputes and operational activity."
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 38,
+                                    lineNumber: 24,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 29,
+                            lineNumber: 21,
                             columnNumber: 11
                         }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            type: "button",
-                            onClick: reload,
-                            disabled: loading,
-                            className: "rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#374151] shadow-sm transition hover:bg-[#f8faf9] disabled:opacity-50",
-                            children: loading ? "Refreshing..." : "Refresh data"
-                        }, void 0, false, {
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "flex min-w-[222px] items-center gap-4 rounded-2xl border border-[#e7ebef] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(16,24,40,0.04)]",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "h-7 w-7 shrink-0 rounded-full bg-[#4caf50]"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 28,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            className: "text-xs text-[#667085]",
+                                            children: "System status"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 30,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            className: "mt-0.5 text-base font-bold text-[#101828]",
+                                            children: "Operational"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 31,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            className: "mt-1 text-xs text-[#667085]",
+                                            children: "All systems running normally"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 32,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 29,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 44,
+                            lineNumber: 27,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 28,
+                    lineNumber: 20,
                     columnNumber: 9
                 }, this),
                 error ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1249,8 +1286,8 @@ function Dashboard() {
                             size: 20
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 57,
-                            columnNumber: 13
+                            lineNumber: 37,
+                            columnNumber: 106
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             children: [
@@ -1259,28 +1296,28 @@ function Dashboard() {
                                     children: "Dashboard data unavailable"
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 60,
-                                    columnNumber: 15
+                                    lineNumber: 37,
+                                    columnNumber: 167
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-1 text-xs text-red-700",
                                     children: error
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 64,
-                                    columnNumber: 15
+                                    lineNumber: 37,
+                                    columnNumber: 243
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 59,
-                            columnNumber: 13
+                            lineNumber: 37,
+                            columnNumber: 162
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 56,
-                    columnNumber: 11
+                    lineNumber: 37,
+                    columnNumber: 18
                 }, this) : null,
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
@@ -1293,8 +1330,8 @@ function Dashboard() {
                             tone: "amber"
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 73,
-                            columnNumber: 11
+                            lineNumber: 38,
+                            columnNumber: 67
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$StatCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                             label: "Open Queries",
@@ -1304,8 +1341,8 @@ function Dashboard() {
                             tone: "blue"
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 81,
-                            columnNumber: 11
+                            lineNumber: 38,
+                            columnNumber: 216
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$StatCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                             label: "Active Disputes",
@@ -1315,8 +1352,8 @@ function Dashboard() {
                             tone: "red"
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 89,
-                            columnNumber: 11
+                            lineNumber: 38,
+                            columnNumber: 375
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$StatCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                             label: "Pending Resolutions",
@@ -1326,13 +1363,13 @@ function Dashboard() {
                             tone: "green"
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 97,
-                            columnNumber: 11
+                            lineNumber: 38,
+                            columnNumber: 533
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 72,
+                    lineNumber: 38,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1351,119 +1388,115 @@ function Dashboard() {
                                                     children: "Live operations"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 111,
-                                                    columnNumber: 17
+                                                    lineNumber: 39,
+                                                    columnNumber: 230
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     className: "mt-1 text-xs text-[#6b7280]",
                                                     children: "Priority areas requiring administrator attention."
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 115,
-                                                    columnNumber: 17
+                                                    lineNumber: 39,
+                                                    columnNumber: 306
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 110,
-                                            columnNumber: 15
+                                            lineNumber: 39,
+                                            columnNumber: 225
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle2$3e$__["CheckCircle2"], {
                                             size: 20,
                                             className: "text-[#397b0a]"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 120,
-                                            columnNumber: 15
+                                            lineNumber: 39,
+                                            columnNumber: 408
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 109,
-                                    columnNumber: 13
+                                    lineNumber: 39,
+                                    columnNumber: 138
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "divide-y divide-[#edf1ef]",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(OperationRow, {
-                                            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$file$2d$check$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__FileCheck2$3e$__["FileCheck2"], {
-                                                size: 18
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/page.tsx",
-                                                lineNumber: 128,
-                                                columnNumber: 23
-                                            }, void 0),
-                                            title: "KYC verification queue",
-                                            description: "Review pending identity applications.",
-                                            value: data?.pendingKyc ?? 0,
-                                            href: "/kyc"
-                                        }, void 0, false, {
+                                    children: rows.map(([Icon, title, description, value, href])=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
+                                            href: href,
+                                            className: "flex items-center justify-between gap-4 px-6 py-5 hover:bg-[#fafcfb]",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex min-w-0 items-center gap-4",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf3e5] text-[#397b0a]",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Icon, {
+                                                                size: 18
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/page.tsx",
+                                                                lineNumber: 39,
+                                                                columnNumber: 836
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/page.tsx",
+                                                            lineNumber: 39,
+                                                            columnNumber: 728
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "min-w-0",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-sm font-bold text-[#111827]",
+                                                                    children: title
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/page.tsx",
+                                                                    lineNumber: 39,
+                                                                    columnNumber: 884
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-1 text-xs text-[#6b7280]",
+                                                                    children: description
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/page.tsx",
+                                                                    lineNumber: 39,
+                                                                    columnNumber: 943
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/app/page.tsx",
+                                                            lineNumber: 39,
+                                                            columnNumber: 859
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/page.tsx",
+                                                    lineNumber: 39,
+                                                    columnNumber: 679
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                    className: "shrink-0 text-xl font-extrabold text-[#111827]",
+                                                    children: value
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/page.tsx",
+                                                    lineNumber: 39,
+                                                    columnNumber: 1015
+                                                }, this)
+                                            ]
+                                        }, `${title}-${href}`, true, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 127,
-                                            columnNumber: 15
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(OperationRow, {
-                                            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__["MessageSquare"], {
-                                                size: 18
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/page.tsx",
-                                                lineNumber: 136,
-                                                columnNumber: 23
-                                            }, void 0),
-                                            title: "Client queries",
-                                            description: "Review requests requiring support attention.",
-                                            value: data?.openQueries ?? 0,
-                                            href: "/queries"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/page.tsx",
-                                            lineNumber: 135,
-                                            columnNumber: 15
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(OperationRow, {
-                                            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$triangle$2d$alert$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertTriangle$3e$__["AlertTriangle"], {
-                                                size: 18
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/page.tsx",
-                                                lineNumber: 144,
-                                                columnNumber: 23
-                                            }, void 0),
-                                            title: "Active P2P disputes",
-                                            description: "Monitor disputes requiring intervention.",
-                                            value: data?.activeDisputes ?? 0,
-                                            href: "/resolutions"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/page.tsx",
-                                            lineNumber: 143,
-                                            columnNumber: 15
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(OperationRow, {
-                                            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$clock$2d$3$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Clock3$3e$__["Clock3"], {
-                                                size: 18
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/page.tsx",
-                                                lineNumber: 152,
-                                                columnNumber: 23
-                                            }, void 0),
-                                            title: "Pending resolutions",
-                                            description: "Cases awaiting operational resolution.",
-                                            value: data?.pendingResolutions ?? 0,
-                                            href: "/resolutions"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/page.tsx",
-                                            lineNumber: 151,
-                                            columnNumber: 15
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
+                                            lineNumber: 39,
+                                            columnNumber: 558
+                                        }, this))
+                                }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 126,
-                                    columnNumber: 13
+                                    lineNumber: 39,
+                                    columnNumber: 466
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 108,
-                            columnNumber: 11
+                            lineNumber: 39,
+                            columnNumber: 62
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
                             className: "rounded-2xl border border-[#e3e8e5] bg-white shadow-sm",
@@ -1476,22 +1509,22 @@ function Dashboard() {
                                             children: "Operations status"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 164,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 138
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "mt-1 text-xs text-[#6b7280]",
-                                            children: "Current OakPay administration environment."
+                                            children: "Current PayOak administration environment."
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 168,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 216
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 163,
-                                    columnNumber: 13
+                                    lineNumber: 40,
+                                    columnNumber: 85
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "space-y-4 p-6",
@@ -1501,32 +1534,32 @@ function Dashboard() {
                                             status: "Operational"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 174,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 342
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusRow, {
                                             label: "KYC Management",
                                             status: "Connected"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 179,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 398
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusRow, {
                                             label: "Client Queries",
                                             status: "Connected"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 184,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 452
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusRow, {
                                             label: "Resolution Centre",
                                             status: "Operational"
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 189,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 506
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusRow, {
                                             label: "Admin API",
@@ -1534,53 +1567,72 @@ function Dashboard() {
                                             danger: Boolean(error)
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 194,
-                                            columnNumber: 15
+                                            lineNumber: 40,
+                                            columnNumber: 565
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 173,
-                                    columnNumber: 13
+                                    lineNumber: 40,
+                                    columnNumber: 311
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 162,
-                            columnNumber: 11
+                            lineNumber: 40,
+                            columnNumber: 9
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 107,
+                    lineNumber: 39,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "mb-4",
+                            className: "mb-4 flex items-end justify-between",
                             children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                    className: "text-base font-extrabold text-[#111827]",
-                                    children: "Quick actions"
-                                }, void 0, false, {
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                            className: "text-base font-extrabold text-[#111827]",
+                                            children: "Quick actions"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 41,
+                                            columnNumber: 76
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            className: "mt-1 text-xs text-[#6b7280]",
+                                            children: "Jump directly into an operational workspace."
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 41,
+                                            columnNumber: 150
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 206,
-                                    columnNumber: 13
+                                    lineNumber: 41,
+                                    columnNumber: 71
                                 }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "mt-1 text-xs text-[#6b7280]",
-                                    children: "Jump directly into an operational workspace."
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                    type: "button",
+                                    onClick: reload,
+                                    disabled: loading,
+                                    className: "rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#374151] shadow-sm disabled:opacity-50",
+                                    children: loading ? "Refreshing..." : "Refresh data"
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 210,
-                                    columnNumber: 13
+                                    lineNumber: 41,
+                                    columnNumber: 247
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 205,
-                            columnNumber: 11
+                            lineNumber: 41,
+                            columnNumber: 18
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
@@ -1591,8 +1643,8 @@ function Dashboard() {
                                     description: "Open the verification queue."
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 216,
-                                    columnNumber: 13
+                                    lineNumber: 41,
+                                    columnNumber: 553
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(QuickAction, {
                                     href: "/queries",
@@ -1600,8 +1652,8 @@ function Dashboard() {
                                     description: "Review outstanding requests."
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 222,
-                                    columnNumber: 13
+                                    lineNumber: 41,
+                                    columnNumber: 641
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(QuickAction, {
                                     href: "/resolutions",
@@ -1609,8 +1661,8 @@ function Dashboard() {
                                     description: "Review active cases."
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 228,
-                                    columnNumber: 13
+                                    lineNumber: 41,
+                                    columnNumber: 737
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(QuickAction, {
                                     href: "/reports",
@@ -1618,102 +1670,39 @@ function Dashboard() {
                                     description: "Open operational reporting."
                                 }, void 0, false, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 234,
-                                    columnNumber: 13
+                                    lineNumber: 41,
+                                    columnNumber: 832
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 215,
-                            columnNumber: 11
+                            lineNumber: 41,
+                            columnNumber: 495
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 204,
+                    lineNumber: 41,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/page.tsx",
-            lineNumber: 26,
+            lineNumber: 19,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 25,
+        lineNumber: 18,
         columnNumber: 5
     }, this);
 }
-_s(Dashboard, "nXN7ahqs0YkiKeagiVvQKdtDo20=", false, function() {
+_s(Dashboard, "aJN6puuYqvfp+Hc2iRA56o8bFMc=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$hooks$2f$useAdminDashboard$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAdminDashboard"]
     ];
 });
 _c = Dashboard;
-function OperationRow({ icon, title, description, value, href }) {
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-        href: href,
-        className: "flex items-center justify-between gap-4 px-6 py-5 transition hover:bg-[#fafcfb]",
-        children: [
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "flex min-w-0 items-center gap-4",
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf3e5] text-[#397b0a]",
-                        children: icon
-                    }, void 0, false, {
-                        fileName: "[project]/app/page.tsx",
-                        lineNumber: 265,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "min-w-0",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                className: "text-sm font-bold text-[#111827]",
-                                children: title
-                            }, void 0, false, {
-                                fileName: "[project]/app/page.tsx",
-                                lineNumber: 270,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                className: "mt-1 text-xs text-[#6b7280]",
-                                children: description
-                            }, void 0, false, {
-                                fileName: "[project]/app/page.tsx",
-                                lineNumber: 274,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/app/page.tsx",
-                        lineNumber: 269,
-                        columnNumber: 9
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "[project]/app/page.tsx",
-                lineNumber: 264,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                className: "shrink-0 text-xl font-extrabold text-[#111827]",
-                children: value
-            }, void 0, false, {
-                fileName: "[project]/app/page.tsx",
-                lineNumber: 280,
-                columnNumber: 7
-            }, this)
-        ]
-    }, void 0, true, {
-        fileName: "[project]/app/page.tsx",
-        lineNumber: 260,
-        columnNumber: 5
-    }, this);
-}
-_c1 = OperationRow;
 function StatusRow({ label, status, danger = false }) {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "flex items-center justify-between gap-4",
@@ -1723,8 +1712,8 @@ function StatusRow({ label, status, danger = false }) {
                 children: label
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 298,
-                columnNumber: 7
+                lineNumber: 46,
+                columnNumber: 158
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                 className: [
@@ -1739,24 +1728,24 @@ function StatusRow({ label, status, danger = false }) {
                         ].join(" ")
                     }, void 0, false, {
                         fileName: "[project]/app/page.tsx",
-                        lineNumber: 310,
-                        columnNumber: 9
+                        lineNumber: 46,
+                        columnNumber: 394
                     }, this),
                     status
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 302,
-                columnNumber: 7
+                lineNumber: 46,
+                columnNumber: 225
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 297,
-        columnNumber: 5
+        lineNumber: 46,
+        columnNumber: 101
     }, this);
 }
-_c2 = StatusRow;
+_c1 = StatusRow;
 function QuickAction({ href, title, description }) {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
         href: href,
@@ -1767,38 +1756,37 @@ function QuickAction({ href, title, description }) {
                 children: title
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 337,
-                columnNumber: 7
+                lineNumber: 47,
+                columnNumber: 260
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                 className: "mt-2 text-xs leading-5 text-[#6b7280]",
                 children: description
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 341,
-                columnNumber: 7
+                lineNumber: 47,
+                columnNumber: 324
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                 className: "mt-4 text-xs font-bold text-[#397b0a]",
                 children: "Open workspace →"
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 345,
-                columnNumber: 7
+                lineNumber: 47,
+                columnNumber: 394
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 333,
-        columnNumber: 5
+        lineNumber: 47,
+        columnNumber: 101
     }, this);
 }
-_c3 = QuickAction;
-var _c, _c1, _c2, _c3;
+_c2 = QuickAction;
+var _c, _c1, _c2;
 __turbopack_context__.k.register(_c, "Dashboard");
-__turbopack_context__.k.register(_c1, "OperationRow");
-__turbopack_context__.k.register(_c2, "StatusRow");
-__turbopack_context__.k.register(_c3, "QuickAction");
+__turbopack_context__.k.register(_c1, "StatusRow");
+__turbopack_context__.k.register(_c2, "QuickAction");
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }

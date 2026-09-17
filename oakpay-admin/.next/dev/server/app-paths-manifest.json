@@ -1,7 +1,6 @@
 {
+  "/clients/page": "app/clients/page.js",
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/queries/page": "app/queries/page.js",
-  "/reports/page": "app/reports/page.js",
-  "/resolutions/page": "app/resolutions/page.js"
+  "/transactions/page": "app/transactions/page.js"
 }
