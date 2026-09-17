@@ -104,6 +104,19 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
   return response.json() as Promise<T>;
 }
 
+async function listTransactions(limit=100):Promise<AdminTransaction[]> {
+  const safeLimit=Math.min(Math.max(limit,1),200);
+  try {
+    return await request<AdminTransaction[]>(`/api/p2p-transactions?limit=${safeLimit}`);
+  } catch (error) {
+    // Backward-compatible fallback while older local Next.js builds are still running.
+    if (error instanceof Error && error.message === "Not Found") {
+      return request<AdminTransaction[]>(`/api/v1/admin/dashboard/transactions?limit=${safeLimit}`);
+    }
+    throw error;
+  }
+}
+
 export const adminApi={
  dashboard:()=>request<AdminDashboardStats>("/api/v1/admin/dashboard"),
  kyc:{list:(status?:KycStatus)=>{const p=new URLSearchParams();if(status)p.set("status",status);const q=p.toString();return request<AdminKycApplication[]>(`/api/v1/admin/kyc${q?`?${q}`:""}`);},get:(id:string)=>request<AdminKycApplication>(`/api/v1/admin/kyc/${id}`),decide:(id:string,data:KycDecisionRequest)=>request<AdminKycApplication>(`/api/v1/admin/kyc/${id}/decision`,{method:"POST",body:JSON.stringify(data)})},
@@ -116,5 +129,5 @@ export const adminApi={
    resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})
  },
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
- transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/p2p-transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
+ transactions:{list:listTransactions}
 };
