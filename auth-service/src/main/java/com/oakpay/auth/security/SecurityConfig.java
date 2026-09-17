@@ -42,12 +42,8 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/api/v1/internal/**"
                         ).permitAll()
-                        // This route is authenticated here and performs its own explicit
-                        // ADMIN role check using the authenticated UserPrincipal.
-                        // Keeping it outside the generic matcher avoids the inconsistent
-                        // method-security 403 that affected the transactions workspace.
                         .requestMatchers("/api/v1/admin/transactions/**").authenticated()
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRATOR")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
