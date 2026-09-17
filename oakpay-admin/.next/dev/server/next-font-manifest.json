@@ -1,5 +1,7 @@
 {
   "app": {
+    "[project]/app/audit-logs/page": [],
+    "[project]/app/clients/page": [],
     "[project]/app/login/page": [],
     "[project]/app/page": [],
     "[project]/app/transactions/page": []

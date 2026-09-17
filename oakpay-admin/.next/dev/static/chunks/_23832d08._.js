@@ -1005,10 +1005,10 @@ const adminApi = {
             })
     },
     disputes: {
-        list: ()=>request("/api/v1/p2p/admin/disputes"),
-        get: (id)=>request(`/api/v1/p2p/admin/disputes/${id}`),
-        audit: (id)=>request(`/api/v1/p2p/admin/disputes/${id}/audit`),
-        resolve: (id, data)=>request(`/api/v1/p2p/admin/disputes/${id}/resolve`, {
+        list: ()=>request("/api/v1/admin/resolution-centre/disputes"),
+        get: (id)=>request(`/api/v1/admin/resolution-centre/disputes/${id}`),
+        audit: (id)=>request(`/api/v1/admin/resolution-centre/disputes/${id}/audit`),
+        resolve: (id, data)=>request(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`, {
                 method: "POST",
                 body: JSON.stringify(data)
             })
@@ -1051,11 +1051,13 @@ function AuditLogsPage() {
     _s();
     const [events, setEvents] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [refreshing, setRefreshing] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
     const [search, setSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
-    async function load() {
+    async function load(initial = false) {
         try {
-            setLoading(true);
+            if (initial) setLoading(true);
+            else setRefreshing(true);
             setError("");
             const disputes = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$adminApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["adminApi"].disputes.list();
             const audits = await Promise.all(disputes.map((d)=>__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$adminApi$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["adminApi"].disputes.audit(d.id)));
@@ -1066,18 +1068,21 @@ function AuditLogsPage() {
             setEvents(merged);
         } catch (e) {
             if (e instanceof Error && e.message === "ADMIN_AUTH_REQUIRED") {
-                window.location.href = "/login";
+                setError("Your administrator session has expired. Please sign in again.");
                 return;
             }
             setError(e instanceof Error ? e.message : "Unable to load audit events.");
         } finally{
-            setLoading(false);
+            if (initial) setLoading(false);
+            setRefreshing(false);
         }
     }
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuditLogsPage.useEffect": ()=>{
-            load();
-            const t = window.setInterval(load, 15000);
+            load(true);
+            const t = window.setInterval({
+                "AuditLogsPage.useEffect.t": ()=>load(false)
+            }["AuditLogsPage.useEffect.t"], 15000);
             return ({
                 "AuditLogsPage.useEffect": ()=>window.clearInterval(t)
             })["AuditLogsPage.useEffect"];
@@ -1134,64 +1139,64 @@ function AuditLogsPage() {
                                     children: "Administration"
                                 }, void 0, false, {
                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                    lineNumber: 29,
-                                    columnNumber: 91
+                                    lineNumber: 72,
+                                    columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
                                     className: "mt-1 text-3xl font-extrabold tracking-tight text-[#111827]",
                                     children: "Audit Logs"
                                 }, void 0, false, {
                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                    lineNumber: 29,
-                                    columnNumber: 185
+                                    lineNumber: 73,
+                                    columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                     className: "mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]",
                                     children: "Live P2P operational audit activity from the PayOak Resolution Centre."
                                 }, void 0, false, {
                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                    lineNumber: 29,
-                                    columnNumber: 275
+                                    lineNumber: 74,
+                                    columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 29,
-                            columnNumber: 86
+                            lineNumber: 71,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            onClick: load,
-                            disabled: loading,
-                            className: "inline-flex items-center gap-2 rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#082d16] shadow-sm",
+                            onClick: ()=>load(false),
+                            disabled: refreshing,
+                            className: "inline-flex items-center gap-2 rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#082d16] shadow-sm disabled:opacity-60",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
                                     size: 15,
-                                    className: loading ? "animate-spin" : ""
+                                    className: refreshing ? "animate-spin" : ""
                                 }, void 0, false, {
                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                    lineNumber: 29,
-                                    columnNumber: 602
+                                    lineNumber: 81,
+                                    columnNumber: 13
                                 }, this),
                                 "Refresh"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 29,
-                            columnNumber: 418
+                            lineNumber: 76,
+                            columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/audit-logs/page.tsx",
-                    lineNumber: 29,
-                    columnNumber: 5
+                    lineNumber: 70,
+                    columnNumber: 9
                 }, this),
                 error ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700",
                     children: error
                 }, void 0, false, {
                     fileName: "[project]/app/audit-logs/page.tsx",
-                    lineNumber: 30,
-                    columnNumber: 12
+                    lineNumber: 86,
+                    columnNumber: 18
                 }, this) : null,
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
@@ -1203,13 +1208,13 @@ function AuditLogsPage() {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/audit-logs/page.tsx",
-                                lineNumber: 31,
-                                columnNumber: 127
+                                lineNumber: 89,
+                                columnNumber: 79
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 31,
-                            columnNumber: 63
+                            lineNumber: 89,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Card, {
                             label: "Admin Actions",
@@ -1218,34 +1223,34 @@ function AuditLogsPage() {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/audit-logs/page.tsx",
-                                lineNumber: 31,
-                                columnNumber: 218
+                                lineNumber: 90,
+                                columnNumber: 82
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 31,
-                            columnNumber: 151
+                            lineNumber: 90,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(Card, {
                             label: "Latest Activity",
-                            value: latest,
+                            value: loading ? "—" : latest,
                             icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$clock$2d$3$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Clock3$3e$__["Clock3"], {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/audit-logs/page.tsx",
-                                lineNumber: 31,
-                                columnNumber: 296
+                                lineNumber: 91,
+                                columnNumber: 78
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 31,
-                            columnNumber: 245
+                            lineNumber: 91,
+                            columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/audit-logs/page.tsx",
-                    lineNumber: 31,
-                    columnNumber: 5
+                    lineNumber: 88,
+                    columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
                     className: "overflow-hidden rounded-2xl border border-[#e3e8e5] bg-white shadow-sm",
@@ -1260,8 +1265,8 @@ function AuditLogsPage() {
                                         className: "absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]"
                                     }, void 0, false, {
                                         fileName: "[project]/app/audit-logs/page.tsx",
-                                        lineNumber: 32,
-                                        columnNumber: 179
+                                        lineNumber: 97,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                         value: search,
@@ -1270,19 +1275,19 @@ function AuditLogsPage() {
                                         className: "w-full rounded-xl border border-[#dce3df] bg-[#fafcfb] py-3 pl-11 pr-4 text-sm outline-none focus:border-[#397b0a]"
                                     }, void 0, false, {
                                         fileName: "[project]/app/audit-logs/page.tsx",
-                                        lineNumber: 32,
-                                        columnNumber: 266
+                                        lineNumber: 98,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/audit-logs/page.tsx",
-                                lineNumber: 32,
-                                columnNumber: 144
+                                lineNumber: 96,
+                                columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 32,
-                            columnNumber: 97
+                            lineNumber: 95,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "border-b border-[#edf1ef] bg-[#fafcfb] px-6 py-4",
@@ -1293,55 +1298,55 @@ function AuditLogsPage() {
                                         children: "Event"
                                     }, void 0, false, {
                                         fileName: "[project]/app/audit-logs/page.tsx",
-                                        lineNumber: 32,
-                                        columnNumber: 669
+                                        lineNumber: 109,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Actor"
                                     }, void 0, false, {
                                         fileName: "[project]/app/audit-logs/page.tsx",
-                                        lineNumber: 32,
-                                        columnNumber: 687
+                                        lineNumber: 109,
+                                        columnNumber: 33
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Timestamp"
                                     }, void 0, false, {
                                         fileName: "[project]/app/audit-logs/page.tsx",
-                                        lineNumber: 32,
-                                        columnNumber: 705
+                                        lineNumber: 109,
+                                        columnNumber: 51
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Reference"
                                     }, void 0, false, {
                                         fileName: "[project]/app/audit-logs/page.tsx",
-                                        lineNumber: 32,
-                                        columnNumber: 727
+                                        lineNumber: 109,
+                                        columnNumber: 73
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/audit-logs/page.tsx",
-                                lineNumber: 32,
-                                columnNumber: 571
+                                lineNumber: 108,
+                                columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 32,
-                            columnNumber: 505
+                            lineNumber: 107,
+                            columnNumber: 11
                         }, this),
                         loading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex min-h-[250px] items-center justify-center text-sm text-[#6b7280]",
                             children: "Loading live audit data..."
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 32,
-                            columnNumber: 770
+                            lineNumber: 114,
+                            columnNumber: 13
                         }, this) : filtered.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex min-h-[250px] items-center justify-center text-sm text-[#6b7280]",
                             children: "No audit events found."
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 32,
-                            columnNumber: 910
+                            lineNumber: 116,
+                            columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "divide-y divide-[#edf1ef]",
                             children: filtered.map((e)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1354,22 +1359,22 @@ function AuditLogsPage() {
                                                     children: e.label.toLowerCase()
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                                    lineNumber: 32,
-                                                    columnNumber: 1171
+                                                    lineNumber: 122,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     className: "mt-1 text-xs text-[#6b7280]",
                                                     children: e.note || "P2P operational event"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                                    lineNumber: 32,
-                                                    columnNumber: 1257
+                                                    lineNumber: 123,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/audit-logs/page.tsx",
-                                            lineNumber: 32,
-                                            columnNumber: 1166
+                                            lineNumber: 121,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             children: [
@@ -1381,30 +1386,30 @@ function AuditLogsPage() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                                    lineNumber: 32,
-                                                    columnNumber: 1348
+                                                    lineNumber: 126,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     className: "mt-1 text-[10px] text-[#9ca3af]",
                                                     children: "Dispute actor"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                                    lineNumber: 32,
-                                                    columnNumber: 1428
+                                                    lineNumber: 127,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/audit-logs/page.tsx",
-                                            lineNumber: 32,
-                                            columnNumber: 1343
+                                            lineNumber: 125,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "text-xs text-[#6b7280]",
                                             children: dt(e.createdAt)
                                         }, void 0, false, {
                                             fileName: "[project]/app/audit-logs/page.tsx",
-                                            lineNumber: 32,
-                                            columnNumber: 1498
+                                            lineNumber: 129,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             children: [
@@ -1417,8 +1422,8 @@ function AuditLogsPage() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                                    lineNumber: 32,
-                                                    columnNumber: 1566
+                                                    lineNumber: 131,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     className: "mt-1 text-[10px] text-[#9ca3af]",
@@ -1429,45 +1434,45 @@ function AuditLogsPage() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                                    lineNumber: 32,
-                                                    columnNumber: 1651
+                                                    lineNumber: 132,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/audit-logs/page.tsx",
-                                            lineNumber: 32,
-                                            columnNumber: 1561
+                                            lineNumber: 130,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, e.id, true, {
                                     fileName: "[project]/app/audit-logs/page.tsx",
-                                    lineNumber: 32,
-                                    columnNumber: 1086
+                                    lineNumber: 120,
+                                    columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 32,
-                            columnNumber: 1026
+                            lineNumber: 118,
+                            columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/audit-logs/page.tsx",
-                    lineNumber: 32,
-                    columnNumber: 5
+                    lineNumber: 94,
+                    columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/audit-logs/page.tsx",
-            lineNumber: 28,
-            columnNumber: 22
+            lineNumber: 69,
+            columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/audit-logs/page.tsx",
-        lineNumber: 28,
-        columnNumber: 10
+        lineNumber: 68,
+        columnNumber: 5
     }, this);
 }
-_s(AuditLogsPage, "VnRky/sTbzPrtJ89/MquNetDGuc=");
+_s(AuditLogsPage, "yhnpKFDrphoCUAHEUUJNrQEnTcM=");
 _c = AuditLogsPage;
 function Card({ label, value, icon }) {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1482,41 +1487,41 @@ function Card({ label, value, icon }) {
                             children: label
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 35,
-                            columnNumber: 229
+                            lineNumber: 149,
+                            columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                             className: "mt-3 text-3xl font-extrabold text-[#111827]",
                             children: value
                         }, void 0, false, {
                             fileName: "[project]/app/audit-logs/page.tsx",
-                            lineNumber: 35,
-                            columnNumber: 313
+                            lineNumber: 150,
+                            columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/audit-logs/page.tsx",
-                    lineNumber: 35,
-                    columnNumber: 224
+                    lineNumber: 148,
+                    columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "rounded-xl bg-[#edf5ee] p-3 text-[#397b0a]",
                     children: icon
                 }, void 0, false, {
                     fileName: "[project]/app/audit-logs/page.tsx",
-                    lineNumber: 35,
-                    columnNumber: 389
+                    lineNumber: 152,
+                    columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/audit-logs/page.tsx",
-            lineNumber: 35,
-            columnNumber: 174
+            lineNumber: 147,
+            columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/audit-logs/page.tsx",
-        lineNumber: 35,
-        columnNumber: 98
+        lineNumber: 146,
+        columnNumber: 5
     }, this);
 }
 _c1 = Card;
