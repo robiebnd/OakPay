@@ -19,10 +19,27 @@ export type ResolveDisputeRequest = { resolution:DisputeResolution; note?:string
 export type P2PTradeStatus = "ESCROWED"|"PAYMENT_PENDING"|"PAYMENT_MARKED"|"COMPLETED"|"CANCELLED"|"DISPUTED"|"EXPIRED";
 export type AdminTransaction = { id:string; buyerId:string; sellerId:string; advertisementId:string|null; asset:string; fiatCurrency:string; quantity:number|string; unitPrice:number|string; fiatAmount:number|string; paymentMethod:string; status:P2PTradeStatus|string; paymentReference:string|null; expiresAt:string; createdAt:string; updatedAt:string };
 
-function getAccessToken():string|null { if(typeof window === "undefined") return null; return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken"); }
-function getRefreshToken():string|null { if(typeof window === "undefined") return null; return localStorage.getItem("oakpay.admin.refreshToken") || localStorage.getItem("oakpay.refreshToken"); }
-function storeTokens(token:StoredToken) { if(typeof window === "undefined") return; localStorage.setItem("oakpay.admin.accessToken",token.accessToken); if(token.refreshToken)localStorage.setItem("oakpay.admin.refreshToken",token.refreshToken); }
-function clearSession() { if(typeof window === "undefined") return; localStorage.removeItem("oakpay.admin.accessToken");localStorage.removeItem("oakpay.admin.refreshToken");localStorage.removeItem("oakpay.accessToken");localStorage.removeItem("oakpay.refreshToken"); }
+function getAccessToken():string|null {
+  if(typeof window === "undefined") return null;
+  return localStorage.getItem("oakpay.admin.accessToken");
+}
+
+function getRefreshToken():string|null {
+  if(typeof window === "undefined") return null;
+  return localStorage.getItem("oakpay.admin.refreshToken");
+}
+
+function storeTokens(token:StoredToken) {
+  if(typeof window === "undefined") return;
+  localStorage.setItem("oakpay.admin.accessToken",token.accessToken);
+  if(token.refreshToken) localStorage.setItem("oakpay.admin.refreshToken",token.refreshToken);
+}
+
+function clearSession() {
+  if(typeof window === "undefined") return;
+  localStorage.removeItem("oakpay.admin.accessToken");
+  localStorage.removeItem("oakpay.admin.refreshToken");
+}
 
 async function refreshAccessToken():Promise<string|null>{
   if(typeof window === "undefined") return null;
@@ -99,5 +116,5 @@ export const adminApi={
  users:{list:(status?:AdminUserStatus,role?:string)=>{const p=new URLSearchParams();if(status)p.set("status",status);if(role)p.set("role",role);const q=p.toString();return request<AdminUser[]>(`/api/v1/admin/users${q?`?${q}`:""}`);},get:(id:string)=>request<AdminUser>(`/api/v1/admin/users/${id}`),updateStatus:(id:string,status:AdminUserStatus)=>request<AdminUser>(`/api/v1/admin/users/${id}/status`,{method:"PATCH",body:JSON.stringify({status})})},
  disputes:{list:()=>request<P2PDispute[]>("/api/v1/p2p/admin/disputes"),get:(id:string)=>request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}`),audit:(id:string)=>request<P2PDisputeAudit[]>(`/api/v1/p2p/admin/disputes/${id}/audit`),resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})},
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
- transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/v1/admin/transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
+ transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
 };
