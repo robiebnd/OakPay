@@ -5,10 +5,39 @@ export type KycItem={kycId:string;userId:string;clientName:string;email:string;c
 export type ResolutionDispute={id:string;tradeId:string;openedBy:string;reason:string;evidence:string|null;status:string;resolution:string|null;resolutionNote:string|null;resolvedBy:string|null;resolvedAt:string|null;createdAt:string;updatedAt:string};
 export type ResolutionAudit={id:string;disputeId:string;tradeId:string;actorId:string;eventType:string;note:string|null;createdAt:string};
 
-async function rawJson<T>(path:string,init:RequestInit={}):Promise<Response>{return fetch(`${BASE}${path}`,{...init,headers:{Accept:'application/json','Content-Type':'application/json',...(init.headers??{})}});}
+type SharedWindow=Window & { __payoakAdminRefreshPromise?:Promise<string|null> };
+
+async function rawJson<T>(path:string,init:RequestInit={}):Promise<Response>{return fetch(`${BASE}${path}`,{...init,cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json',...(init.headers??{})}});}
 async function parse<T>(r:Response):Promise<T>{const text=await r.text();let body:any=null;try{body=text?JSON.parse(text):null}catch{body=text}if(!r.ok)throw new Error(body?.message??body?.error??`Request failed with status ${r.status}`);return body as T;}
-async function refreshAccessToken():Promise<string|null>{const refreshToken=session.getRefresh();if(!refreshToken)return null;try{const response=await rawJson<TokenResponse>('/api/v1/auth/refresh',{method:'POST',body:JSON.stringify({refreshToken})});if(!response.ok){session.clear();return null;}const token=await parse<TokenResponse>(response);session.set(token);return token.accessToken;}catch{session.clear();return null;}}
-async function json<T>(path:string,init:RequestInit={}):Promise<T>{let response=await rawJson<T>(path,init);const authHeader=new Headers(init.headers).get('Authorization');if(response.status===401&&authHeader){const token=await refreshAccessToken();if(token){const headers=new Headers(init.headers);headers.set('Authorization',`Bearer ${token}`);response=await rawJson<T>(path,{...init,headers});}}return parse<T>(response);}
+async function refreshAccessToken():Promise<string|null>{
+ if(typeof window==='undefined')return null;
+ const shared=window as SharedWindow;
+ if(shared.__payoakAdminRefreshPromise)return shared.__payoakAdminRefreshPromise;
+ const refreshToken=session.getRefresh();
+ if(!refreshToken)return null;
+ shared.__payoakAdminRefreshPromise=(async()=>{
+  try{
+   const response=await rawJson<TokenResponse>('/api/v1/auth/refresh',{method:'POST',body:JSON.stringify({refreshToken})});
+   if(!response.ok)return null;
+   const token=await parse<TokenResponse>(response);
+   session.set(token);
+   return token.accessToken;
+  }catch{return null;}
+  finally{shared.__payoakAdminRefreshPromise=undefined;}
+ })();
+ return shared.__payoakAdminRefreshPromise;
+}
+async function json<T>(path:string,init:RequestInit={}):Promise<T>{
+ let response=await rawJson<T>(path,init);
+ const authHeader=new Headers(init.headers).get('Authorization');
+ if(response.status===401&&authHeader){
+  const sentToken=authHeader.startsWith('Bearer ')?authHeader.slice(7):authHeader;
+  const latestToken=session.get();
+  const token=latestToken&&latestToken!==sentToken?latestToken:await refreshAccessToken();
+  if(token){const headers=new Headers(init.headers);headers.set('Authorization',`Bearer ${token}`);response=await rawJson<T>(path,{...init,headers});}
+ }
+ return parse<T>(response);
+}
 
 export const adminApi={
  login:(email:string,password:string)=>json<TokenResponse>('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email,password})}),
