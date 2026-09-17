@@ -116,8 +116,5 @@ export const adminApi={
    resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})
  },
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
- // P2P transaction reporting uses the Next.js server-side proxy. The browser
- // does not call the protected gateway/admin endpoint, so this page is isolated
- // from the admin-role issue while the internal trading secret remains server-side.
- transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/local/p2p-transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
+ transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/p2p-transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
 };
