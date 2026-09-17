@@ -29,45 +29,57 @@ public class AdminP2PResolutionController {
     }
 
     @GetMapping("/disputes")
-    public ResponseEntity<JsonNode> disputes() {
-        return ResponseEntity.ok(tradingGet("/api/v1/p2p/admin/disputes"));
+    public ResponseEntity<JsonNode> disputes(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        return ResponseEntity.ok(tradingGet("/api/v1/p2p/admin/disputes", authorization));
     }
 
     @GetMapping("/disputes/{disputeId}/audit")
-    public ResponseEntity<JsonNode> audit(@PathVariable UUID disputeId) {
+    public ResponseEntity<JsonNode> audit(
+            @PathVariable UUID disputeId,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         return ResponseEntity.ok(tradingGet(
-                "/api/v1/p2p/admin/disputes/" + disputeId + "/audit"));
+                "/api/v1/p2p/admin/disputes/" + disputeId + "/audit", authorization));
     }
 
     @PostMapping("/disputes/{disputeId}/resolve")
     public ResponseEntity<JsonNode> resolve(
             @PathVariable UUID disputeId,
-            @RequestBody JsonNode request) {
+            @RequestBody JsonNode request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         if (request == null || !request.isObject()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "A dispute resolution request is required");
         }
 
-        JsonNode result = tradingClient.post()
+        var builder = tradingClient.post()
                 .uri("/api/v1/p2p/admin/disputes/" + disputeId + "/resolve")
                 .header("X-OakPay-Admin-Secret", disputeSecret)
                 .header(HttpHeaders.ACCEPT, "application/json")
-                .body(request)
-                .retrieve()
-                .body(JsonNode.class);
+                .body(request);
 
+        if (authorization != null && !authorization.isBlank()) {
+            builder.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+
+        JsonNode result = builder.retrieve().body(JsonNode.class);
         return ResponseEntity.ok(result);
     }
 
-    private JsonNode tradingGet(String path) {
-        JsonNode result = tradingClient.get()
+    private JsonNode tradingGet(String path, String authorization) {
+        var builder = tradingClient.get()
                 .uri(path)
                 .header("X-OakPay-Admin-Secret", disputeSecret)
-                .header(HttpHeaders.ACCEPT, "application/json")
-                .retrieve()
-                .body(JsonNode.class);
+                .header(HttpHeaders.ACCEPT, "application/json");
 
-        return result == null ? com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode() : result;
+        if (authorization != null && !authorization.isBlank()) {
+            builder.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+
+        JsonNode result = builder.retrieve().body(JsonNode.class);
+        return result == null
+                ? com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode()
+                : result;
     }
 }
