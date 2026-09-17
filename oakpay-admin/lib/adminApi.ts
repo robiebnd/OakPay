@@ -16,6 +16,8 @@ export type ResolveDisputeRequest = { resolution:DisputeResolution; note?:string
 export type P2PTradeStatus = "ESCROWED"|"PAYMENT_PENDING"|"PAYMENT_MARKED"|"COMPLETED"|"CANCELLED"|"DISPUTED"|"EXPIRED";
 export type AdminTransaction = { id:string; buyerId:string; sellerId:string; advertisementId:string|null; asset:string; fiatCurrency:string; quantity:number|string; unitPrice:number|string; fiatAmount:number|string; paymentMethod:string; status:P2PTradeStatus|string; paymentReference:string|null; expiresAt:string; createdAt:string; updatedAt:string };
 
+type StoredToken = { accessToken:string; refreshToken?:string|null; expiresIn?:number; requiresTwoFactor?:boolean; challengeToken?:string|null };
+
 function getAccessToken():string|null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
@@ -26,7 +28,7 @@ function getRefreshToken():string|null {
   return localStorage.getItem("oakpay.admin.refreshToken") || localStorage.getItem("oakpay.refreshToken");
 }
 
-function storeTokens(token:{accessToken:string;refreshToken?:string|null}) {
+function storeTokens(token:StoredToken) {
   if (typeof window === "undefined") return;
   localStorage.setItem("oakpay.admin.accessToken", token.accessToken);
   if (token.refreshToken) localStorage.setItem("oakpay.admin.refreshToken", token.refreshToken);
@@ -40,24 +42,37 @@ function clearSession() {
   localStorage.removeItem("oakpay.refreshToken");
 }
 
+let refreshInFlight:Promise<string|null>|null=null;
+
 async function refreshAccessToken():Promise<string|null>{
-  const refreshToken=getRefreshToken();
-  if(!refreshToken)return null;
-  try{
-    const response=await fetch(`${API_BASE_URL}/api/v1/auth/refresh`,{
-      method:"POST",
-      headers:{Accept:"application/json","Content-Type":"application/json"},
-      cache:"no-store",
-      body:JSON.stringify({refreshToken})
-    });
-    if(!response.ok)return null;
-    const token=await response.json() as {accessToken:string;refreshToken?:string|null};
-    if(!token?.accessToken)return null;
-    storeTokens(token);
-    return token.accessToken;
-  }catch{
-    return null;
-  }
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight=(async()=>{
+    const refreshToken=getRefreshToken();
+    if(!refreshToken)return null;
+
+    try{
+      const response=await fetch(`${API_BASE_URL}/api/v1/auth/refresh`,{
+        method:"POST",
+        headers:{Accept:"application/json","Content-Type":"application/json"},
+        cache:"no-store",
+        body:JSON.stringify({refreshToken})
+      });
+
+      if(!response.ok)return null;
+
+      const token=await response.json() as StoredToken;
+      if(!token?.accessToken)return null;
+      storeTokens(token);
+      return token.accessToken;
+    }catch{
+      return null;
+    }finally{
+      refreshInFlight=null;
+    }
+  })();
+
+  return refreshInFlight;
 }
 
 async function request<T>(path:string, options:RequestInit={}):Promise<T>{
