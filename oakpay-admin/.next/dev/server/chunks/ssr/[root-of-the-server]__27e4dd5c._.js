@@ -712,15 +712,10 @@ function AdminShell({ children }) {
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
     const [checking, setChecking] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        const token = localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
+        const token = localStorage.getItem("oakpay.admin.accessToken");
         if (!token) {
             router.replace("/login");
             return;
-        }
-        // Migrate the legacy key to the current admin key so navigation
-        // between admin pages does not appear to sign the administrator out.
-        if (!localStorage.getItem("oakpay.admin.accessToken")) {
-            localStorage.setItem("oakpay.admin.accessToken", token);
         }
         setChecking(false);
     }, [
@@ -734,12 +729,12 @@ function AdminShell({ children }) {
                 children: "Loading PayOak Admin..."
             }, void 0, false, {
                 fileName: "[project]/components/AdminShell.tsx",
-                lineNumber: 38,
+                lineNumber: 30,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/AdminShell.tsx",
-            lineNumber: 37,
+            lineNumber: 29,
             columnNumber: 7
         }, this);
     }
@@ -748,7 +743,7 @@ function AdminShell({ children }) {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminSidebar$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/components/AdminShell.tsx",
-                lineNumber: 47,
+                lineNumber: 39,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -756,7 +751,7 @@ function AdminShell({ children }) {
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminHeader$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                         fileName: "[project]/components/AdminShell.tsx",
-                        lineNumber: 50,
+                        lineNumber: 42,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -766,24 +761,24 @@ function AdminShell({ children }) {
                             children: children
                         }, void 0, false, {
                             fileName: "[project]/components/AdminShell.tsx",
-                            lineNumber: 53,
+                            lineNumber: 45,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/AdminShell.tsx",
-                        lineNumber: 52,
+                        lineNumber: 44,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/AdminShell.tsx",
-                lineNumber: 49,
+                lineNumber: 41,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/AdminShell.tsx",
-        lineNumber: 46,
+        lineNumber: 38,
         columnNumber: 5
     }, this);
 }
@@ -1052,7 +1047,7 @@ const adminApi = {
         get: (id)=>request(`/api/v1/p2p/trades/${id}`)
     },
     transactions: {
-        list: (limit = 100)=>request(`/api/v1/admin/transactions?limit=${Math.min(Math.max(limit, 1), 200)}`)
+        list: (limit = 100)=>request(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit, 1), 200)}`)
     }
 };
 }),

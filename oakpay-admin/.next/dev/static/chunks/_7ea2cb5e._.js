@@ -735,15 +735,10 @@ function AdminShell({ children }) {
     const [checking, setChecking] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AdminShell.useEffect": ()=>{
-            const token = localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
+            const token = localStorage.getItem("oakpay.admin.accessToken");
             if (!token) {
                 router.replace("/login");
                 return;
-            }
-            // Migrate the legacy key to the current admin key so navigation
-            // between admin pages does not appear to sign the administrator out.
-            if (!localStorage.getItem("oakpay.admin.accessToken")) {
-                localStorage.setItem("oakpay.admin.accessToken", token);
             }
             setChecking(false);
         }
@@ -758,12 +753,12 @@ function AdminShell({ children }) {
                 children: "Loading PayOak Admin..."
             }, void 0, false, {
                 fileName: "[project]/components/AdminShell.tsx",
-                lineNumber: 38,
+                lineNumber: 30,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/AdminShell.tsx",
-            lineNumber: 37,
+            lineNumber: 29,
             columnNumber: 7
         }, this);
     }
@@ -772,7 +767,7 @@ function AdminShell({ children }) {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminSidebar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/components/AdminShell.tsx",
-                lineNumber: 47,
+                lineNumber: 39,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -780,7 +775,7 @@ function AdminShell({ children }) {
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminHeader$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                         fileName: "[project]/components/AdminShell.tsx",
-                        lineNumber: 50,
+                        lineNumber: 42,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -790,24 +785,24 @@ function AdminShell({ children }) {
                             children: children
                         }, void 0, false, {
                             fileName: "[project]/components/AdminShell.tsx",
-                            lineNumber: 53,
+                            lineNumber: 45,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/AdminShell.tsx",
-                        lineNumber: 52,
+                        lineNumber: 44,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/AdminShell.tsx",
-                lineNumber: 49,
+                lineNumber: 41,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/AdminShell.tsx",
-        lineNumber: 46,
+        lineNumber: 38,
         columnNumber: 5
     }, this);
 }
@@ -935,12 +930,12 @@ const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:8082") |
 function getAccessToken() {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
-    return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken");
+    return localStorage.getItem("oakpay.admin.accessToken");
 }
 function getRefreshToken() {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
-    return localStorage.getItem("oakpay.admin.refreshToken") || localStorage.getItem("oakpay.refreshToken");
+    return localStorage.getItem("oakpay.admin.refreshToken");
 }
 function storeTokens(token) {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
@@ -953,8 +948,6 @@ function clearSession() {
     ;
     localStorage.removeItem("oakpay.admin.accessToken");
     localStorage.removeItem("oakpay.admin.refreshToken");
-    localStorage.removeItem("oakpay.accessToken");
-    localStorage.removeItem("oakpay.refreshToken");
 }
 async function refreshAccessToken() {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
@@ -1124,7 +1117,7 @@ const adminApi = {
         get: (id)=>request(`/api/v1/p2p/trades/${id}`)
     },
     transactions: {
-        list: (limit = 100)=>request(`/api/v1/admin/transactions?limit=${Math.min(Math.max(limit, 1), 200)}`)
+        list: (limit = 100)=>request(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit, 1), 200)}`)
     }
 };
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
