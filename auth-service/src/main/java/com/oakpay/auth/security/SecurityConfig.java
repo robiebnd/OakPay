@@ -42,7 +42,6 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/api/v1/internal/**"
                         ).permitAll()
-                        .requestMatchers("/api/v1/admin/transactions/**").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRATOR")
                         .anyRequest().authenticated()
                 )
