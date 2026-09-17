@@ -33,30 +33,47 @@ public class ResolutionCentreService {
                 new TypeReference<List<DisputeResponse>>() {});
     }
 
+    public DisputeResponse dispute(UUID disputeId, String authorization) {
+        return get("/api/v1/p2p/admin/disputes/" + disputeId, authorization,
+                new TypeReference<DisputeResponse>() {});
+    }
+
     public List<AuditResponse> audit(UUID disputeId, String authorization) {
         return get("/api/v1/p2p/admin/disputes/" + disputeId + "/audit", authorization,
                 new TypeReference<List<AuditResponse>>() {});
     }
 
     public DisputeResponse resolve(UUID disputeId, ResolveRequest request, String authorization) {
-        return tradingClient.post()
+        var builder = tradingClient.post()
                 .uri("/api/v1/p2p/admin/disputes/" + disputeId + "/resolve")
-                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .header("X-OakPay-Admin-Secret", adminSecret)
+                .header(HttpHeaders.ACCEPT, "application/json")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(DisputeResponse.class);
+                .body(request);
+
+        if (authorization != null && !authorization.isBlank()) {
+            builder.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+
+        try {
+            return builder.retrieve().body(DisputeResponse.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("Trading service dispute resolution request failed", e);
+        }
     }
 
     private <T> T get(String uri, String authorization, TypeReference<T> type) {
         try {
-            String body = tradingClient.get()
+            var builder = tradingClient.get()
                     .uri(uri)
-                    .header(HttpHeaders.AUTHORIZATION, authorization)
                     .header("X-OakPay-Admin-Secret", adminSecret)
-                    .retrieve()
-                    .body(String.class);
+                    .header(HttpHeaders.ACCEPT, "application/json");
+
+            if (authorization != null && !authorization.isBlank()) {
+                builder.header(HttpHeaders.AUTHORIZATION, authorization);
+            }
+
+            String body = builder.retrieve().body(String.class);
             return objectMapper.readValue(body, type);
         } catch (Exception e) {
             throw new IllegalStateException("Trading service dispute request failed", e);
