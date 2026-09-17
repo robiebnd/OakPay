@@ -37,7 +37,11 @@ public class UserPrincipal implements UserDetails {
         if (role == null || role.isBlank()) {
             return "CLIENT";
         }
-        return role.trim().toUpperCase(Locale.ROOT);
+        String normalized = role.trim().toUpperCase(Locale.ROOT);
+        if (normalized.startsWith("ROLE_")) {
+            normalized = normalized.substring("ROLE_".length());
+        }
+        return normalized.isBlank() ? "CLIENT" : normalized;
     }
 
     public UUID getUserId() { return userId; }
