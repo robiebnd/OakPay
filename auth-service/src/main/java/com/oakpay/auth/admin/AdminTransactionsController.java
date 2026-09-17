@@ -5,6 +5,7 @@ import com.oakpay.auth.user.User;
 import com.oakpay.auth.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,9 +40,7 @@ public class AdminTransactionsController {
 
     private void requireAdmin(UserPrincipal principal) {
         if (principal == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Authentication required");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
 
         User user = userRepository.findById(principal.getUserId())
@@ -49,15 +48,23 @@ public class AdminTransactionsController {
                         HttpStatus.UNAUTHORIZED,
                         "Authenticated administrator account was not found"));
 
-        String role = user.getRole() == null ? "" : user.getRole().trim();
-        boolean administrator =
-                "ADMIN".equalsIgnoreCase(role) ||
-                "ADMINISTRATOR".equalsIgnoreCase(role);
+        boolean administrator = isAdminRole(user.getRole())
+                || isAdminRole(principal.getRole())
+                || principal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(this::isAdminRole);
 
         if (!administrator) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Administrator access required for P2P transactions");
         }
+    }
+
+    private boolean isAdminRole(String role) {
+        if (role == null) return false;
+        String normalized = role.trim().toUpperCase();
+        if (normalized.startsWith("ROLE_")) normalized = normalized.substring(5);
+        return "ADMIN".equals(normalized) || "ADMINISTRATOR".equals(normalized);
     }
 }
