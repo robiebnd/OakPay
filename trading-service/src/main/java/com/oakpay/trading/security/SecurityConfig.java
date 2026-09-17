@@ -32,7 +32,6 @@ public class SecurityConfig {
                                 "/actuator/scheduledtasks",
                                 "/api/v1/p2p/rates",
                                 "/api/v1/p2p/rates/**",
-                                "/api/v1/p2p/public-admin/transactions",
                                 "/api/v1/internal/admin/dashboard/**"
                         ).permitAll()
                         .anyRequest().authenticated())
