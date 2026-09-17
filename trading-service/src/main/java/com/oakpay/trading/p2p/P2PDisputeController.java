@@ -30,9 +30,7 @@ public class P2PDisputeController {
             @PathVariable UUID tradeId,
             @RequestBody P2PDisputeDtos.OpenRequest request,
             Authentication authentication) {
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.open(userId(authentication), tradeId, request));
     }
 
@@ -47,6 +45,15 @@ public class P2PDisputeController {
             Authentication authentication) {
         requireAdmin(authentication, suppliedSecret);
         return service.openDisputes();
+    }
+
+    @GetMapping("/admin/disputes/{disputeId}")
+    public P2PDisputeDtos.DisputeResponse adminDispute(
+            @PathVariable UUID disputeId,
+            @RequestHeader(value = "X-OakPay-Admin-Secret", required = false) String suppliedSecret,
+            Authentication authentication) {
+        requireAdmin(authentication, suppliedSecret);
+        return service.get(disputeId);
     }
 
     @GetMapping("/admin/disputes/{disputeId}/audit")
@@ -81,17 +88,11 @@ public class P2PDisputeController {
         }
     }
 
-    /**
-     * Trading service validates the shared admin secret for admin-only operations.
-     * The auth service proxy is the public admin entry point and already enforces
-     * the ADMIN role before forwarding the request.
-     */
     private void requireAdmin(Authentication authentication, String suppliedSecret) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new org.springframework.web.server.ResponseStatusException(
                     HttpStatus.UNAUTHORIZED, "Authentication is required");
         }
-
         if (suppliedSecret == null || adminSecret == null ||
                 !MessageDigest.isEqual(
                         suppliedSecret.getBytes(StandardCharsets.UTF_8),
