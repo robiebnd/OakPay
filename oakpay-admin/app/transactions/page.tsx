@@ -17,16 +17,11 @@ export default function TransactionsPage() {
       if (initial) setLoading(true);
       else setRefreshing(true);
       setError("");
-
       const result = await adminApi.transactions.list(200);
       setItems(result);
     } catch (e) {
       if (e instanceof Error && e.message === "ADMIN_AUTH_REQUIRED") {
         setError("Your administrator session has expired. Please sign in again.");
-        return;
-      }
-      if (e instanceof Error && e.message === "ADMIN_ACCESS_FORBIDDEN") {
-        setError("Administrator access required for P2P transactions.");
         return;
       }
       setError(e instanceof Error ? e.message : "Unable to load transactions.");
@@ -66,13 +61,8 @@ export default function TransactionsPage() {
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-[#111827]">P2P & Transactions</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">Monitor live PayOak P2P trades and transaction activity.</p>
           </div>
-          <button
-            onClick={() => load(false)}
-            disabled={refreshing}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#082d16] shadow-sm disabled:opacity-60"
-          >
-            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
-            Refresh
+          <button onClick={() => load(false)} disabled={refreshing} className="inline-flex items-center gap-2 rounded-xl border border-[#dce3df] bg-white px-4 py-2.5 text-sm font-bold text-[#082d16] shadow-sm disabled:opacity-60">
+            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />Refresh
           </button>
         </div>
 
@@ -86,16 +76,12 @@ export default function TransactionsPage() {
         </div>
 
         <section className="overflow-hidden rounded-2xl border border-[#e3e8e5] bg-white shadow-sm">
-          <div className="border-b border-[#e3e8e5] p-5">
-            <div className="relative max-w-xl">
+          <div className="flex items-center justify-between gap-4 border-b border-[#e3e8e5] p-5">
+            <div className="relative max-w-xl flex-1">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search transaction ID, wallet or user..."
-                className="w-full rounded-xl border border-[#dce3df] bg-[#fafcfb] py-3 pl-11 pr-4 text-sm outline-none focus:border-[#397b0a]"
-              />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search transaction ID, wallet or user..." className="w-full rounded-xl border border-[#dce3df] bg-[#fafcfb] py-3 pl-11 pr-4 text-sm outline-none focus:border-[#397b0a]" />
             </div>
+            {!loading && refreshing ? <span className="shrink-0 text-xs font-semibold text-[#6b7280]">Updating…</span> : null}
           </div>
 
           {loading ? (
@@ -105,31 +91,8 @@ export default function TransactionsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1100px]">
-                <thead>
-                  <tr className="border-b bg-[#fafcfb] text-left">
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Transaction</th>
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Asset</th>
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Amount</th>
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Fiat total</th>
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Status</th>
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(x => (
-                    <tr key={x.id} className="border-b last:border-0 hover:bg-[#fbfdfc]">
-                      <td className="px-5 py-4">
-                        <p className="text-sm font-semibold text-[#082d16]">{x.id.slice(0, 8)}…</p>
-                        <p className="mt-1 text-[10px] text-[#9ca3af]">Buyer {x.buyerId.slice(0, 8)} · Seller {x.sellerId.slice(0, 8)}</p>
-                      </td>
-                      <td className="px-5 py-4"><p className="text-sm font-bold text-[#111827]">{x.asset}</p><p className="text-xs text-[#6b7280]">{x.paymentMethod}</p></td>
-                      <td className="px-5 py-4 text-sm font-bold">{fmt(x.quantity)} {x.asset}</td>
-                      <td className="px-5 py-4 text-sm font-bold">{fmt(x.fiatAmount)} {x.fiatCurrency}</td>
-                      <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${x.status === "COMPLETED" ? "bg-green-50 text-green-700" : x.status === "CANCELLED" || x.status === "EXPIRED" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>{x.status}</span></td>
-                      <td className="px-5 py-4 text-xs text-[#6b7280]">{dt(x.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
+                <thead><tr className="border-b bg-[#fafcfb] text-left"><th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Transaction</th><th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Asset</th><th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Amount</th><th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Fiat total</th><th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Status</th><th className="px-5 py-4 text-[11px] font-bold uppercase text-[#6b7280]">Created</th></tr></thead>
+                <tbody>{filtered.map(x => <tr key={x.id} className="border-b last:border-0 hover:bg-[#fbfdfc]"><td className="px-5 py-4"><p className="text-sm font-semibold text-[#082d16]">{x.id.slice(0, 8)}…</p><p className="mt-1 text-[10px] text-[#9ca3af]">Buyer {x.buyerId.slice(0, 8)} · Seller {x.sellerId.slice(0, 8)}</p></td><td className="px-5 py-4"><p className="text-sm font-bold text-[#111827]">{x.asset}</p><p className="text-xs text-[#6b7280]">{x.paymentMethod}</p></td><td className="px-5 py-4 text-sm font-bold">{fmt(x.quantity)} {x.asset}</td><td className="px-5 py-4 text-sm font-bold">{fmt(x.fiatAmount)} {x.fiatCurrency}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${x.status === "COMPLETED" ? "bg-green-50 text-green-700" : x.status === "CANCELLED" || x.status === "EXPIRED" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>{x.status}</span></td><td className="px-5 py-4 text-xs text-[#6b7280]">{dt(x.createdAt)}</td></tr>)}</tbody>
               </table>
             </div>
           )}
@@ -140,12 +103,5 @@ export default function TransactionsPage() {
 }
 
 function Card({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-[#e3e8e5] bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div><p className="text-xs font-bold uppercase tracking-wider text-[#6b7280]">{label}</p><p className="mt-3 text-3xl font-extrabold text-[#111827]">{value}</p></div>
-        <div className="rounded-xl bg-[#edf5ee] p-3 text-[#397b0a]">{icon}</div>
-      </div>
-    </div>
-  );
+  return <div className="rounded-2xl border border-[#e3e8e5] bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-[#6b7280]">{label}</p><p className="mt-3 text-3xl font-extrabold text-[#111827]">{value}</p></div><div className="rounded-xl bg-[#edf5ee] p-3 text-[#397b0a]">{icon}</div></div></div>;
 }
