@@ -1,5 +1,8 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
 
+type StoredToken = { accessToken:string; refreshToken?:string|null; expiresIn?:number; requiresTwoFactor?:boolean; challengeToken?:string|null };
+type SharedWindow=Window & { __payoakAdminRefreshPromise?:Promise<string|null> };
+
 export type AdminDashboardStats = { pendingKyc:number; openQueries:number; activeDisputes:number; pendingResolutions:number };
 export type KycStatus = "NOT_STARTED"|"PENDING"|"UNDER_REVIEW"|"APPROVED"|"REJECTED";
 export type AdminKycApplication = { id:string; userId:string; email:string; firstName:string; lastName:string; status:KycStatus; documentType:string|null; documentNumberMasked:string|null; submittedAt:string|null; updatedAt:string|null };
@@ -15,9 +18,6 @@ export type P2PDisputeAudit = { id:string; disputeId:string; tradeId:string; act
 export type ResolveDisputeRequest = { resolution:DisputeResolution; note?:string };
 export type P2PTradeStatus = "ESCROWED"|"PAYMENT_PENDING"|"PAYMENT_MARKED"|"COMPLETED"|"CANCELLED"|"DISPUTED"|"EXPIRED";
 export type AdminTransaction = { id:string; buyerId:string; sellerId:string; advertisementId:string|null; asset:string; fiatCurrency:string; quantity:number|string; unitPrice:number|string; fiatAmount:number|string; paymentMethod:string; status:P2PTradeStatus|string; paymentReference:string|null; expiresAt:string; createdAt:string; updatedAt:string };
-
-type StoredToken = { accessToken:string; refreshToken?:string|null; expiresIn?:number; requiresTwoFactor?:boolean; challengeToken?:string|null };
-type SharedWindow=Window & { __payoakAdminRefreshPromise?:Promise<string|null> };
 
 function getAccessToken():string|null { if(typeof window === "undefined") return null; return localStorage.getItem("oakpay.admin.accessToken") || localStorage.getItem("oakpay.accessToken"); }
 function getRefreshToken():string|null { if(typeof window === "undefined") return null; return localStorage.getItem("oakpay.admin.refreshToken") || localStorage.getItem("oakpay.refreshToken"); }
@@ -74,7 +74,17 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
     if(response.status===401){clearSession();throw new Error("ADMIN_AUTH_REQUIRED");}
   }
 
-  if(response.status===403)throw new Error("ADMIN_ACCESS_FORBIDDEN");
+  if(response.status===403){
+    const body=await response.text();
+    let message="Administrator access required.";
+    try{
+      const parsed=body?JSON.parse(body):null;
+      message=parsed?.message || parsed?.error || parsed?.detail || message;
+    }catch{
+      if(body.trim()) message=body.trim();
+    }
+    throw new Error(message);
+  }
   if(!response.ok){const body=await response.text();let message=body;try{const parsed=JSON.parse(body);message=parsed?.message||parsed?.error||parsed?.detail||body;}catch{}throw new Error(message||`Request failed with status ${response.status}`);}
   if(response.status===204)return undefined as T;
   const contentType=response.headers.get("content-type")||"";
