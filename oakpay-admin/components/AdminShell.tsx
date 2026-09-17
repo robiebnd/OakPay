@@ -14,19 +14,11 @@ export default function AdminShell({
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("oakpay.admin.accessToken") ||
-      localStorage.getItem("oakpay.accessToken");
+    const token = localStorage.getItem("oakpay.admin.accessToken");
 
     if (!token) {
       router.replace("/login");
       return;
-    }
-
-    // Migrate the legacy key to the current admin key so navigation
-    // between admin pages does not appear to sign the administrator out.
-    if (!localStorage.getItem("oakpay.admin.accessToken")) {
-      localStorage.setItem("oakpay.admin.accessToken", token);
     }
 
     setChecking(false);
