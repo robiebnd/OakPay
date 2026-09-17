@@ -32,10 +32,11 @@ __turbopack_context__.s([
     "session",
     ()=>session
 ]);
-const BASE = (("TURBOPACK compile-time value", "http://localhost:8082") ?? 'http://localhost:8080').replace(/\/$/, '');
+const BASE = (("TURBOPACK compile-time value", "http://localhost:8082") ?? 'http://localhost:8082').replace(/\/$/, '');
 async function rawJson(path, init = {}) {
     return fetch(`${BASE}${path}`, {
         ...init,
+        cache: 'no-store',
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -55,32 +56,19 @@ async function parse(r) {
     return body;
 }
 async function refreshAccessToken() {
-    const refreshToken = session.getRefresh();
-    if (!refreshToken) return null;
-    try {
-        const response = await rawJson('/api/v1/auth/refresh', {
-            method: 'POST',
-            body: JSON.stringify({
-                refreshToken
-            })
-        });
-        if (!response.ok) {
-            session.clear();
-            return null;
-        }
-        const token = await parse(response);
-        session.set(token);
-        return token.accessToken;
-    } catch  {
-        session.clear();
-        return null;
-    }
+    if ("TURBOPACK compile-time truthy", 1) return null;
+    //TURBOPACK unreachable
+    ;
+    const shared = undefined;
+    const refreshToken = undefined;
 }
 async function json(path, init = {}) {
     let response = await rawJson(path, init);
     const authHeader = new Headers(init.headers).get('Authorization');
     if (response.status === 401 && authHeader) {
-        const token = await refreshAccessToken();
+        const sentToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+        const latestToken = session.get();
+        const token = latestToken && latestToken !== sentToken ? latestToken : await refreshAccessToken();
         if (token) {
             const headers = new Headers(init.headers);
             headers.set('Authorization', `Bearer ${token}`);
@@ -168,6 +156,8 @@ const session = {
     clear: ()=>{
         localStorage.removeItem('oakpay.admin.accessToken');
         localStorage.removeItem('oakpay.admin.refreshToken');
+        localStorage.removeItem('oakpay.accessToken');
+        localStorage.removeItem('oakpay.refreshToken');
     }
 };
 }),

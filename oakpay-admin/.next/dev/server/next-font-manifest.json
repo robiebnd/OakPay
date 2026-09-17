@@ -1,6 +1,5 @@
 {
   "app": {
-    "[project]/app/clients/page": [],
     "[project]/app/login/page": [],
     "[project]/app/page": [],
     "[project]/app/transactions/page": []

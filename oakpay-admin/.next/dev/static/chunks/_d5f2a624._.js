@@ -9,10 +9,11 @@ __turbopack_context__.s([
     ()=>session
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-const BASE = (("TURBOPACK compile-time value", "http://localhost:8082") ?? 'http://localhost:8080').replace(/\/$/, '');
+const BASE = (("TURBOPACK compile-time value", "http://localhost:8082") ?? 'http://localhost:8082').replace(/\/$/, '');
 async function rawJson(path, init = {}) {
     return fetch(`${BASE}${path}`, {
         ...init,
+        cache: 'no-store',
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -32,32 +33,39 @@ async function parse(r) {
     return body;
 }
 async function refreshAccessToken() {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    const shared = window;
+    if (shared.__payoakAdminRefreshPromise) return shared.__payoakAdminRefreshPromise;
     const refreshToken = session.getRefresh();
     if (!refreshToken) return null;
-    try {
-        const response = await rawJson('/api/v1/auth/refresh', {
-            method: 'POST',
-            body: JSON.stringify({
-                refreshToken
-            })
-        });
-        if (!response.ok) {
-            session.clear();
+    shared.__payoakAdminRefreshPromise = (async ()=>{
+        try {
+            const response = await rawJson('/api/v1/auth/refresh', {
+                method: 'POST',
+                body: JSON.stringify({
+                    refreshToken
+                })
+            });
+            if (!response.ok) return null;
+            const token = await parse(response);
+            session.set(token);
+            return token.accessToken;
+        } catch  {
             return null;
+        } finally{
+            shared.__payoakAdminRefreshPromise = undefined;
         }
-        const token = await parse(response);
-        session.set(token);
-        return token.accessToken;
-    } catch  {
-        session.clear();
-        return null;
-    }
+    })();
+    return shared.__payoakAdminRefreshPromise;
 }
 async function json(path, init = {}) {
     let response = await rawJson(path, init);
     const authHeader = new Headers(init.headers).get('Authorization');
     if (response.status === 401 && authHeader) {
-        const token = await refreshAccessToken();
+        const sentToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+        const latestToken = session.get();
+        const token = latestToken && latestToken !== sentToken ? latestToken : await refreshAccessToken();
         if (token) {
             const headers = new Headers(init.headers);
             headers.set('Authorization', `Bearer ${token}`);
@@ -136,8 +144,8 @@ const adminApi = {
         })
 };
 const session = {
-    get: ()=>("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : localStorage.getItem('oakpay.admin.accessToken'),
-    getRefresh: ()=>("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : localStorage.getItem('oakpay.admin.refreshToken'),
+    get: ()=>("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : localStorage.getItem('oakpay.admin.accessToken') || localStorage.getItem('oakpay.accessToken'),
+    getRefresh: ()=>("TURBOPACK compile-time falsy", 0) ? "TURBOPACK unreachable" : localStorage.getItem('oakpay.admin.refreshToken') || localStorage.getItem('oakpay.refreshToken'),
     set: (t)=>{
         localStorage.setItem('oakpay.admin.accessToken', t.accessToken);
         if (t.refreshToken) localStorage.setItem('oakpay.admin.refreshToken', t.refreshToken);
@@ -145,6 +153,8 @@ const session = {
     clear: ()=>{
         localStorage.removeItem('oakpay.admin.accessToken');
         localStorage.removeItem('oakpay.admin.refreshToken');
+        localStorage.removeItem('oakpay.accessToken');
+        localStorage.removeItem('oakpay.refreshToken');
     }
 };
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
