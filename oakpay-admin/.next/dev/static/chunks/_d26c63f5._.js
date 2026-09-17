@@ -934,7 +934,17 @@ async function request(path, options = {}) {
             throw new Error("ADMIN_AUTH_REQUIRED");
         }
     }
-    if (response.status === 403) throw new Error("ADMIN_ACCESS_FORBIDDEN");
+    if (response.status === 403) {
+        const body = await response.text();
+        let message = "Administrator access required.";
+        try {
+            const parsed = body ? JSON.parse(body) : null;
+            message = parsed?.message || parsed?.error || parsed?.detail || message;
+        } catch  {
+            if (body.trim()) message = body.trim();
+        }
+        throw new Error(message);
+    }
     if (!response.ok) {
         const body = await response.text();
         let message = body;
