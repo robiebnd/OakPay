@@ -20,13 +20,13 @@ public class AdminDashboardController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<AdminDashboard> dashboard() {
         return ResponseEntity.ok(dashboardService.getDashboard());
     }
 
     @GetMapping("/transactions")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<List<AdminDashboardService.AdminTransaction>> transactions(
             @RequestParam(defaultValue = "100") int limit) {
         return ResponseEntity.ok(dashboardService.getTransactions(limit));
