@@ -85,7 +85,11 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
   let response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
 
   if(response.status===401){
-    const refreshed=await refreshAccessToken();
+    // Another admin API client may have refreshed the shared token at exactly
+    // the same time. Re-read storage before consuming the refresh token again.
+    const latestToken=getAccessToken();
+    const refreshed=latestToken && latestToken!==token ? latestToken : await refreshAccessToken();
+
     if(refreshed){
       token=refreshed;
       headers=new Headers(options.headers);
@@ -94,6 +98,20 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
       headers.set("Authorization",`Bearer ${token}`);
       response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
     }
+
+    if(response.status===401){
+      // Before clearing the session, check one last time whether another
+      // request completed a token refresh between retries.
+      const currentToken=getAccessToken();
+      if(currentToken && currentToken!==token){
+        headers=new Headers(options.headers);
+        if(options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type","application/json");
+        headers.set("Accept","application/json");
+        headers.set("Authorization",`Bearer ${currentToken}`);
+        response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
+      }
+    }
+
     if(response.status===401){
       clearSession();
       throw new Error("ADMIN_AUTH_REQUIRED");
