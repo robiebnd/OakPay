@@ -89,5 +89,5 @@ export const adminApi={
  users:{list:(status?:AdminUserStatus,role?:string)=>{const p=new URLSearchParams();if(status)p.set("status",status);if(role)p.set("role",role);const q=p.toString();return request<AdminUser[]>(`/api/v1/admin/users${q?`?${q}`:""}`);},get:(id:string)=>request<AdminUser>(`/api/v1/admin/users/${id}`),updateStatus:(id:string,status:AdminUserStatus)=>request<AdminUser>(`/api/v1/admin/users/${id}/status`,{method:"PATCH",body:JSON.stringify({status})})},
  disputes:{list:()=>request<P2PDispute[]>("/api/v1/p2p/admin/disputes"),get:(id:string)=>request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}`),audit:(id:string)=>request<P2PDisputeAudit[]>(`/api/v1/p2p/admin/disputes/${id}/audit`),resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})},
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
- transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
+ transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/v1/admin/transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
 };
