@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/resolution-centre")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
 public class ResolutionCentreController {
     private final ResolutionCentreService service;
 
@@ -21,6 +21,13 @@ public class ResolutionCentreController {
     public ResponseEntity<List<ResolutionCentreService.DisputeResponse>> disputes(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         return ResponseEntity.ok(service.disputes(authorization));
+    }
+
+    @GetMapping("/disputes/{disputeId}")
+    public ResponseEntity<ResolutionCentreService.DisputeResponse> dispute(
+            @PathVariable UUID disputeId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        return ResponseEntity.ok(service.dispute(disputeId, authorization));
     }
 
     @GetMapping("/disputes/{disputeId}/audit")
