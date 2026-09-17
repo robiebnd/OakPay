@@ -1,6 +1,8 @@
 package com.oakpay.auth.admin;
 
 import com.oakpay.auth.security.UserPrincipal;
+import com.oakpay.auth.user.User;
+import com.oakpay.auth.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,9 +19,13 @@ import java.util.List;
 public class AdminTransactionsController {
 
     private final AdminDashboardService dashboardService;
+    private final UserRepository userRepository;
 
-    public AdminTransactionsController(AdminDashboardService dashboardService) {
+    public AdminTransactionsController(
+            AdminDashboardService dashboardService,
+            UserRepository userRepository) {
         this.dashboardService = dashboardService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -32,8 +38,20 @@ public class AdminTransactionsController {
     }
 
     private void requireAdmin(UserPrincipal principal) {
-        if (principal == null || !"ADMIN".equalsIgnoreCase(principal.getRole())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrator access required");
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+
+        User user = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Administrator account not found"));
+
+        String role = user.getRole() == null ? "" : user.getRole().trim();
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Administrator access required");
         }
     }
 }
