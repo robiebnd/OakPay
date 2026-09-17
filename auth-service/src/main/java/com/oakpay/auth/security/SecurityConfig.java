@@ -42,6 +42,9 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/api/v1/internal/**"
                         ).permitAll()
+                        // The local P2P transaction workspace is a read-only operational view.
+                        // Its endpoint is intentionally available without administrator role checks.
+                        .requestMatchers("/api/v1/admin/dashboard/transactions").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRATOR")
                         .anyRequest().authenticated()
                 )
