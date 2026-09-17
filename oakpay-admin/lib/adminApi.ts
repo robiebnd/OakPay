@@ -23,24 +23,20 @@ function getAccessToken():string|null {
   if(typeof window === "undefined") return null;
   return localStorage.getItem("oakpay.admin.accessToken");
 }
-
 function getRefreshToken():string|null {
   if(typeof window === "undefined") return null;
   return localStorage.getItem("oakpay.admin.refreshToken");
 }
-
 function storeTokens(token:StoredToken) {
   if(typeof window === "undefined") return;
   localStorage.setItem("oakpay.admin.accessToken",token.accessToken);
   if(token.refreshToken) localStorage.setItem("oakpay.admin.refreshToken",token.refreshToken);
 }
-
 function clearSession() {
   if(typeof window === "undefined") return;
   localStorage.removeItem("oakpay.admin.accessToken");
   localStorage.removeItem("oakpay.admin.refreshToken");
 }
-
 async function refreshAccessToken():Promise<string|null>{
   if(typeof window === "undefined") return null;
   const shared=window as SharedWindow;
@@ -60,7 +56,6 @@ async function refreshAccessToken():Promise<string|null>{
   })();
   return shared.__payoakAdminRefreshPromise;
 }
-
 async function request<T>(path:string, options:RequestInit={}):Promise<T>{
   let token=getAccessToken();
   let headers=new Headers(options.headers);
@@ -68,7 +63,6 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
   headers.set("Accept","application/json");
   if(token)headers.set("Authorization",`Bearer ${token}`);
   let response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
-
   if(response.status===401){
     const latestToken=getAccessToken();
     const refreshed=latestToken && latestToken!==token ? latestToken : await refreshAccessToken();
@@ -76,7 +70,8 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
       token=refreshed;
       headers=new Headers(options.headers);
       if(options.body && !(options.body instanceof FormData) && !headers.has("Content-Type"))headers.set("Content-Type","application/json");
-      headers.set("Accept","application/json");headers.set("Authorization",`Bearer ${token}`);
+      headers.set("Accept","application/json");
+      headers.set("Authorization",`Bearer ${token}`);
       response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
     }
     if(response.status===401){
@@ -84,13 +79,13 @@ async function request<T>(path:string, options:RequestInit={}):Promise<T>{
       if(currentToken && currentToken!==token){
         headers=new Headers(options.headers);
         if(options.body && !(options.body instanceof FormData) && !headers.has("Content-Type"))headers.set("Content-Type","application/json");
-        headers.set("Accept","application/json");headers.set("Authorization",`Bearer ${currentToken}`);
+        headers.set("Accept","application/json");
+        headers.set("Authorization",`Bearer ${currentToken}`);
         response=await fetch(`${API_BASE_URL}${path}`,{...options,cache:"no-store",headers});
       }
     }
     if(response.status===401){clearSession();throw new Error("ADMIN_AUTH_REQUIRED");}
   }
-
   if(response.status===403){
     const body=await response.text();
     let message="Administrator access required.";
@@ -114,7 +109,12 @@ export const adminApi={
  kyc:{list:(status?:KycStatus)=>{const p=new URLSearchParams();if(status)p.set("status",status);const q=p.toString();return request<AdminKycApplication[]>(`/api/v1/admin/kyc${q?`?${q}`:""}`);},get:(id:string)=>request<AdminKycApplication>(`/api/v1/admin/kyc/${id}`),decide:(id:string,data:KycDecisionRequest)=>request<AdminKycApplication>(`/api/v1/admin/kyc/${id}/decision`,{method:"POST",body:JSON.stringify(data)})},
  queries:{list:(status?:ClientQueryStatus|string)=>{const p=new URLSearchParams();if(status)p.set("status",status);const q=p.toString();return request<ClientQuery[]>(`/api/v1/admin/queries${q?`?${q}`:""}`);},get:(id:string)=>request<ClientQuery>(`/api/v1/admin/queries/${id}`),assign:(id:string,adminUserId:string)=>request<ClientQuery>(`/api/v1/admin/queries/${id}/assign`,{method:"PATCH",body:JSON.stringify({adminUserId})}),resolve:(id:string,resolution:string)=>request<ClientQuery>(`/api/v1/admin/queries/${id}/resolve`,{method:"POST",body:JSON.stringify({resolution})})},
  users:{list:(status?:AdminUserStatus,role?:string)=>{const p=new URLSearchParams();if(status)p.set("status",status);if(role)p.set("role",role);const q=p.toString();return request<AdminUser[]>(`/api/v1/admin/users${q?`?${q}`:""}`);},get:(id:string)=>request<AdminUser>(`/api/v1/admin/users/${id}`),updateStatus:(id:string,status:AdminUserStatus)=>request<AdminUser>(`/api/v1/admin/users/${id}/status`,{method:"PATCH",body:JSON.stringify({status})})},
- disputes:{list:()=>request<P2PDispute[]>("/api/v1/p2p/admin/disputes"),get:(id:string)=>request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}`),audit:(id:string)=>request<P2PDisputeAudit[]>(`/api/v1/p2p/admin/disputes/${id}/audit`),resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/p2p/admin/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})},
+ disputes:{
+   list:()=>request<P2PDispute[]>("/api/v1/admin/resolution-centre/disputes"),
+   get:(id:string)=>request<P2PDispute>(`/api/v1/admin/resolution-centre/disputes/${id}`),
+   audit:(id:string)=>request<P2PDisputeAudit[]>(`/api/v1/admin/resolution-centre/disputes/${id}/audit`),
+   resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})
+ },
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
  transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
 };
