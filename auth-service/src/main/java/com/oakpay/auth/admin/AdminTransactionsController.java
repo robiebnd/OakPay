@@ -39,19 +39,25 @@ public class AdminTransactionsController {
 
     private void requireAdmin(UserPrincipal principal) {
         if (principal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authentication required");
         }
 
         User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED,
-                        "Administrator account not found"));
+                        "Authenticated administrator account was not found"));
 
         String role = user.getRole() == null ? "" : user.getRole().trim();
-        if (!"ADMIN".equalsIgnoreCase(role)) {
+        boolean administrator =
+                "ADMIN".equalsIgnoreCase(role) ||
+                "ADMINISTRATOR".equalsIgnoreCase(role);
+
+        if (!administrator) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
-                    "Administrator access required");
+                    "Administrator access required for P2P transactions");
         }
     }
 }
