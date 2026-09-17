@@ -941,10 +941,10 @@ const adminApi = {
             })
     },
     disputes: {
-        list: ()=>request("/api/v1/p2p/admin/disputes"),
-        get: (id)=>request(`/api/v1/p2p/admin/disputes/${id}`),
-        audit: (id)=>request(`/api/v1/p2p/admin/disputes/${id}/audit`),
-        resolve: (id, data)=>request(`/api/v1/p2p/admin/disputes/${id}/resolve`, {
+        list: ()=>request("/api/v1/admin/resolution-centre/disputes"),
+        get: (id)=>request(`/api/v1/admin/resolution-centre/disputes/${id}`),
+        audit: (id)=>request(`/api/v1/admin/resolution-centre/disputes/${id}/audit`),
+        resolve: (id, data)=>request(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`, {
                 method: "POST",
                 body: JSON.stringify(data)
             })
