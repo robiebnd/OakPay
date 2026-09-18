@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useMemo, useState, type ComponentProps } from 'react';
+import { router } from 'expo-router';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -252,7 +253,7 @@ export default function OrdersScreen() {
                 <Text style={styles.eyebrow}>PAYOAK ACCOUNT</Text>
                 <Text style={styles.title}>P2P Orders</Text>
               </View>
-              <View style={styles.iconButton}><Ionicons name="notifications-outline" size={21} color={TEXT} /></View>
+              <Pressable style={styles.iconButton} onPress={()=>router.push('/(tabs)/notifications')} accessibilityLabel="Notifications"><Ionicons name="notifications-outline" size={21} color={TEXT} /></Pressable>
             </View>
             <Text style={styles.subtitle}>Track purchases and sales from offer to completion.</Text>
             <View style={styles.tabs}>
