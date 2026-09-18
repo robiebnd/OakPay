@@ -4,6 +4,7 @@ import com.oakpay.trading.asset.AssetStatus;
 import com.oakpay.trading.asset.SupportedAsset;
 import com.oakpay.trading.asset.SupportedAssetRepository;
 import com.oakpay.trading.security.UserStatusClient;
+import com.oakpay.trading.notification.NotificationClient;
 import com.oakpay.trading.wallet.WalletClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -27,15 +29,16 @@ public class P2PTradeService {
     private final AdvertisementRepository advertisementRepository;
     private final UserStatusClient userStatusClient;
     private final TradeLimitService tradeLimitService;
+    private final NotificationClient notificationClient;
 
     public P2PTradeService(P2PTradeRepository repository, WalletClient walletClient, P2PPaymentService paymentService,
                            P2PPaymentRepository paymentRepository, P2PCommissionService commissionService,
                            SupportedAssetRepository assetRepository, AdvertisementRepository advertisementRepository,
-                           UserStatusClient userStatusClient, TradeLimitService tradeLimitService) {
+                           UserStatusClient userStatusClient, TradeLimitService tradeLimitService, NotificationClient notificationClient) {
         this.repository = repository; this.walletClient = walletClient; this.paymentService = paymentService;
         this.paymentRepository = paymentRepository; this.commissionService = commissionService;
         this.assetRepository = assetRepository; this.advertisementRepository = advertisementRepository;
-        this.userStatusClient = userStatusClient; this.tradeLimitService = tradeLimitService;
+        this.userStatusClient = userStatusClient; this.tradeLimitService = tradeLimitService; this.notificationClient = notificationClient;
     }
 
     @Transactional
@@ -105,7 +108,14 @@ public class P2PTradeService {
             if (ad.getAvailableQuantity().signum() == 0) { ad.setStatus(AdStatus.CLOSED); ad.setAutoClosed(true); }
             advertisementRepository.save(ad);
         }
-        return P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        P2PTradeDtos.TradeResponse response = P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        notificationClient.send(buyerId, "P2P_ORDER", "P2P order created",
+                "Your " + asset + " purchase order is awaiting payment.",
+                Map.of("tradeId", trade.getId().toString(), "status", trade.getStatus().name()));
+        notificationClient.send(sellerId, "P2P_ORDER", "New P2P order",
+                "A buyer has started a " + asset + " P2P order.",
+                Map.of("tradeId", trade.getId().toString(), "status", trade.getStatus().name()));
+        return response;
     }
 
     @Transactional
@@ -115,7 +125,11 @@ public class P2PTradeService {
         if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING) throw new IllegalStateException("Trade is not awaiting payment");
         ensureNotExpired(trade); paymentService.submit(buyerId, tradeId, new P2PPaymentDtos.SubmitRequest(request == null ? null : request.paymentReference(), request == null ? null : request.paymentNote()));
-        return P2PTradeDtos.TradeResponse.from(getForUpdate(tradeId));
+        P2PTrade updated = getForUpdate(tradeId);
+        notificationClient.send(updated.getSellerId(), "P2P_PAYMENT", "Payment marked",
+                "The buyer has marked payment for your " + updated.getAsset() + " order.",
+                Map.of("tradeId", updated.getId().toString(), "status", updated.getStatus().name()));
+        return P2PTradeDtos.TradeResponse.from(updated);
     }
 
     @Transactional
@@ -127,7 +141,14 @@ public class P2PTradeService {
         P2PPayment payment = paymentRepository.findByTradeId(tradeId).orElseThrow(() -> new IllegalStateException("Payment record not found"));
         if (payment.getStatus() != PaymentStatus.VERIFIED) throw new IllegalStateException("Payment must be verified before crypto is released");
         walletClient.releaseEscrow(sellerId, trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId()); trade.setStatus(P2PTradeStatus.COMPLETED);
-        return P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        P2PTrade saved = repository.save(trade);
+        notificationClient.send(saved.getBuyerId(), "ORDER_STATUS", "P2P order completed",
+                "Your " + saved.getAsset() + " P2P purchase is complete.",
+                Map.of("tradeId", saved.getId().toString(), "status", saved.getStatus().name()));
+        notificationClient.send(saved.getSellerId(), "ORDER_STATUS", "P2P order completed",
+                "Your " + saved.getAsset() + " P2P sale is complete.",
+                Map.of("tradeId", saved.getId().toString(), "status", saved.getStatus().name()));
+        return P2PTradeDtos.TradeResponse.from(saved);
     }
 
     @Transactional
@@ -137,7 +158,13 @@ public class P2PTradeService {
         if (trade.getStatus() == P2PTradeStatus.COMPLETED) throw new IllegalStateException("Completed trade cannot be cancelled");
         if (trade.getStatus() == P2PTradeStatus.CANCELLED || trade.getStatus() == P2PTradeStatus.EXPIRED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() == P2PTradeStatus.PAYMENT_MARKED || trade.getStatus() == P2PTradeStatus.DISPUTED) throw new IllegalStateException("Paid or disputed trade must not be cancelled");
-        releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.CANCELLED); restoreAdvertisement(trade); return P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.CANCELLED); restoreAdvertisement(trade);
+        P2PTrade saved = repository.save(trade);
+        UUID otherParty = trade.getBuyerId().equals(userId) ? trade.getSellerId() : trade.getBuyerId();
+        notificationClient.send(otherParty, "ORDER_STATUS", "P2P order cancelled",
+                "A " + saved.getAsset() + " P2P order has been cancelled.",
+                Map.of("tradeId", saved.getId().toString(), "status", saved.getStatus().name()));
+        return P2PTradeDtos.TradeResponse.from(saved);
     }
 
     @Transactional
@@ -146,7 +173,13 @@ public class P2PTradeService {
         if (!trade.getBuyerId().equals(userId) && !trade.getSellerId().equals(userId)) throw new IllegalArgumentException("Trade does not belong to user");
         if (trade.getStatus() == P2PTradeStatus.DISPUTED) return P2PTradeDtos.TradeResponse.from(trade);
         if (trade.getStatus() != P2PTradeStatus.PAYMENT_MARKED) throw new IllegalStateException("Only a payment-marked trade can be disputed");
-        trade.setStatus(P2PTradeStatus.DISPUTED); return P2PTradeDtos.TradeResponse.from(repository.save(trade));
+        trade.setStatus(P2PTradeStatus.DISPUTED);
+        P2PTrade saved = repository.save(trade);
+        UUID otherParty = trade.getBuyerId().equals(userId) ? trade.getSellerId() : trade.getBuyerId();
+        notificationClient.send(otherParty, "P2P_DISPUTE", "P2P dispute opened",
+                "A dispute has been opened for your " + saved.getAsset() + " P2P trade.",
+                Map.of("tradeId", saved.getId().toString(), "status", saved.getStatus().name()));
+        return P2PTradeDtos.TradeResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -166,7 +199,7 @@ public class P2PTradeService {
     public void expirePendingTrades() { LocalDateTime now = LocalDateTime.now(); repository.findAllByStatusOrderByCreatedAtAsc(P2PTradeStatus.PAYMENT_PENDING).stream().filter(t -> !t.getExpiresAt().isAfter(now)).map(P2PTrade::getId).forEach(this::expirePendingTrade); }
 
     @Transactional
-    public void expirePendingTrade(UUID tradeId) { P2PTrade trade = repository.findByIdForUpdate(tradeId).orElse(null); if (trade == null || trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING || trade.getExpiresAt().isAfter(LocalDateTime.now())) return; releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.EXPIRED); restoreAdvertisement(trade); repository.save(trade); }
+    public void expirePendingTrade(UUID tradeId) { P2PTrade trade = repository.findByIdForUpdate(tradeId).orElse(null); if (trade == null || trade.getStatus() != P2PTradeStatus.PAYMENT_PENDING || trade.getExpiresAt().isAfter(LocalDateTime.now())) return; releaseTradeHold(trade); trade.setStatus(P2PTradeStatus.EXPIRED); restoreAdvertisement(trade); P2PTrade saved = repository.save(trade); notificationClient.send(saved.getBuyerId(), "ORDER_STATUS", "P2P order expired", "Your " + saved.getAsset() + " P2P order expired before payment.", Map.of("tradeId", saved.getId().toString(), "status", saved.getStatus().name())); notificationClient.send(saved.getSellerId(), "ORDER_STATUS", "P2P order expired", "A " + saved.getAsset() + " P2P order expired before payment.", Map.of("tradeId", saved.getId().toString(), "status", saved.getStatus().name())); }
     private void releaseTradeHold(P2PTrade trade) { if (trade.getAdvertisementId() == null) { walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId()); return; } Advertisement ad = advertisementRepository.findByIdForUpdate(trade.getAdvertisementId()).orElse(null); if (ad == null || ad.getSide() != OrderSide.SELL) walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId()); }
     private boolean containsPaymentMethod(String methods, String selected) { return java.util.Arrays.stream(methods.split(",")).map(String::trim).map(v -> v.toUpperCase(Locale.ROOT)).anyMatch(selected::equals); }
     private void validateP2PAsset(String symbol, BigDecimal quantity) { SupportedAsset asset = assetRepository.findBySymbolIgnoreCase(symbol).orElseThrow(() -> new IllegalArgumentException("Unsupported asset " + symbol)); if (asset.getStatus() != AssetStatus.ACTIVE || !asset.getP2pEnabled()) throw new IllegalStateException("Asset is not enabled for P2P"); if (quantity.compareTo(asset.getMinTradeAmount()) < 0) throw new IllegalArgumentException("Quantity is below the minimum trade amount for " + symbol); }
