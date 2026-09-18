@@ -5,24 +5,14 @@ import {
   GoogleSansFlex_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/google-sans-flex';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { PropsWithChildren, useEffect } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { notificationsApi } from '../lib/notificationsApi';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 function NotificationBootstrap() {
   const { accessToken, user } = useAuth();
@@ -30,16 +20,34 @@ function NotificationBootstrap() {
   useEffect(() => {
     let mounted = true;
 
-    async function register() {
+    async function registerForPush() {
       if (!accessToken || !user) return;
 
+      // Expo Go on Android cannot use remote push notifications from
+      // expo-notifications. Do not import the native module at all in Expo Go,
+      // otherwise the route itself crashes during module evaluation.
+      if (Constants.executionEnvironment === 'storeClient') return;
+
       try {
+        const Notifications = await import('expo-notifications');
+
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+
         const permissions = await Notifications.getPermissionsAsync();
         let finalStatus = permissions.status;
+
         if (finalStatus !== 'granted') {
           const requested = await Notifications.requestPermissionsAsync();
           finalStatus = requested.status;
         }
+
         if (finalStatus !== 'granted') return;
 
         if (Platform.OS === 'android') {
@@ -50,10 +58,12 @@ function NotificationBootstrap() {
           });
         }
 
-        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-        const pushToken = projectId
-          ? await Notifications.getExpoPushTokenAsync({ projectId })
-          : await Notifications.getExpoPushTokenAsync();
+        // Push registration is only attempted when the native build has an
+        // EAS project id. Expo Go is handled above and stays fully functional.
+        const projectId = Constants.easConfig?.projectId;
+        if (!projectId || !mounted) return;
+
+        const pushToken = await Notifications.getExpoPushTokenAsync({ projectId });
 
         if (!mounted) return;
 
@@ -63,12 +73,15 @@ function NotificationBootstrap() {
           deviceId: Constants.deviceName ?? null,
         });
       } catch {
-        // Push registration must never prevent the user from entering PayOak.
+        // Push registration must never prevent PayOak from starting.
       }
     }
 
-    register();
-    return () => { mounted = false; };
+    registerForPush();
+
+    return () => {
+      mounted = false;
+    };
   }, [accessToken, user]);
 
   return null;
