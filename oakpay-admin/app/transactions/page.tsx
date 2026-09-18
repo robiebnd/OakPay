@@ -40,7 +40,7 @@ type AdminTransaction = {
   updatedAt: string;
 };
 
-const FEED_URL = "/api/p2p-transactions?limit=200";
+const FEED_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082"}/api/v1/p2p/reporting/transactions?limit=200`;
 
 export default function TransactionsPage() {
   const [items, setItems] = useState<AdminTransaction[]>([]);
