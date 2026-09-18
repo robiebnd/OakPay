@@ -38,6 +38,7 @@ type AdminTransaction = {
   paymentMethod: string;
   status: TradeStatus;
   paymentReference: string | null;
+  paymentNote: string | null;
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
@@ -438,6 +439,7 @@ export default function TransactionsPage() {
                       </div>
                     ) : "—"}
                   </Detail>
+                  <Detail label="Payment note">{selectedTransaction.paymentNote || "—"}</Detail>
                   <Detail label="Advertisement ID">
                     {selectedTransaction.advertisementId ? (
                       <button
