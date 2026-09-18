@@ -5,9 +5,12 @@ import {
   BarChart3,
   CheckCircle2,
   Clock3,
+  Copy,
+  Eye,
   RefreshCw,
   Search,
   Wallet,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminShell from "../../components/AdminShell";
@@ -49,6 +52,8 @@ export default function TransactionsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [feedHealthy, setFeedHealthy] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [selectedTransaction, setSelectedTransaction] = useState<AdminTransaction | null>(null);
+  const [copiedField, setCopiedField] = useState("");
 
   const load = useCallback(async (initial = false) => {
     try {
@@ -125,6 +130,16 @@ export default function TransactionsPage() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 8,
     });
+
+  const copyValue = async (value: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      window.setTimeout(() => setCopiedField(""), 1500);
+    } catch {
+      setCopiedField("");
+    }
+  };
 
   const formatDate = (value: string) => {
     const parsed = new Date(value);
@@ -265,6 +280,7 @@ export default function TransactionsPage() {
                     <Th>Payment</Th>
                     <Th>Status</Th>
                     <Th>Created</Th>
+                    <Th> </Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -331,6 +347,17 @@ export default function TransactionsPage() {
                       <td className="px-5 py-4 text-xs text-[#667085]">
                         {formatDate(trade.createdAt)}
                       </td>
+
+                      <td className="px-5 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTransaction(trade)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-[#dce3df] bg-white px-3 py-2 text-xs font-bold text-[#082d16] transition hover:border-[#397b0a] hover:bg-[#f7fbf7]"
+                        >
+                          <Eye size={15} />
+                          View
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -339,12 +366,172 @@ export default function TransactionsPage() {
           )}
         </section>
 
+
+        {selectedTransaction ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#07120b]/45 p-4 backdrop-blur-[2px]"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setSelectedTransaction(null);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="transaction-details-title"
+              className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-[#dce3df] bg-white shadow-2xl"
+            >
+              <div className="flex items-start justify-between border-b border-[#e3e8e5] p-6">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#397b0a]">
+                    Transaction details
+                  </p>
+                  <h2 id="transaction-details-title" className="mt-1 text-2xl font-extrabold text-[#0b1628]">
+                    {selectedTransaction.asset} P2P Trade
+                  </h2>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#f5f8f6] px-3 py-1 text-xs font-semibold text-[#475467]">
+                      {selectedTransaction.id}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void copyValue(selectedTransaction.id, "transaction")}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#dce3df] px-2.5 py-1 text-xs font-bold text-[#397b0a] hover:bg-[#f7fbf7]"
+                    >
+                      <Copy size={13} />
+                      {copiedField === "transaction" ? "Copied" : "Copy ID"}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTransaction(null)}
+                  aria-label="Close transaction details"
+                  className="rounded-xl p-2 text-[#667085] hover:bg-[#f5f7f6] hover:text-[#111827]"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+
+              <div className="max-h-[calc(90vh-120px)] overflow-y-auto p-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Detail label="Status"><StatusBadge status={selectedTransaction.status} /></Detail>
+                  <Detail label="Created">{formatDate(selectedTransaction.createdAt)}</Detail>
+                  <Detail label="Last updated">{formatDate(selectedTransaction.updatedAt)}</Detail>
+                  <Detail label="Expires">{formatDate(selectedTransaction.expiresAt)}</Detail>
+                  <Detail label="Asset">{selectedTransaction.asset}</Detail>
+                  <Detail label="Fiat currency">{selectedTransaction.fiatCurrency}</Detail>
+                  <Detail label="Quantity">{fmt(selectedTransaction.quantity)} {selectedTransaction.asset}</Detail>
+                  <Detail label="Unit price">{fmt(selectedTransaction.unitPrice)} / {selectedTransaction.asset}</Detail>
+                  <Detail label="Fiat total">{fmt(selectedTransaction.fiatAmount)} {selectedTransaction.fiatCurrency}</Detail>
+                  <Detail label="Payment method">{selectedTransaction.paymentMethod || "—"}</Detail>
+                  <Detail label="Payment reference">
+                    {selectedTransaction.paymentReference ? (
+                      <div className="flex items-center gap-2">
+                        <span>{selectedTransaction.paymentReference}</span>
+                        <button
+                          type="button"
+                          onClick={() => void copyValue(selectedTransaction.paymentReference || "", "payment")}
+                          className="text-[#397b0a] hover:underline"
+                        >
+                          {copiedField === "payment" ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    ) : "—"}
+                  </Detail>
+                  <Detail label="Advertisement ID">
+                    {selectedTransaction.advertisementId ? (
+                      <button
+                        type="button"
+                        onClick={() => void copyValue(selectedTransaction.advertisementId || "", "ad")}
+                        className="text-left text-[#397b0a] hover:underline"
+                      >
+                        {copiedField === "ad" ? "Copied" : selectedTransaction.advertisementId}
+                      </button>
+                    ) : "—"}
+                  </Detail>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <IdentityCard
+                    label="Buyer"
+                    id={selectedTransaction.buyerId}
+                    field="buyer"
+                    copiedField={copiedField}
+                    onCopy={copyValue}
+                  />
+                  <IdentityCard
+                    label="Seller"
+                    id={selectedTransaction.sellerId}
+                    field="seller"
+                    copiedField={copiedField}
+                    onCopy={copyValue}
+                  />
+                </div>
+
+                <div className="mt-6 rounded-xl border border-[#e3e8e5] bg-[#fafcfb] p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#667085]">
+                    Transaction reference
+                  </p>
+                  <p className="mt-2 break-all font-mono text-sm text-[#111827]">
+                    {selectedTransaction.id}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <p className="text-xs text-[#98a2b3]">
           Live data refreshes every 15 seconds. Existing records remain visible
           while an update is in progress.
         </p>
       </div>
     </AdminShell>
+  );
+}
+
+
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-[#e3e8e5] bg-[#fafcfb] p-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#667085]">
+        {label}
+      </p>
+      <div className="mt-2 break-words text-sm font-semibold text-[#111827]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function IdentityCard({
+  label,
+  id,
+  field,
+  copiedField,
+  onCopy,
+}: {
+  label: string;
+  id: string;
+  field: string;
+  copiedField: string;
+  onCopy: (value: string, field: string) => Promise<void>;
+}) {
+  return (
+    <div className="rounded-xl border border-[#e3e8e5] bg-white p-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#667085]">
+        {label}
+      </p>
+      <p className="mt-2 break-all font-mono text-sm text-[#111827]">{id}</p>
+      <button
+        type="button"
+        onClick={() => void onCopy(id, field)}
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#397b0a] hover:underline"
+      >
+        <Copy size={13} />
+        {copiedField === field ? "Copied" : "Copy ID"}
+      </button>
+    </div>
   );
 }
 
