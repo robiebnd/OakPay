@@ -62,3 +62,5 @@ oakpay:
   admin:
     dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET:oakpay-admin-dispute-development-secret-change-before-production}
   internal-secret: ${OAKPAY_INTERNAL_SECRET:oakpay-internal-development-secret-change-before-production}
+  notifications:
+    test-enabled: ${OAKPAY_NOTIFICATIONS_TEST_ENABLED:true}
