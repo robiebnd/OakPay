@@ -27,4 +27,6 @@ export const notificationsApi = {
     apiPost<void>('/api/v1/notifications/read-all', token),
   registerDevice: (token: string, body: RegisterPushDeviceRequest) =>
     apiPost<void>('/api/v1/notifications/devices', token, body),
+  createTest: (token: string) =>
+    apiPost<AppNotification>('/api/v1/notifications/test', token),
 };
