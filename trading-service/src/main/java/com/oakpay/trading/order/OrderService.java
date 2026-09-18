@@ -2,6 +2,8 @@ package com.oakpay.trading.order;
 
 import com.oakpay.trading.api.TradingDtos;
 import com.oakpay.trading.wallet.WalletClient;
+import com.oakpay.trading.notification.NotificationClient;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class OrderService {
     private final TradeRepository tradeRepository;
     private final WalletClient walletClient;
     private final BigDecimal feeRate;
+    private final NotificationClient notificationClient;
 
     public OrderService(OrderRepository orderRepository, TradeRepository tradeRepository, WalletClient walletClient,
                         @Value("${oakpay.trading.fee-rate:0.001}") BigDecimal feeRate) {
@@ -46,6 +49,9 @@ public class OrderService {
                 : order.getQuantity();
         walletClient.lock(userId, reserveCurrency(order), reserve, order.getId());
         match(order);
+        notificationClient.send(userId, "ORDER_STATUS", "Order submitted",
+                "Your " + order.getSide().name() + " order for " + order.getQuantity().stripTrailingZeros().toPlainString() + " " + order.getBaseCurrency() + " is " + order.getStatus().name().replace('_', ' ').toLowerCase() + ".",
+                Map.of("orderId", order.getId().toString(), "status", order.getStatus().name()));
         return response(order);
     }
 
@@ -61,6 +67,9 @@ public class OrderService {
         if (reserve.signum() > 0) walletClient.unlock(userId, reserveCurrency(order), reserve, order.getId());
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+        notificationClient.send(userId, "ORDER_STATUS", "Order cancelled",
+                "Your " + order.getBaseCurrency() + "/" + order.getQuoteCurrency() + " order has been cancelled.",
+                Map.of("orderId", order.getId().toString(), "status", order.getStatus().name()));
     }
 
     @Transactional(readOnly = true)
@@ -117,6 +126,12 @@ public class OrderService {
             trade.setPrice(executionPrice); trade.setQuantity(fill); trade.setGrossValue(gross);
             trade.setBuyerFee(buyerFee); trade.setSellerFee(sellerFee);
             tradeRepository.save(trade);
+            notificationClient.send(buyerId, "ORDER_STATUS", "Order filled",
+                    "Your " + fill.stripTrailingZeros().toPlainString() + " " + incoming.getBaseCurrency() + " trade has executed.",
+                    Map.of("tradeId", trade.getId().toString(), "status", "EXECUTED", "quantity", fill.toPlainString()));
+            notificationClient.send(sellerId, "ORDER_STATUS", "Order filled",
+                    "Your sale of " + fill.stripTrailingZeros().toPlainString() + " " + incoming.getBaseCurrency() + " has executed.",
+                    Map.of("tradeId", trade.getId().toString(), "status", "EXECUTED", "quantity", fill.toPlainString()));
 
             incoming.setRemainingQuantity(incoming.getRemainingQuantity().subtract(fill));
             resting.setRemainingQuantity(resting.getRemainingQuantity().subtract(fill));
