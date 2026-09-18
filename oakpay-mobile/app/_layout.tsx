@@ -5,11 +5,74 @@ import {
   GoogleSansFlex_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/google-sans-flex';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { PropsWithChildren, useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text, TextInput } from 'react-native';
-import { AuthProvider } from '../context/AuthContext';
+import { Platform, Text, TextInput } from 'react-native';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { notificationsApi } from '../lib/notificationsApi';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+function NotificationBootstrap() {
+  const { accessToken, user } = useAuth();
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function register() {
+      if (!accessToken || !user) return;
+
+      try {
+        const permissions = await Notifications.getPermissionsAsync();
+        let finalStatus = permissions.status;
+        if (finalStatus !== 'granted') {
+          const requested = await Notifications.requestPermissionsAsync();
+          finalStatus = requested.status;
+        }
+        if (finalStatus !== 'granted') return;
+
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'PayOak notifications',
+            importance: Notifications.AndroidImportance.DEFAULT,
+            sound: 'default',
+          });
+        }
+
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        const pushToken = projectId
+          ? await Notifications.getExpoPushTokenAsync({ projectId })
+          : await Notifications.getExpoPushTokenAsync();
+
+        if (!mounted) return;
+
+        await notificationsApi.registerDevice(accessToken, {
+          expoPushToken: pushToken.data,
+          platform: Platform.OS,
+          deviceId: Constants.deviceName ?? null,
+        });
+      } catch {
+        // Push registration must never prevent the user from entering PayOak.
+      }
+    }
+
+    register();
+    return () => { mounted = false; };
+  }, [accessToken, user]);
+
+  return null;
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -21,9 +84,6 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  // Google Sans Flex is the app-wide typography default.
-  // Existing Inter_* aliases remain mapped to Google Sans Flex so older
-  // screen styles continue to render with the same font family.
   Text.defaultProps = Text.defaultProps || {};
   Text.defaultProps.style = [{ fontFamily: 'Inter_400Regular' }, Text.defaultProps.style];
   TextInput.defaultProps = TextInput.defaultProps || {};
@@ -32,6 +92,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        <NotificationBootstrap />
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
