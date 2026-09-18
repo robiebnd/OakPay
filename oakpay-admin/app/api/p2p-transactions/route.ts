@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 const TRADING_BASE_URL =
   process.env.OAKPAY_TRADING_URL || "http://localhost:8085";
+const INTERNAL_SECRET =
+  process.env.OAKPAY_INTERNAL_SECRET ||
+  "oakpay-internal-development-secret-change-before-production-2026";
+
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
@@ -12,11 +16,16 @@ export async function GET(request: Request) {
       200,
     );
 
+    // Use the already-proven internal trading feed that Postman is able to
+    // retrieve. The internal secret stays server-side in Next.js.
     const response = await fetch(
-      `${TRADING_BASE_URL}/api/v1/p2p/reporting/transactions?limit=${limit}`,
+      `${TRADING_BASE_URL}/api/v1/internal/admin/trades?limit=${limit}`,
       {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          "X-OakPay-Internal-Secret": INTERNAL_SECRET,
+        },
         cache: "no-store",
       },
     );
@@ -27,19 +36,40 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           error: "P2P_TRANSACTION_FEED_UNAVAILABLE",
-          message: `Trading service returned HTTP ${response.status}.`,
+          message: `Trading service returned HTTP ${response.status} from /api/v1/internal/admin/trades.`,
           detail: body || null,
         },
         { status: response.status },
       );
     }
 
-    return new NextResponse(body, {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return NextResponse.json(
+        {
+          error: "P2P_TRANSACTION_FEED_INVALID",
+          message: "Trading service returned a non-JSON transaction response.",
+          detail: body || null,
+        },
+        { status: 502 },
+      );
+    }
+
+    if (!Array.isArray(parsed)) {
+      return NextResponse.json(
+        {
+          error: "P2P_TRANSACTION_FEED_INVALID",
+          message: "Trading service returned an unexpected transaction payload.",
+        },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json(parsed, {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store",
-      },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     return NextResponse.json(
