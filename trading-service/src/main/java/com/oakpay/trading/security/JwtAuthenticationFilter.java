@@ -19,7 +19,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return "/api/v1/p2p/reporting/transactions".equals(request.getRequestURI());
+        return request.getRequestURI().equals("/api/v1/p2p/reporting/transactions")
+                || request.getRequestURI().startsWith("/api/v1/p2p/reporting/transactions/");
     }
 
     @Override
