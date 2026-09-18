@@ -2,10 +2,6 @@ import { NextResponse } from "next/server";
 
 const TRADING_BASE_URL =
   process.env.OAKPAY_TRADING_URL || "http://localhost:8085";
-const INTERNAL_SECRET =
-  process.env.OAKPAY_INTERNAL_SECRET ||
-  "oakpay-internal-development-secret-change-before-production";
-
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
@@ -19,13 +15,10 @@ export async function GET(request: Request) {
     // Use the already-proven internal trading feed that Postman is able to
     // retrieve. The internal secret stays server-side in Next.js.
     const response = await fetch(
-      `${TRADING_BASE_URL}/api/v1/internal/admin/trades?limit=${limit}`,
+      `${TRADING_BASE_URL}/api/v1/p2p/reporting/transactions?limit=${limit}`,
       {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-          "X-OakPay-Internal-Secret": INTERNAL_SECRET,
-        },
+        headers: { Accept: "application/json" },
         cache: "no-store",
       },
     );
