@@ -1,6 +1,10 @@
 {
-  "app": {},
-  "appUsingSizeAdjust": false,
+  "app": {
+    "[project]/app/login/page": [],
+    "[project]/app/page": [],
+    "[project]/app/transactions/page": []
+  },
+  "appUsingSizeAdjust": true,
   "pages": {},
   "pagesUsingSizeAdjust": false
 }
