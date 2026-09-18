@@ -36,5 +36,7 @@ oakpay:
   jwt:
     secret: ${OAKPAY_JWT_SECRET:oakpay-development-secret-change-before-production-2026}
   internal-secret: ${OAKPAY_INTERNAL_SECRET:oakpay-internal-development-secret-change-before-production}
+  auth:
+    base-url: ${OAKPAY_AUTH_URL:http://localhost:8083}
   test-addresses:
     enabled: ${OAKPAY_TEST_ADDRESSES_ENABLED:true}
