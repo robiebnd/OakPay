@@ -116,5 +116,5 @@ export const adminApi={
    resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})
  },
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
- transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/v1/admin/dashboard/transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
+ transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/p2p-transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
 };
