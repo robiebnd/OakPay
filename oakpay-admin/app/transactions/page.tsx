@@ -40,7 +40,7 @@ type AdminTransaction = {
   updatedAt: string;
 };
 
-const FEED_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082"}/api/v1/p2p/reporting/transactions?limit=200`;
+const FEED_URL = "/api/p2p-transactions?limit=200";
 
 export default function TransactionsPage() {
   const [items, setItems] = useState<AdminTransaction[]>([]);
@@ -48,6 +48,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [feedHealthy, setFeedHealthy] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const load = useCallback(async (initial = false) => {
     try {
@@ -60,16 +61,28 @@ export default function TransactionsPage() {
         cache: "no-store",
       });
 
-      if (!response.ok) throw new Error("LIVE_FEED_UNAVAILABLE");
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const payload = (await response.json()) as { message?: string; detail?: string };
+          detail = payload.message || payload.detail || "";
+        } catch {}
+        throw new Error(detail || "Unable to load live P2P transactions.");
+      }
 
       const data = (await response.json()) as unknown;
       if (!Array.isArray(data)) throw new Error("INVALID_LIVE_FEED");
 
       setItems(data as AdminTransaction[]);
       setFeedHealthy(true);
-    } catch {
+      setLoadError("");
+    } catch (error) {
       setFeedHealthy(false);
       // Keep the last known records visible during transient failures.
+      if (initial && items.length === 0) {
+        const message = error instanceof Error ? error.message : "Unable to load live P2P transactions.";
+        setLoadError(message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -163,6 +176,12 @@ export default function TransactionsPage() {
             Refresh
           </button>
         </header>
+
+{loadError ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            {loadError}
+          </div>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
