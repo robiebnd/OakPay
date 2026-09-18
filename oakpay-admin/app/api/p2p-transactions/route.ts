@@ -4,7 +4,7 @@ const TRADING_BASE_URL =
   process.env.OAKPAY_TRADING_URL || "http://localhost:8085";
 const INTERNAL_SECRET =
   process.env.OAKPAY_INTERNAL_SECRET ||
-  "oakpay-internal-development-secret-change-before-production-2026";
+  "oakpay-internal-development-secret-change-before-production";
 
 export const dynamic = "force-dynamic";
 
