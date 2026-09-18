@@ -1,0 +1,8 @@
+{
+  "/api/p2p-transactions/route": "app/api/p2p-transactions/route.js",
+  "/audit-logs/page": "app/audit-logs/page.js",
+  "/clients/page": "app/clients/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/transactions/page": "app/transactions/page.js"
+}
