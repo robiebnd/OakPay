@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           error: "P2P_TRANSACTION_FEED_UNAVAILABLE",
-          message: `Trading service returned HTTP ${response.status} from /api/v1/internal/admin/trades.`,
+          message: `Trading service returned HTTP ${response.status} from /api/v1/p2p/reporting/transactions.`,
           detail: body || null,
         },
         { status: response.status },
