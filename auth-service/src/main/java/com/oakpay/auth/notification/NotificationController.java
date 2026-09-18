@@ -25,7 +25,18 @@ public class NotificationController {
     public ResponseEntity<NotificationDtos.NotificationResponse> test(
             @AuthenticationPrincipal UserPrincipal p) {
         if (!testEnabled) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(service.createTest(p.getUserId()));
+
+        service.createInternal(new NotificationDtos.InternalCreateRequest(
+                p.getUserId(),
+                "TEST",
+                "PayOak test notification",
+                "Notifications are working correctly on this device.",
+                "{\"source\":\"mobile-test\"}"
+        ));
+
+        List<NotificationDtos.NotificationResponse> latest = service.list(p.getUserId(), 1);
+        if (latest.isEmpty()) return ResponseEntity.internalServerError().build();
+        return ResponseEntity.ok(latest.get(0));
     }
 
     @GetMapping public List<NotificationDtos.NotificationResponse> list(@AuthenticationPrincipal UserPrincipal p,@RequestParam(defaultValue="50") int limit){return service.list(p.getUserId(),limit);}
