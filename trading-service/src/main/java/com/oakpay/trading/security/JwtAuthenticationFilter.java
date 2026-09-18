@@ -18,6 +18,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public JwtAuthenticationFilter(JwtService jwtService) { this.jwtService = jwtService; }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return "/api/v1/p2p/reporting/transactions".equals(request.getRequestURI());
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String header = request.getHeader("Authorization");
