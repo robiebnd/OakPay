@@ -3,6 +3,8 @@ package com.oakpay.wallet.ledger;
 import com.oakpay.wallet.api.LedgerDtos;
 import com.oakpay.wallet.wallet.Wallet;
 import com.oakpay.wallet.wallet.WalletRepository;
+import com.oakpay.wallet.notification.NotificationClient;
+import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +18,12 @@ import java.util.UUID;
 public class LedgerService {
     private final LedgerEntryRepository ledgerRepository;
     private final WalletRepository walletRepository;
+    private final NotificationClient notificationClient;
 
-    public LedgerService(LedgerEntryRepository ledgerRepository, WalletRepository walletRepository) {
+    public LedgerService(LedgerEntryRepository ledgerRepository, WalletRepository walletRepository, NotificationClient notificationClient) {
         this.ledgerRepository = ledgerRepository;
         this.walletRepository = walletRepository;
+        this.notificationClient = notificationClient;
     }
 
     @Transactional
@@ -74,7 +78,11 @@ public class LedgerService {
         entry.setBalanceAfter(after);
         entry.setReference(normalizedReference);
         entry.setMetadata(metadata);
-        return LedgerDtos.LedgerResponse.from(ledgerRepository.save(entry));
+        LedgerEntry saved = ledgerRepository.save(entry);
+        notificationClient.send(userId, "DEPOSIT", "Deposit completed",
+                normalizedAmount.stripTrailingZeros().toPlainString() + " " + normalizedCurrency + " has been credited to your wallet.",
+                Map.of("ledgerId", saved.getId().toString(), "currency", normalizedCurrency, "amount", normalizedAmount.toPlainString(), "status", "COMPLETED"));
+        return LedgerDtos.LedgerResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -134,7 +142,14 @@ public class LedgerService {
         entry.setBalanceAfter(after);
         entry.setReference(reference);
         entry.setMetadata(request.metadata());
-        return LedgerDtos.LedgerResponse.from(ledgerRepository.save(entry));
+        LedgerEntry saved = ledgerRepository.save(entry);
+        String notificationType = type == LedgerTransactionType.WITHDRAWAL ? "WITHDRAWAL" : "DEPOSIT";
+        String title = type == LedgerTransactionType.WITHDRAWAL ? "Withdrawal completed" : "Deposit completed";
+        String message = (type == LedgerTransactionType.WITHDRAWAL ? "Your withdrawal of " : "Your deposit of ")
+                + amount.stripTrailingZeros().toPlainString() + " " + normalizedCurrency + " is completed.";
+        notificationClient.send(userId, notificationType, title, message,
+                Map.of("ledgerId", saved.getId().toString(), "currency", normalizedCurrency, "amount", amount.toPlainString(), "status", saved.getStatus().name()));
+        return LedgerDtos.LedgerResponse.from(saved);
     }
 
     private Wallet createWalletForDeposit(UUID userId, String currency) {
