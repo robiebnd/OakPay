@@ -1,6 +1,7 @@
 package com.oakpay.trading.p2p;
 
 import com.oakpay.trading.wallet.WalletClient;
+import com.oakpay.trading.security.AuditLogClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ public class P2PDisputeService {
     private final P2PTradeRepository tradeRepository;
     private final AdvertisementRepository advertisementRepository;
     private final WalletClient walletClient;
+    private final AuditLogClient auditLogClient;
 
     public P2PDisputeService(
             P2PDisputeRepository disputeRepository,
@@ -29,6 +31,7 @@ public class P2PDisputeService {
         this.tradeRepository = tradeRepository;
         this.advertisementRepository = advertisementRepository;
         this.walletClient = walletClient;
+        this.auditLogClient = auditLogClient;
     }
 
     @Transactional
@@ -116,6 +119,7 @@ public class P2PDisputeService {
         dispute.setStatus(DisputeStatus.RESOLVED);
         disputeRepository.save(dispute);
         audit(dispute, adminId, "DISPUTE_RESOLVED", request.resolution().name() + ": " + request.note());
+        auditLogClient.record(adminId, "P2P_DISPUTE_RESOLVED", "P2P_DISPUTE", disputeId.toString(), "SUCCESS", request.resolution().name());
         return P2PDisputeDtos.DisputeResponse.from(dispute);
     }
 
