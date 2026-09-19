@@ -1,0 +1,23 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  data:
+    redis:
+      host: ${OAKPAY_REDIS_HOST}
+      port: ${OAKPAY_REDIS_PORT:6379}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "${OAKPAY_WEB_ORIGIN}"
+          default-filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${OAKPAY_RATE_LIMIT_PER_SECOND:60}
+                redis-rate-limiter.burstCapacity: ${OAKPAY_RATE_LIMIT_BURST:120}
+                key-resolver: "#{@ipKeyResolver}"
