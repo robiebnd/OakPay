@@ -22,8 +22,10 @@ public class P2PTradeController {
     }
 
     @PostMapping
-    public ResponseEntity<P2PTradeDtos.TradeResponse> create(@RequestBody P2PTradeDtos.CreateRequest request, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(userId(authentication), request));
+    public ResponseEntity<P2PTradeDtos.TradeResponse> create(@RequestBody P2PTradeDtos.CreateRequest request,
+                                                            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                                                            Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(userId(authentication), request, idempotencyKey));
     }
 
     @GetMapping
