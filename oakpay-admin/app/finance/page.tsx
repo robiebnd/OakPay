@@ -41,7 +41,7 @@ export default function FinancePage() {
         const next = { ...current };
         feeDefinitions.forEach(fee => {
           if (next[fee.key] == null && financial.currentFees[fee.key] != null) {
-            next[fee.key] = String(financial.currentFees[fee.key]);
+            next[fee.key] = fee.type === "rate" ? String(Number(financial.currentFees[fee.key]) * 100) : String(financial.currentFees[fee.key]);
           }
         });
         return next;
