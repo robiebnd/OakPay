@@ -62,17 +62,21 @@ public class InternalAdminFinancialController {
             BigDecimal amount = money(commission.getCommissionAmount());
             BigDecimal assessed = current.assessed().add(amount);
             BigDecimal collected = current.collected();
+            BigDecimal waived = current.waived();
             if (commission.getStatus() == P2PCommissionStatus.COLLECTED) {
                 collected = collected.add(amount);
             }
-            BigDecimal outstanding = assessed.subtract(collected).max(BigDecimal.ZERO);
+            if (commission.getStatus() == P2PCommissionStatus.WAIVED) {
+                waived = waived.add(amount);
+            }
+            BigDecimal outstanding = assessed.subtract(collected).subtract(waived).max(BigDecimal.ZERO);
             p2pByCurrency.put(currency, new P2PCommissionSummary(
                     currency,
                     current.commissionCount() + 1,
                     assessed,
                     collected,
                     outstanding,
-                    current.waived().add(commission.getStatus() == P2PCommissionStatus.WAIVED ? amount : BigDecimal.ZERO)
+                    waived
             ));
         });
 
