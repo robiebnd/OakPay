@@ -1,7 +1,9 @@
 package com.oakpay.wallet.custody;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -12,35 +14,43 @@ import java.time.Instant;
 @Component
 public class HmacCustodyWebhookVerifier implements CustodyWebhookVerifier {
     private final String secret;
+    private final String configuredProvider;
     private final long toleranceSeconds;
 
     public HmacCustodyWebhookVerifier(
             @Value("${oakpay.custody.webhook-secret:}") String secret,
+            @Value("${oakpay.custody.provider-name:}") String configuredProvider,
             @Value("${oakpay.custody.webhook-tolerance-seconds:300}") long toleranceSeconds) {
         this.secret = secret;
+        this.configuredProvider = configuredProvider == null ? "" : configuredProvider.trim();
         this.toleranceSeconds = toleranceSeconds;
     }
 
     @Override
     public void verify(String provider, String eventId, String timestamp, String signature, String rawBody) {
-        if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("Custody webhook secret is not configured");
+        if (secret == null || secret.isBlank() || configuredProvider.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Custody webhook authentication is not configured");
         }
         if (provider == null || provider.isBlank() || eventId == null || eventId.isBlank()
                 || timestamp == null || timestamp.isBlank() || signature == null || signature.isBlank()) {
-            throw new IllegalArgumentException("Missing custody webhook authentication headers");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Missing custody webhook authentication headers");
+        }
+        if (!configuredProvider.equalsIgnoreCase(provider)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unknown custody webhook provider");
         }
 
         long epoch;
         try {
             epoch = Long.parseLong(timestamp);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid webhook timestamp");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid webhook timestamp");
         }
 
         long age = Math.abs(Instant.now().getEpochSecond() - epoch);
         if (age > toleranceSeconds) {
-            throw new IllegalArgumentException("Expired custody webhook");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired custody webhook");
         }
 
         String signedPayload = timestamp + "." + eventId + "." + rawBody;
@@ -49,7 +59,7 @@ public class HmacCustodyWebhookVerifier implements CustodyWebhookVerifier {
 
         if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
                 supplied.toLowerCase().getBytes(StandardCharsets.UTF_8))) {
-            throw new IllegalArgumentException("Invalid custody webhook signature");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid custody webhook signature");
         }
     }
 
