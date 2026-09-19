@@ -18,6 +18,43 @@ export type P2PDisputeAudit = { id:string; disputeId:string; tradeId:string; act
 export type ResolveDisputeRequest = { resolution:DisputeResolution; note?:string };
 export type P2PTradeStatus = "ESCROWED"|"PAYMENT_PENDING"|"PAYMENT_MARKED"|"COMPLETED"|"CANCELLED"|"DISPUTED"|"EXPIRED";
 export type AdminTransaction = { id:string; buyerId:string; sellerId:string; advertisementId:string|null; asset:string; fiatCurrency:string; quantity:number|string; unitPrice:number|string; fiatAmount:number|string; paymentMethod:string; status:P2PTradeStatus|string; paymentReference:string|null; expiresAt:string; createdAt:string; updatedAt:string };
+export type AdminFinancialSummary = {
+  currentFees: Record<string, number>;
+  executedTrades: number;
+  commissionRecords: number;
+  collectedCommissionRecords: number;
+  spotFees: Array<{
+    quoteCurrency: string;
+    tradeCount: number;
+    grossVolume: number;
+    buyerFees: number;
+    sellerFees: number;
+  }>;
+  p2pCommissions: Array<{
+    fiatCurrency: string;
+    commissionCount: number;
+    assessed: number;
+    collected: number;
+    outstanding: number;
+    waived: number;
+  }>;
+};
+
+export type AdminCommissionRecord = {
+  id: string;
+  tradeId: string;
+  payerId: string;
+  fiatCurrency: string;
+  fiatAmount: number;
+  rate: number;
+  commissionAmount: number;
+  status: "ASSESSED" | "COLLECTED" | "WAIVED" | string;
+  collectionReference: string | null;
+  collectionMethod: string | null;
+  collectedAt: string | null;
+  createdAt: string;
+};
+
 
 function getAccessToken():string|null {
   if(typeof window === "undefined") return null;
@@ -116,5 +153,11 @@ export const adminApi={
    resolve:(id:string,data:ResolveDisputeRequest)=>request<P2PDispute>(`/api/v1/admin/resolution-centre/disputes/${id}/resolve`,{method:"POST",body:JSON.stringify(data)})
  },
  trades:{get:(id:string)=>request<AdminTransaction>(`/api/v1/p2p/trades/${id}`)},
- transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/p2p-transactions?limit=${Math.min(Math.max(limit,1),200)}`)}
+ transactions:{list:(limit=100)=>request<AdminTransaction[]>(`/api/p2p-transactions?limit=${Math.min(Math.max(limit,1),200)}`)},
+ finance:{
+   summary:()=>request<AdminFinancialSummary>("/api/v1/admin/dashboard/finance"),
+   commissions:(status?:string,limit=200)=>request<AdminCommissionRecord[]>(`/api/v1/admin/dashboard/finance/commissions?limit=${Math.min(Math.max(limit,1),200)}${status?`&status=${encodeURIComponent(status)}`:""}`),
+   updateFee:(key:string,value:number)=>request<Record<string,number>>(`/api/v1/admin/dashboard/finance/fees/${encodeURIComponent(key)}?value=${encodeURIComponent(value)}`,{method:"PATCH"}),
+   collectCommission:(tradeId:string,collectionReference:string,collectionMethod:string)=>request<AdminCommissionRecord>(`/api/v1/admin/dashboard/finance/commissions/${tradeId}/collect`,{method:"POST",body:JSON.stringify({collectionReference,collectionMethod})})
+ }
 };
