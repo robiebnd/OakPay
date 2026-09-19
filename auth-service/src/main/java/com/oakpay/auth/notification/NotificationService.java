@@ -56,21 +56,7 @@ public class NotificationService {
         d.setDeviceId(request.deviceId()==null?null:request.deviceId().trim()); d.setActive(true); deviceRepository.save(d);
     }
 
-    @Transactional
-    public NotificationDtos.NotificationResponse createTest(UUID userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("Authenticated user is required");
-        }
-        Notification n = new Notification();
-        n.setUserId(userId);
-        n.setType("TEST");
-        n.setTitle("PayOak test notification");
-        n.setMessage("Notifications are working correctly on this device.");
-        n.setData("{\"source\":\"mobile-test\"}");
-        Notification saved = notificationRepository.saveAndFlush(n);
-        sendPushBestEffort(saved);
-        return response(saved);
-    }
+
 
     @Transactional
     public void createInternal(NotificationDtos.InternalCreateRequest request){
