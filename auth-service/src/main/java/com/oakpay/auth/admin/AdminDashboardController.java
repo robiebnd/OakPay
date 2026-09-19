@@ -3,8 +3,8 @@ import org.springframework.http.ResponseEntity; import org.springframework.secur
 import java.math.BigDecimal; import java.util.List; import java.util.Map; import java.util.UUID;
 @RestController @RequestMapping("/api/v1/admin/dashboard")
 public class AdminDashboardController {
- private final AdminDashboardService dashboardService; private final AuditLogService audit;
- public AdminDashboardController(AdminDashboardService dashboardService,AuditLogService audit){this.dashboardService=dashboardService;this.audit=audit;}
+ private final AdminDashboardService dashboardService;
+ public AdminDashboardController(AdminDashboardService dashboardService){this.dashboardService=dashboardService;}
  @GetMapping @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<AdminDashboard> dashboard(){return ResponseEntity.ok(dashboardService.getDashboard());}
  @GetMapping("/finance") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<AdminFinancialSummary> finance(){return ResponseEntity.ok(dashboardService.getFinancialSummary());}
  @GetMapping("/finance/commissions") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<List<AdminFinancialSummary.P2PCommissionRecord>> commissions(@RequestParam(required=false) String status,@RequestParam(defaultValue="200") int limit){return ResponseEntity.ok(dashboardService.getCommissionRecords(status,limit));}
