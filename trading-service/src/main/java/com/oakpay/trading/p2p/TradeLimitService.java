@@ -16,22 +16,21 @@ public class TradeLimitService {
 
     private final KycStatusClient kycStatusClient;
     private final P2PExchangeRateRepository exchangeRateRepository;
-    private final BigDecimal unverifiedUsdLimit;
+    private final PlatformFeeService platformFeeService;
 
     public TradeLimitService(
             KycStatusClient kycStatusClient,
             P2PExchangeRateRepository exchangeRateRepository,
-            @Value("${oakpay.p2p.unverified-usd-limit:50.00}") BigDecimal unverifiedUsdLimit) {
+            PlatformFeeService platformFeeService) {
         this.kycStatusClient = kycStatusClient;
         this.exchangeRateRepository = exchangeRateRepository;
-        this.unverifiedUsdLimit = unverifiedUsdLimit == null || unverifiedUsdLimit.signum() <= 0
-                ? DEFAULT_UNVERIFIED_USD_LIMIT
-                : unverifiedUsdLimit.setScale(2, RoundingMode.HALF_UP);
+        this.platformFeeService = platformFeeService;
     }
 
     public void validate(UUID userId, String fiatCurrency, BigDecimal fiatAmount) {
         if (kycStatusClient.isVerified(userId)) return;
         BigDecimal usdAmount = toUsd(fiatCurrency, fiatAmount);
+        BigDecimal unverifiedUsdLimit = platformFeeService.unverifiedUsdLimit();
         if (usdAmount.compareTo(unverifiedUsdLimit) > 0) {
             throw new IllegalArgumentException(
                     String.format(Locale.ROOT,
@@ -43,7 +42,7 @@ public class TradeLimitService {
 
     public BigDecimal maximumFiatAmount(UUID userId, String fiatCurrency) {
         if (kycStatusClient.isVerified(userId)) return null;
-        return fromUsd(fiatCurrency, unverifiedUsdLimit);
+        return fromUsd(fiatCurrency, platformFeeService.unverifiedUsdLimit());
     }
 
     private BigDecimal toUsd(String fiatCurrency, BigDecimal amount) {
