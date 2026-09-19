@@ -11,16 +11,20 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
+import com.oakpay.trading.security.AuditLogClient;
+
 @RestController
 @RequestMapping("/api/v1/p2p/trades")
 public class P2PCommissionController {
     private final P2PTradeRepository tradeRepository;
     private final P2PCommissionService commissionService;
     private final String adminSecret;
+    private final AuditLogClient auditLogClient;
 
     public P2PCommissionController(P2PTradeRepository tradeRepository,
                                    P2PCommissionService commissionService,
-                                   @Value("${oakpay.admin.dispute-secret}") String adminSecret) {
+                                   @Value("${oakpay.admin.dispute-secret}") String adminSecret,
+                                   AuditLogClient auditLogClient) {
         this.tradeRepository = tradeRepository;
         this.commissionService = commissionService;
         this.adminSecret = adminSecret;
@@ -46,7 +50,7 @@ public class P2PCommissionController {
         if (!tradeRepository.existsById(tradeId)) {
             throw new IllegalArgumentException("P2P trade not found");
         }
-        return P2PCommissionDtos.Response.from(commissionService.collect(tradeId, request));
+        var result = commissionService.collect(tradeId, request);\n        UUID actorId = null;\n        if (actor != null && !actor.isBlank()) { try { actorId = UUID.fromString(actor.trim()); } catch (IllegalArgumentException ignored) {} }\n        auditLogClient.record(actorId, "P2P_COMMISSION_COLLECTED", "P2P_COMMISSION", tradeId.toString(), "SUCCESS", null);\n        return P2PCommissionDtos.Response.from(result);
     }
 
     private void requireAdmin(String supplied) {
