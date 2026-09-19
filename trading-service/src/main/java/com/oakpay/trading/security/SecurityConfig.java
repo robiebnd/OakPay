@@ -33,11 +33,11 @@ public class SecurityConfig {
                                 "/api/v1/p2p/rates",
                                 "/api/v1/p2p/rates/**",
                                 "/api/v1/internal/admin/dashboard/**",
+                                "/api/v1/internal/admin/finance/**",
                                 "/api/v1/p2p/reporting/transactions",
                                 "/api/v1/p2p/reporting/transactions/**"
                         ).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
-    }
 }
