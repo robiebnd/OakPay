@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
+    java.util.Optional<Order> findByIdempotencyKey(String idempotencyKey);
     List<Order> findAllByBaseCurrencyAndQuoteCurrencyAndSideAndStatusOrderByCreatedAtAsc(
             String baseCurrency, String quoteCurrency, OrderSide side, OrderStatus status);
 }
