@@ -21,7 +21,6 @@ public class DepositAddressController {
                                     @Value("${oakpay.internal-secret}") String internalSecret) {
         this.service = service;
         this.internalSecret = internalSecret;
-        this.testAddressesEnabled = testAddressesEnabled;
     }
 
     @GetMapping
