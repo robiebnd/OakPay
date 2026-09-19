@@ -1,0 +1,83 @@
+package com.oakpay.wallet.custody;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oakpay.wallet.deposit.DepositDtos;
+import com.oakpay.wallet.deposit.DepositService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.UUID;
+
+@Service
+public class CustodyWebhookEventService {
+    private final CustodyWebhookEventRepository eventRepository;
+    private final DepositService depositService;
+    private final ObjectMapper objectMapper;
+
+    public CustodyWebhookEventService(CustodyWebhookEventRepository eventRepository,
+                                      DepositService depositService,
+                                      ObjectMapper objectMapper) {
+        this.eventRepository = eventRepository;
+        this.depositService = depositService;
+        this.objectMapper = objectMapper;
+    }
+
+    @Transactional
+    public DepositDtos.DepositResponse processDeposit(String provider, String eventId, String rawBody) {
+        String normalizedProvider = normalize(provider);
+        String normalizedEventId = normalize(eventId);
+        String payloadHash = sha256(rawBody);
+
+        CustodyWebhookEvent existing = eventRepository
+                .findByProviderNameAndEventId(normalizedProvider, normalizedEventId)
+                .orElse(null);
+
+        if (existing != null) {
+            if (!existing.getPayloadHash().equals(payloadHash)) {
+                throw new IllegalArgumentException("Webhook event ID was already used with a different payload");
+            }
+            if (existing.getDepositId() == null) {
+                throw new IllegalStateException("Webhook event is still being processed");
+            }
+            return depositService.getById(existing.getDepositId());
+        }
+
+        CustodyWebhookEvent event = new CustodyWebhookEvent();
+        event.setProviderName(normalizedProvider);
+        event.setEventId(normalizedEventId);
+        event.setPayloadHash(payloadHash);
+        event.setStatus(CustodyWebhookEventStatus.PROCESSING);
+        eventRepository.saveAndFlush(event);
+
+        try {
+            DepositDtos.BlockchainDepositWebhook payload =
+                    objectMapper.readValue(rawBody, DepositDtos.BlockchainDepositWebhook.class);
+            DepositDtos.DepositResponse result = depositService.processWebhook(payload);
+            event.setDepositId(result.id());
+            event.setStatus(CustodyWebhookEventStatus.PROCESSED);
+            eventRepository.save(event);
+            return result;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid custody deposit webhook", e);
+        }
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) throw new IllegalArgumentException("Value is required");
+        return value.trim().toUpperCase();
+    }
+
+    private String sha256(String value) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder result = new StringBuilder(64);
+            for (byte b : digest) result.append(String.format("%02x", b));
+            return result.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to hash webhook payload", e);
+        }
+    }
+}
