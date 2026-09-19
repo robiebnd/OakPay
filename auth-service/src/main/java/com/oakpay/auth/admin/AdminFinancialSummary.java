@@ -45,7 +45,8 @@ public record AdminFinancialSummary(
             String collectionReference,
             String collectionMethod,
             LocalDateTime collectedAt,
-            LocalDateTime createdAt) {}
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt) {}
 
     public record CollectionRequest(String collectionReference, String collectionMethod) {}
 
