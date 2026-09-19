@@ -28,20 +28,15 @@ public class CustodyWithdrawalService {
                                    String destinationAddress, String memoTag, String idempotencyKey) {
         String normalizedCurrency = normalize(currency);
         BigDecimal normalizedAmount = positive(amount);
+        CustodyOperation existing = custodyProviderService.findWithdrawalByIdempotencyKeyOrNull(idempotencyKey);
+        if (existing != null) return existing;
+
         Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(userId, normalizedCurrency)
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found for currency " + normalizedCurrency));
 
         if (wallet.getAvailableBalance().compareTo(normalizedAmount) < 0) {
             throw new IllegalStateException("Insufficient available balance");
         }
-
-        CustodyOperation existing = null;
-        try {
-            existing = custodyProviderService.findWithdrawalByIdempotencyKey(idempotencyKey);
-        } catch (IllegalArgumentException ignored) {
-            // No prior custody operation; continue with reservation.
-        }
-        if (existing != null) return existing;
 
         wallet.setAvailableBalance(wallet.getAvailableBalance().subtract(normalizedAmount));
         wallet.setLockedBalance(wallet.getLockedBalance().add(normalizedAmount));
@@ -59,6 +54,10 @@ public class CustodyWithdrawalService {
                         CustodyProvider.ProviderTransactionStatus.FAILED);
             }
             return operation;
+        } catch (CustodySubmissionUnknownException e) {
+            // Do not release funds: the provider may have accepted the withdrawal.
+            // The operation is persisted as SUBMISSION_UNKNOWN and must be reconciled.
+            return custodyProviderService.findWithdrawalByIdempotencyKey(idempotencyKey);
         } catch (RuntimeException e) {
             wallet.setLockedBalance(wallet.getLockedBalance().subtract(normalizedAmount));
             wallet.setAvailableBalance(wallet.getAvailableBalance().add(normalizedAmount));
