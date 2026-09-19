@@ -29,6 +29,9 @@ public class CustodyOperation {
     @Column(name = "provider_reference", length = 150)
     private String providerReference;
 
+    @Column(name = "provider_address", length = 255)
+    private String providerAddress;
+
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
@@ -80,6 +83,8 @@ public class CustodyOperation {
     public void setProviderName(String providerName) { this.providerName = providerName; }
     public String getProviderReference() { return providerReference; }
     public void setProviderReference(String providerReference) { this.providerReference = providerReference; }
+    public String getProviderAddress() { return providerAddress; }
+    public void setProviderAddress(String providerAddress) { this.providerAddress = providerAddress; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
     public String getCurrency() { return currency; }
