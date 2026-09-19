@@ -1,5 +1,6 @@
 package com.oakpay.trading.p2p;
 
+import com.oakpay.trading.order.TradeRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -154,7 +155,7 @@ public class InternalAdminFinancialController {
         return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 
-    private BigDecimal money(BigDecimal value) {
+    private static BigDecimal money(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value.setScale(2, RoundingMode.HALF_UP);
     }
 
