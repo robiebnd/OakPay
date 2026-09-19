@@ -116,6 +116,36 @@ public class BitGoCustodyProvider implements CustodyProvider {
         return new WithdrawalResult(transferId, mapTransferStatus(textOrNull(transfer, "state")));
     }
 
+    public JsonNode getTransfer(String coin, String walletId, String transferId) {
+        requireConfigured();
+        String normalizedCoin = requireText(coin, "coin");
+        String normalizedWalletId = requireWalletId(walletId);
+        String normalizedTransferId = requireText(transferId, "transferId");
+        return request("GET", "/api/v2/" + normalizedCoin + "/wallet/" + normalizedWalletId
+                + "/transfer/" + normalizedTransferId, "");
+    }
+
+    public void verifyWebhook(String webhookId, String signature, String notificationPayload) {
+        requireConfigured();
+        String id = requireText(webhookId, "webhookId");
+        String sig = requireText(signature, "X-Signature-SHA256");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("signature", sig);
+        body.put("notificationPayload", notificationPayload);
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(body);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to serialize BitGo webhook verification request", e);
+        }
+
+        // The webhook verification endpoint expects the raw BitGo access token.
+        JsonNode response = rawTokenRequest("POST", "/api/v2/webhook/" + id + "/verify", payload);
+        if (!response.path("isValid").asBoolean(false)) {
+            throw new IllegalArgumentException("BitGo webhook signature is invalid");
+        }
+    }
+
     @Override
     public ProviderTransactionStatus getTransactionStatus(String providerReference) {
         requireConfigured();
@@ -146,6 +176,32 @@ public class BitGoCustodyProvider implements CustodyProvider {
         return asset;
     }
 
+    private JsonNode rawTokenRequest(String method, String path, String body) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + path))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Content-Type", "application/json");
+            builder.method(method, HttpRequest.BodyPublishers.ofString(body));
+            HttpResponse<String> response = httpClient.send(
+                    builder.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException("BitGo webhook verification failed with HTTP "
+                        + response.statusCode() + ": " + sanitizeError(response.body()));
+            }
+            return response.body() == null || response.body().isBlank()
+                    ? objectMapper.createObjectNode() : objectMapper.readTree(response.body());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("BitGo webhook verification interrupted", e);
+        } catch (Exception e) {
+            if (e instanceof IllegalStateException state) throw state;
+            throw new IllegalStateException("BitGo webhook verification failed", e);
+        }
+    }
+
     private JsonNode request(String method, String path, String body) {
         if (accessToken.isBlank()) {
             throw new IllegalStateException("OAKPAY_BITGO_ACCESS_TOKEN is not configured");
@@ -164,6 +220,7 @@ public class BitGoCustodyProvider implements CustodyProvider {
                     .header("Authorization", "Bearer " + tokenHash)
                     .header("Auth-Timestamp", Long.toString(timestamp))
                     .header("BitGo-Auth-Version", "2.0")
+                    .header("X-Original-Uri", path)
                     .header("HMAC", hmac);
 
             if ("GET".equals(method)) {
