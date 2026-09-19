@@ -44,3 +44,8 @@ oakpay:
     provider-name: ${OAKPAY_CUSTODY_PROVIDER_NAME:}
     webhook-secret: ${OAKPAY_CUSTODY_WEBHOOK_SECRET:}
     webhook-tolerance-seconds: ${OAKPAY_CUSTODY_WEBHOOK_TOLERANCE_SECONDS:300}
+    reconciliation:
+      enabled: ${OAKPAY_CUSTODY_RECONCILIATION_ENABLED:true}
+      fixed-delay-ms: ${OAKPAY_CUSTODY_RECONCILIATION_FIXED_DELAY_MS:60000}
+      initial-delay-ms: ${OAKPAY_CUSTODY_RECONCILIATION_INITIAL_DELAY_MS:30000}
+      older-than-minutes: ${OAKPAY_CUSTODY_RECONCILIATION_OLDER_THAN_MINUTES:5}
