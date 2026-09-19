@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, BarChart3, FileCheck2, LayoutDashboard, LogOut, MessageSquare, PanelLeftOpen, Scale, Settings, ShieldCheck, Users, WalletCards, X } from "lucide-react";
+import { Activity, BarChart3, CircleDollarSign, FileCheck2, LayoutDashboard, LogOut, MessageSquare, PanelLeftOpen, Scale, Settings, ShieldCheck, Users, WalletCards, X } from "lucide-react";
 import { session } from "../lib/api";
 
 type NavItem = { label: string; href: string; icon: LucideIcon };
@@ -14,6 +14,7 @@ const mainNavigation: NavItem[] = [
   { label: "Client Queries", href: "/queries", icon: MessageSquare },
   { label: "Resolution Centre", href: "/resolutions", icon: Scale },
   { label: "Reports", href: "/reports", icon: BarChart3 },
+  { label: "Fees & Revenue", href: "/finance", icon: CircleDollarSign },
 ];
 const administrationNavigation: NavItem[] = [
   { label: "Clients", href: "/clients", icon: Users },
