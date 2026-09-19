@@ -92,6 +92,22 @@ public class InternalAdminFinancialController {
         );
     }
 
+    @GetMapping("/commissions")
+    public List<P2PCommissionDtos.Response> commissions(
+            @RequestParam(required = false) P2PCommissionStatus status,
+            @RequestParam(defaultValue = "200") int limit,
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
+        requireInternalSecret(suppliedSecret);
+        int safeLimit = Math.min(Math.max(limit, 1), 200);
+        return commissionRepository.findAll(org.springframework.data.domain.PageRequest.of(
+                        0, safeLimit, org.springframework.data.domain.Sort.by(
+                                org.springframework.data.domain.Sort.Direction.DESC, "createdAt")))
+                .stream()
+                .filter(c -> status == null || c.getStatus() == status)
+                .map(P2PCommissionDtos.Response::from)
+                .toList();
+    }
+
     @PostMapping("/commissions/{tradeId}/collect")
     public P2PCommissionDtos.Response collectCommission(
             @PathVariable UUID tradeId,
