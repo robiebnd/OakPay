@@ -19,14 +19,16 @@ class TradeLimitServiceTest {
 
     @Mock KycStatusClient kycStatusClient;
     @Mock P2PExchangeRateRepository exchangeRateRepository;
+    @Mock PlatformFeeService platformFeeService;
 
     @Test
     void unverifiedUserCanTradeExactlyFiftyUsd() {
         UUID userId = UUID.randomUUID();
         when(kycStatusClient.isVerified(userId)).thenReturn(false);
+        when(platformFeeService.unverifiedUsdLimit()).thenReturn(new BigDecimal("50.00"));
 
         TradeLimitService service = new TradeLimitService(
-                kycStatusClient, exchangeRateRepository, new BigDecimal("50.00"));
+                kycStatusClient, exchangeRateRepository, platformFeeService);
 
         assertDoesNotThrow(() -> service.validate(userId, "USD", new BigDecimal("50.00")));
     }
@@ -35,9 +37,10 @@ class TradeLimitServiceTest {
     void unverifiedUserCannotTradeAboveFiftyUsd() {
         UUID userId = UUID.randomUUID();
         when(kycStatusClient.isVerified(userId)).thenReturn(false);
+        when(platformFeeService.unverifiedUsdLimit()).thenReturn(new BigDecimal("50.00"));
 
         TradeLimitService service = new TradeLimitService(
-                kycStatusClient, exchangeRateRepository, new BigDecimal("50.00"));
+                kycStatusClient, exchangeRateRepository, platformFeeService);
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.validate(userId, "USD", new BigDecimal("50.01")));
@@ -49,7 +52,7 @@ class TradeLimitServiceTest {
         when(kycStatusClient.isVerified(userId)).thenReturn(true);
 
         TradeLimitService service = new TradeLimitService(
-                kycStatusClient, exchangeRateRepository, new BigDecimal("50.00"));
+                kycStatusClient, exchangeRateRepository, platformFeeService);
 
         assertDoesNotThrow(() -> service.validate(userId, "USD", new BigDecimal("5000.00")));
     }
@@ -58,13 +61,14 @@ class TradeLimitServiceTest {
     void unverifiedZwgTradeUsesActiveUsdtReferenceRates() {
         UUID userId = UUID.randomUUID();
         when(kycStatusClient.isVerified(userId)).thenReturn(false);
+        when(platformFeeService.unverifiedUsdLimit()).thenReturn(new BigDecimal("50.00"));
         when(exchangeRateRepository.findFirstByBaseCurrencyAndQuoteCurrencyAndActiveTrueOrderByEffectiveAtDesc("USDT", "USD"))
                 .thenReturn(Optional.of(rate("USDT", "USD", "1.00")));
         when(exchangeRateRepository.findFirstByBaseCurrencyAndQuoteCurrencyAndActiveTrueOrderByEffectiveAtDesc("USDT", "ZWG"))
                 .thenReturn(Optional.of(rate("USDT", "ZWG", "26.56")));
 
         TradeLimitService service = new TradeLimitService(
-                kycStatusClient, exchangeRateRepository, new BigDecimal("50.00"));
+                kycStatusClient, exchangeRateRepository, platformFeeService);
 
         assertDoesNotThrow(() -> service.validate(userId, "ZWG", new BigDecimal("1328.00")));
         assertThrows(IllegalArgumentException.class,
