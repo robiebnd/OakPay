@@ -22,7 +22,7 @@ public class CustodyHealthIndicator implements HealthIndicator {
     public Health health() {
         CustodyProvider provider = providerProvider.getIfAvailable();
         if (provider == null) {
-            return Health.down()
+            return Health.unknown()
                     .withDetail("reason", "No custody provider configured")
                     .build();
         }
