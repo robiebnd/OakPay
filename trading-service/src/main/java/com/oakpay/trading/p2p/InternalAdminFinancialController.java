@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import com.oakpay.trading.security.AuditLogClient;
 
 @RestController
 @RequestMapping("/api/v1/internal/admin/finance")
@@ -25,18 +26,21 @@ public class InternalAdminFinancialController {
     private final PlatformFeeService platformFeeService;
     private final P2PCommissionService commissionService;
     private final String internalSecret;
+    private final AuditLogClient auditLogClient;
 
     public InternalAdminFinancialController(
             TradeRepository tradeRepository,
             P2PCommissionRepository commissionRepository,
             PlatformFeeService platformFeeService,
             P2PCommissionService commissionService,
-            @Value("$" + "{oakpay.internal-secret}") String internalSecret) {
+            @Value("$" + "{oakpay.internal-secret}") String internalSecret,
+            AuditLogClient auditLogClient) {
         this.tradeRepository = tradeRepository;
         this.commissionRepository = commissionRepository;
         this.platformFeeService = platformFeeService;
         this.commissionService = commissionService;
         this.internalSecret = internalSecret;
+        this.auditLogClient = auditLogClient;
     }
 
     @GetMapping
