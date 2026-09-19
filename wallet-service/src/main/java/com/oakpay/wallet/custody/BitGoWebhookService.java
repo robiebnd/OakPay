@@ -1,6 +1,7 @@
 package com.oakpay.wallet.custody;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oakpay.wallet.deposit.DepositDtos;
 import com.oakpay.wallet.deposit.DepositService;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,16 +16,22 @@ import java.util.Locale;
 public class BitGoWebhookService {
     private final BitGoCustodyProvider bitGo;
     private final DepositService depositService;
+    private final CustodyWebhookEventService eventService;
+    private final ObjectMapper objectMapper;
     private final int btcRequiredConfirmations;
     private final int usdtTronRequiredConfirmations;
 
     public BitGoWebhookService(
             BitGoCustodyProvider bitGo,
             DepositService depositService,
+            CustodyWebhookEventService eventService,
+            ObjectMapper objectMapper,
             @Value("${oakpay.custody.bitgo.btc.required-confirmations:3}") int btcRequiredConfirmations,
             @Value("${oakpay.custody.bitgo.usdt-tron.required-confirmations:20}") int usdtTronRequiredConfirmations) {
         this.bitGo = bitGo;
         this.depositService = depositService;
+        this.eventService = eventService;
+        this.objectMapper = objectMapper;
         this.btcRequiredConfirmations = positiveConfirmations(btcRequiredConfirmations);
         this.usdtTronRequiredConfirmations = positiveConfirmations(usdtTronRequiredConfirmations);
     }
@@ -98,14 +105,16 @@ public class BitGoWebhookService {
         int confirmations = Math.max(0, transfer.path("confirmations").asInt(0));
         String txHash = text(transfer, "txid");
 
-        return depositService.processWebhook(new DepositDtos.BlockchainDepositWebhook(
-                network,
-                address,
-                txHash,
-                currency,
-                amount,
-                confirmations,
-                requiredConfirmations));
+        DepositDtos.BlockchainDepositWebhook normalizedPayload =
+                new DepositDtos.BlockchainDepositWebhook(
+                        network, address, txHash, currency, amount,
+                        confirmations, requiredConfirmations);
+        try {
+            String normalizedBody = objectMapper.writeValueAsString(normalizedPayload);
+            return eventService.processDeposit("BITGO", eventId, normalizedBody);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to normalize BitGo deposit webhook", e);
+        }
     }
 
     private JsonNode findDepositEntry(JsonNode transfer) {
@@ -128,7 +137,7 @@ public class BitGoWebhookService {
 
     private JsonNode readJson(String rawBody) {
         try {
-            return new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawBody);
+            return objectMapper.readTree(rawBody);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid BitGo webhook JSON", e);
         }
