@@ -1,78 +1,15 @@
 package com.oakpay.auth.admin;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-@RestController
-@RequestMapping("/api/v1/admin/dashboard")
+import org.springframework.http.ResponseEntity; import org.springframework.security.core.Authentication; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*; import jakarta.servlet.http.HttpServletRequest;
+import java.math.BigDecimal; import java.util.List; import java.util.Map; import java.util.UUID;
+@RestController @RequestMapping("/api/v1/admin/dashboard")
 public class AdminDashboardController {
-
-    private final AdminDashboardService dashboardService;
-
-    public AdminDashboardController(AdminDashboardService dashboardService) {
-        this.dashboardService = dashboardService;
-    }
-
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
-    public ResponseEntity<AdminDashboard> dashboard() {
-        return ResponseEntity.ok(dashboardService.getDashboard());
-    }
-
-    @GetMapping("/finance")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
-    public ResponseEntity<AdminFinancialSummary> finance() {
-        return ResponseEntity.ok(dashboardService.getFinancialSummary());
-    }
-
-    @GetMapping("/finance/commissions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
-    public ResponseEntity<List<AdminFinancialSummary.P2PCommissionRecord>> commissions(
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "200") int limit) {
-        return ResponseEntity.ok(dashboardService.getCommissionRecords(status, limit));
-    }
-
-    @PatchMapping("/finance/fees/{key}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
-    public ResponseEntity<Map<String, BigDecimal>> updateFee(
-            @PathVariable String key,
-            @RequestParam BigDecimal value,
-            Authentication authentication) {
-        UUID actorId = null;
-        if (authentication != null && authentication.getName() != null) {
-            try {
-                actorId = UUID.fromString(authentication.getName());
-            } catch (IllegalArgumentException ignored) {
-                // Preserve compatibility with non-UUID development principals.
-            }
-        }
-        return ResponseEntity.ok(dashboardService.updateFee(key, value, actorId));
-    }
-
-    @PostMapping("/finance/commissions/{tradeId}/collect")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
-    public ResponseEntity<AdminFinancialSummary.P2PCommissionRecord> collectCommission(
-            @PathVariable UUID tradeId,
-            @RequestBody AdminFinancialSummary.CollectionRequest request) {
-        return ResponseEntity.ok(dashboardService.collectCommission(tradeId, request));
-    }
-
-    /**
-     * P2P transactions screen is read-only and the data is queried server-side
-     * from trading-service.
-     */
-    @GetMapping("/transactions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
-    public ResponseEntity<List<AdminDashboardService.AdminTransaction>> transactions(
-            @RequestParam(defaultValue = "100") int limit) {
-        return ResponseEntity.ok(dashboardService.getTransactions(limit));
-    }
+ private final AdminDashboardService dashboardService; private final AuditLogService audit;
+ public AdminDashboardController(AdminDashboardService dashboardService,AuditLogService audit){this.dashboardService=dashboardService;this.audit=audit;}
+ @GetMapping @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<AdminDashboard> dashboard(){return ResponseEntity.ok(dashboardService.getDashboard());}
+ @GetMapping("/finance") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<AdminFinancialSummary> finance(){return ResponseEntity.ok(dashboardService.getFinancialSummary());}
+ @GetMapping("/finance/commissions") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<List<AdminFinancialSummary.P2PCommissionRecord>> commissions(@RequestParam(required=false) String status,@RequestParam(defaultValue="200") int limit){return ResponseEntity.ok(dashboardService.getCommissionRecords(status,limit));}
+ @PatchMapping("/finance/fees/{key}") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<Map<String,BigDecimal>> updateFee(@PathVariable String key,@RequestParam BigDecimal value,Authentication authentication,HttpServletRequest request){UUID actor=uuid(authentication);Map<String,BigDecimal> result=dashboardService.updateFee(key,value,actor);audit.record(actor,"ADMIN","PLATFORM_FEE_CHANGED","PLATFORM_FEE",key,"SUCCESS",request.getRemoteAddr(),"{\"value\":"+value+"}");return ResponseEntity.ok(result);}
+ @PostMapping("/finance/commissions/{tradeId}/collect") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<AdminFinancialSummary.P2PCommissionRecord> collectCommission(@PathVariable UUID tradeId,@RequestBody AdminFinancialSummary.CollectionRequest request,Authentication authentication){UUID actor=uuid(authentication);AdminFinancialSummary.P2PCommissionRecord result=dashboardService.collectCommission(tradeId,request,actor);audit.record(actor,"ADMIN","P2P_COMMISSION_COLLECTED","P2P_COMMISSION",tradeId.toString(),"SUCCESS",null,null);return ResponseEntity.ok(result);}
+ @GetMapping("/transactions") @PreAuthorize("hasAnyRole('ADMIN','ADMINISTRATOR')") public ResponseEntity<List<AdminDashboardService.AdminTransaction>> transactions(@RequestParam(defaultValue="100") int limit){return ResponseEntity.ok(dashboardService.getTransactions(limit));}
+ private UUID uuid(Authentication a){try{return UUID.fromString(a.getName());}catch(Exception e){throw new IllegalStateException("Invalid administrator identity");}}
 }
