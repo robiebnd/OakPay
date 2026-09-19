@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +21,18 @@ public class InternalCustodyReconciliationController {
             @Value("${oakpay.internal-secret}") String internalSecret) {
         this.reconciliationService = reconciliationService;
         this.internalSecret = internalSecret;
+    }
+
+    @GetMapping("/withdrawals/pending")
+    public List<CustodyWithdrawalDtos.WithdrawalResponse> pendingWithdrawals(
+            @RequestParam(defaultValue = "5") int olderThanMinutes,
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
+        requireInternalSecret(suppliedSecret);
+        int minutes = Math.max(1, Math.min(olderThanMinutes, 1440));
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(minutes);
+        return reconciliationService.findPendingWithdrawals(cutoff).stream()
+                .map(CustodyWithdrawalDtos.WithdrawalResponse::from)
+                .toList();
     }
 
     @PostMapping("/withdrawals/{operationId}")
