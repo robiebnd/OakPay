@@ -2,6 +2,7 @@ package com.oakpay.trading.order;
 
 import com.oakpay.trading.api.TradingDtos;
 import com.oakpay.trading.wallet.WalletClient;
+import com.oakpay.trading.security.IdempotencySupport;
 import com.oakpay.trading.notification.NotificationClient;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,8 +33,29 @@ public class OrderService {
 
     @Transactional
     public TradingDtos.OrderResponse place(UUID userId, TradingDtos.CreateOrderRequest request) {
+        return place(userId, request, null);
+    }
+
+    @Transactional
+    public TradingDtos.OrderResponse place(UUID userId, TradingDtos.CreateOrderRequest request, String suppliedIdempotencyKey) {
         validate(request);
+        String idempotencyKey = IdempotencySupport.normalizeKey(suppliedIdempotencyKey);
+        String idempotencyHash = idempotencyKey == null ? null : IdempotencySupport.hash(request.toString());
+        if (idempotencyKey != null) {
+            var existing = orderRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                Order existingOrder = existing.get();
+                if (!userId.equals(existingOrder.getUserId())) throw new IllegalStateException("Idempotency key is already associated with another user");
+                if (!idempotencyHash.equals(existingOrder.getIdempotencyHash())) throw new IllegalStateException("Idempotency key was already used with different request data");
+                return response(existingOrder);
+            }
+        }
         Order order = new Order();
+        if (idempotencyKey != null) {
+            order.setId(IdempotencySupport.deterministicId(userId, "ORDER_CREATE", idempotencyKey));
+            order.setIdempotencyKey(idempotencyKey);
+            order.setIdempotencyHash(idempotencyHash);
+        }
         order.setUserId(userId);
         order.setSide(request.side());
         order.setBaseCurrency(normalize(request.baseCurrency()));
