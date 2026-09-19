@@ -107,11 +107,13 @@ public class AdminDashboardService {
 
     public AdminFinancialSummary.P2PCommissionRecord collectCommission(
             UUID tradeId,
-            AdminFinancialSummary.CollectionRequest request) {
+            AdminFinancialSummary.CollectionRequest request,
+            UUID actorId) {
         try {
             P2PCommissionResponse result = tradingClient.post()
                     .uri("/api/v1/internal/admin/finance/commissions/{tradeId}/collect", tradeId)
                     .header("X-OakPay-Internal-Secret", internalSecret)
+                    .header("X-OakPay-Admin-Actor", actorId == null ? "" : actorId.toString())
                     .header(HttpHeaders.ACCEPT, "application/json")
                     .header("Content-Type", "application/json")
                     .body(request)
