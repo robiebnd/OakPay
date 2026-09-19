@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.List;\nimport java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -41,32 +41,24 @@ public class DepositService {
             throw new IllegalArgumentException("Deposit amount must be greater than zero");
         }
 
-        Deposit deposit = depositRepository.findWithLockByTxHashAndNetwork(txHash, network).orElse(null);
-        if (deposit == null) {
-            deposit = new Deposit();
-            deposit.setUserId(assigned.getUserId());
-            deposit.setDepositAddressId(assigned.getId());
-            deposit.setCurrency(currency);
-            deposit.setNetwork(network);
-            deposit.setAddress(address);
-            deposit.setTxHash(txHash);
-            deposit.setAmount(amount);
-            deposit.setConfirmations(request.confirmations());
-            deposit.setRequiredConfirmations(request.requiredConfirmations());
-            deposit.setStatus(statusFor(request.confirmations(), request.requiredConfirmations()));
-            deposit = depositRepository.saveAndFlush(deposit);
-        } else {
-            if (!deposit.getUserId().equals(assigned.getUserId())
-                    || !deposit.getDepositAddressId().equals(assigned.getId())
-                    || !deposit.getCurrency().equals(currency)
-                    || deposit.getAmount().compareTo(amount) != 0) {
-                throw new IllegalArgumentException("Blockchain transaction conflicts with the original deposit record");
-            }
-            if (deposit.getStatus() == DepositStatus.COMPLETED) return DepositDtos.DepositResponse.from(deposit);
-            deposit.setConfirmations(Math.max(deposit.getConfirmations(), request.confirmations()));
-            deposit.setRequiredConfirmations(Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
-            deposit.setStatus(statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
+        DepositStatus incomingStatus = statusFor(request.confirmations(), request.requiredConfirmations());
+        LocalDateTime now = LocalDateTime.now();
+        depositRepository.insertIfAbsent(UUID.randomUUID(), assigned.getUserId(), assigned.getId(), currency, network,
+                address, txHash, amount, request.confirmations(), request.requiredConfirmations(),
+                incomingStatus.name(), now, now);
+
+        Deposit deposit = depositRepository.findWithLockByTxHashAndNetwork(txHash, network)
+                .orElseThrow(() -> new IllegalStateException("Deposit record could not be loaded after idempotent insert"));
+        if (!deposit.getUserId().equals(assigned.getUserId())
+                || !deposit.getDepositAddressId().equals(assigned.getId())
+                || !deposit.getCurrency().equals(currency)
+                || deposit.getAmount().compareTo(amount) != 0) {
+            throw new IllegalArgumentException("Blockchain transaction conflicts with the original deposit record");
         }
+        if (deposit.getStatus() == DepositStatus.COMPLETED) return DepositDtos.DepositResponse.from(deposit);
+        deposit.setConfirmations(Math.max(deposit.getConfirmations(), request.confirmations()));
+        deposit.setRequiredConfirmations(Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
+        deposit.setStatus(statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
 
         if (deposit.getStatus() == DepositStatus.COMPLETED) {
             String reference = "CHAIN-DEPOSIT:" + deposit.getNetwork() + ":" + deposit.getTxHash();
