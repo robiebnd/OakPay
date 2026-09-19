@@ -22,16 +22,19 @@ public class InternalAdminFinancialController {
     private final TradeRepository tradeRepository;
     private final P2PCommissionRepository commissionRepository;
     private final PlatformFeeService platformFeeService;
+    private final P2PCommissionService commissionService;
     private final String internalSecret;
 
     public InternalAdminFinancialController(
             TradeRepository tradeRepository,
             P2PCommissionRepository commissionRepository,
             PlatformFeeService platformFeeService,
+            P2PCommissionService commissionService,
             @Value("$" + "{oakpay.internal-secret}") String internalSecret) {
         this.tradeRepository = tradeRepository;
         this.commissionRepository = commissionRepository;
         this.platformFeeService = platformFeeService;
+        this.commissionService = commissionService;
         this.internalSecret = internalSecret;
     }
 
@@ -87,6 +90,15 @@ public class InternalAdminFinancialController {
                 new ArrayList<>(spotByCurrency.values()),
                 new ArrayList<>(p2pByCurrency.values())
         );
+    }
+
+    @PostMapping("/commissions/{tradeId}/collect")
+    public P2PCommissionDtos.Response collectCommission(
+            @PathVariable UUID tradeId,
+            @RequestBody P2PCommissionDtos.CollectionRequest request,
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
+        requireInternalSecret(suppliedSecret);
+        return P2PCommissionDtos.Response.from(commissionService.collect(tradeId, request));
     }
 
     @PatchMapping("/fees/{key}")
