@@ -25,7 +25,8 @@ public class P2PDisputeService {
             P2PDisputeAuditRepository auditRepository,
             P2PTradeRepository tradeRepository,
             AdvertisementRepository advertisementRepository,
-            WalletClient walletClient) {
+            WalletClient walletClient,
+            AuditLogClient auditLogClient) {
         this.disputeRepository = disputeRepository;
         this.auditRepository = auditRepository;
         this.tradeRepository = tradeRepository;
