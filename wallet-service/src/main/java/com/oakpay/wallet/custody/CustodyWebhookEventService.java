@@ -18,17 +18,20 @@ public class CustodyWebhookEventService {
     private final CustodyWithdrawalService withdrawalService;
     private final CustodyOperationRepository operationRepository;
     private final ObjectMapper objectMapper;
+    private final CustodyMetrics metrics;
 
     public CustodyWebhookEventService(CustodyWebhookEventRepository eventRepository,
                                       DepositService depositService,
                                       CustodyWithdrawalService withdrawalService,
                                       CustodyOperationRepository operationRepository,
-                                      ObjectMapper objectMapper) {
+                                      ObjectMapper objectMapper,
+                                      CustodyMetrics metrics) {
         this.eventRepository = eventRepository;
         this.depositService = depositService;
         this.withdrawalService = withdrawalService;
         this.operationRepository = operationRepository;
         this.objectMapper = objectMapper;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -63,6 +66,7 @@ public class CustodyWebhookEventService {
             event.setDepositId(result.id());
             event.setStatus(CustodyWebhookEventStatus.PROCESSED);
             eventRepository.save(event);
+            metrics.webhookProcessed();
             return result;
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid custody deposit webhook", e);
@@ -104,6 +108,7 @@ public class CustodyWebhookEventService {
             event.setWithdrawalOperationId(operation.getId());
             event.setStatus(CustodyWebhookEventStatus.PROCESSED);
             eventRepository.save(event);
+            metrics.webhookProcessed();
             return CustodyWithdrawalDtos.WithdrawalResponse.from(operation);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid custody withdrawal webhook", e);
