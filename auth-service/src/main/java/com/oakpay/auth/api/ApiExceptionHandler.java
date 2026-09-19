@@ -16,7 +16,7 @@ public class ApiExceptionHandler {
                 "timestamp", Instant.now(),
                 "status", status.value(),
                 "error", code,
-                "message", message
+                "message", message == null ? "Request failed" : message
         ));
     }
 
