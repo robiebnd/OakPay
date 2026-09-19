@@ -12,13 +12,16 @@ public class CustodyReconciliationService {
     private final CustodyOperationRepository operationRepository;
     private final CustodyProviderService providerService;
     private final CustodyWithdrawalService withdrawalService;
+    private final CustodyMetrics metrics;
 
     public CustodyReconciliationService(CustodyOperationRepository operationRepository,
                                          CustodyProviderService providerService,
-                                         CustodyWithdrawalService withdrawalService) {
+                                         CustodyWithdrawalService withdrawalService,
+                                         CustodyMetrics metrics) {
         this.operationRepository = operationRepository;
         this.providerService = providerService;
         this.withdrawalService = withdrawalService;
+        this.metrics = metrics;
     }
 
     @Transactional(readOnly = true)
@@ -50,12 +53,23 @@ public class CustodyReconciliationService {
             return operation;
         }
 
-        CustodyProvider.ProviderTransactionStatus providerStatus =
-                providerService.getTransactionStatus(operation.getProviderName(), operation.getProviderReference());
+        try {
+            CustodyProvider.ProviderTransactionStatus providerStatus =
+                    providerService.getTransactionStatus(operation.getProviderName(), operation.getProviderReference());
 
-        return withdrawalService.applyProviderStatus(
-                operation.getProviderName(),
-                operation.getProviderReference(),
-                providerStatus);
+            CustodyOperation reconciled = withdrawalService.applyProviderStatus(
+                    operation.getProviderName(),
+                    operation.getProviderReference(),
+                    providerStatus);
+            if (reconciled.getStatus() == CustodyOperationStatus.COMPLETED) {
+                metrics.reconciliationCompleted();
+            } else if (reconciled.getStatus() == CustodyOperationStatus.FAILED) {
+                metrics.reconciliationFailed();
+            }
+            return reconciled;
+        } catch (RuntimeException e) {
+            metrics.reconciliationFailed();
+            throw e;
+        }
     }
 }
