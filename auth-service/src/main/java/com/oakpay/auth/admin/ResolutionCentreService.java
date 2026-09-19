@@ -43,7 +43,7 @@ public class ResolutionCentreService {
                 new TypeReference<List<AuditResponse>>() {});
     }
 
-    public DisputeResponse resolve(UUID disputeId, ResolveRequest request, String authorization) {
+    public DisputeResponse resolve(UUID disputeId, ResolveRequest request, String authorization, UUID actorId) {
         var builder = tradingClient.post()
                 .uri("/api/v1/p2p/admin/disputes/" + disputeId + "/resolve")
                 .header("X-OakPay-Admin-Secret", adminSecret)
