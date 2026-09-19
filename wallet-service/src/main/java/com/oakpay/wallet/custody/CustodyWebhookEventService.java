@@ -3,6 +3,7 @@ package com.oakpay.wallet.custody;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oakpay.wallet.deposit.DepositDtos;
 import com.oakpay.wallet.deposit.DepositService;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,13 +15,19 @@ import java.util.UUID;
 public class CustodyWebhookEventService {
     private final CustodyWebhookEventRepository eventRepository;
     private final DepositService depositService;
+    private final CustodyWithdrawalService withdrawalService;
+    private final CustodyOperationRepository operationRepository;
     private final ObjectMapper objectMapper;
 
     public CustodyWebhookEventService(CustodyWebhookEventRepository eventRepository,
                                       DepositService depositService,
+                                      CustodyWithdrawalService withdrawalService,
+                                      CustodyOperationRepository operationRepository,
                                       ObjectMapper objectMapper) {
         this.eventRepository = eventRepository;
         this.depositService = depositService;
+        this.withdrawalService = withdrawalService;
+        this.operationRepository = operationRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -60,6 +67,53 @@ public class CustodyWebhookEventService {
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid custody deposit webhook", e);
         }
+    }
+
+    @Transactional
+    public CustodyWithdrawalDtos.WithdrawalResponse processWithdrawal(String provider, String eventId, String rawBody) {
+        String normalizedProvider = normalize(provider);
+        String normalizedEventId = normalize(eventId);
+        String payloadHash = sha256(rawBody);
+
+        UUID eventUuid = UUID.randomUUID();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        int inserted = eventRepository.insertIfAbsent(eventUuid, normalizedProvider, normalizedEventId,
+                payloadHash, now, now);
+
+        CustodyWebhookEvent event = eventRepository
+                .findByProviderNameAndEventId(normalizedProvider, normalizedEventId)
+                .orElseThrow(() -> new IllegalStateException("Webhook event could not be loaded"));
+
+        if (inserted == 0) {
+            if (!event.getPayloadHash().equals(payloadHash)) {
+                throw new IllegalArgumentException("Webhook event ID was already used with a different payload");
+            }
+            if (event.getWithdrawalOperationId() == null) {
+                throw new IllegalStateException("Webhook event is still being processed");
+            }
+            return withdrawalResponse(event.getWithdrawalOperationId());
+        }
+
+        try {
+            CustodyWithdrawalWebhookDtos.Webhook payload =
+                    objectMapper.readValue(rawBody, CustodyWithdrawalWebhookDtos.Webhook.class);
+            CustodyProvider.ProviderTransactionStatus status =
+                    CustodyProvider.ProviderTransactionStatus.valueOf(payload.status().trim().toUpperCase(Locale.ROOT));
+            CustodyOperation operation = withdrawalService.applyProviderStatus(
+                    normalizedProvider, payload.providerReference().trim(), status);
+            event.setWithdrawalOperationId(operation.getId());
+            event.setStatus(CustodyWebhookEventStatus.PROCESSED);
+            eventRepository.save(event);
+            return CustodyWithdrawalDtos.WithdrawalResponse.from(operation);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid custody withdrawal webhook", e);
+        }
+    }
+
+    private CustodyWithdrawalDtos.WithdrawalResponse withdrawalResponse(UUID operationId) {
+        CustodyOperation operation = operationRepository.findById(operationId)
+                .orElseThrow(() -> new IllegalStateException("Withdrawal custody operation not found"));
+        return CustodyWithdrawalDtos.WithdrawalResponse.from(operation);
     }
 
     private String normalize(String value) {
