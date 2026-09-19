@@ -41,6 +41,19 @@ oakpay:
   test-addresses:
     enabled: ${OAKPAY_TEST_ADDRESSES_ENABLED:true}
   custody:
+    bitgo:
+      webhook-base-url: ${OAKPAY_BITGO_WEBHOOK_BASE_URL:}
+      base-url: ${OAKPAY_BITGO_BASE_URL:https://app.bitgo.com}
+      access-token: ${OAKPAY_BITGO_ACCESS_TOKEN:}
+      wallet-passphrase: ${OAKPAY_BITGO_WALLET_PASSPHRASE:}
+      btc:
+        coin: ${OAKPAY_BITGO_BTC_COIN:btc}
+        wallet-id: ${OAKPAY_BITGO_BTC_WALLET_ID:6aaf14223046b7b19896847319e59250}
+        required-confirmations: ${OAKPAY_BITGO_BTC_REQUIRED_CONFIRMATIONS:3}
+      usdt-tron:
+        coin: ${OAKPAY_BITGO_USDT_TRON_COIN:trx:usdt}
+        wallet-id: ${OAKPAY_BITGO_USDT_TRON_WALLET_ID:6aaf10cdbc1760e65c6fc420d321e95c}
+        required-confirmations: ${OAKPAY_BITGO_USDT_TRON_REQUIRED_CONFIRMATIONS:20}
     provider-name: ${OAKPAY_CUSTODY_PROVIDER_NAME:}
     webhook-secret: ${OAKPAY_CUSTODY_WEBHOOK_SECRET:}
     webhook-tolerance-seconds: ${OAKPAY_CUSTODY_WEBHOOK_TOLERANCE_SECONDS:300}
