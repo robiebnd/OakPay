@@ -3,6 +3,9 @@ package com.oakpay.auth.admin;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,9 +16,11 @@ import java.util.UUID;
 public class AdminUserController {
 
     private final AdminUserService service;
+    private final AuditLogService auditLogService;
 
-    public AdminUserController(AdminUserService service) {
+    public AdminUserController(AdminUserService service, AuditLogService auditLogService) {
         this.service = service;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -40,13 +45,14 @@ public class AdminUserController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<AdminUserDtos.UserResponse> updateStatus(
             @PathVariable UUID id,
-            @RequestBody AdminUserDtos.UpdateStatusRequest request
+            @RequestBody AdminUserDtos.UpdateStatusRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(
-                service.updateStatus(
-                        id,
-                        request.status()
-                )
-        );
+        AdminUserDtos.UserResponse response = service.updateStatus(id, request.status());
+        UUID actor = UUID.fromString(authentication.getName());
+        auditLogService.record(actor, "ADMIN", "USER_STATUS_CHANGED", "USER", id.toString(),
+                "SUCCESS", httpRequest.getRemoteAddr(), "{\"status\":\"" + response.status() + "\"}");
+        return ResponseEntity.ok(response);
     }
 }
