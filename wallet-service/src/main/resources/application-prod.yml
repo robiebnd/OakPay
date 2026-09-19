@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${OAKPAY_DB_URL}
+    username: ${OAKPAY_DB_USERNAME}
+    password: ${OAKPAY_DB_PASSWORD}
+
+oakpay:
+  jwt:
+    secret: ${OAKPAY_JWT_SECRET}
+  internal-secret: ${OAKPAY_INTERNAL_SECRET}
+  auth:
+    base-url: ${OAKPAY_AUTH_URL}
+  test-addresses:
+    enabled: false
