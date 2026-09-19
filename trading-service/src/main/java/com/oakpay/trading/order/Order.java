@@ -53,6 +53,9 @@ public class Order {
     @Column(name = "idempotency_hash", length = 64, updatable = false)
     private String idempotencyHash;
 
+    @Column(name = "fee_rate", nullable = false, precision = 20, scale = 10, updatable = false)
+    private BigDecimal feeRate;
+
     @PrePersist
     void prePersist() {
         if (id == null) id = UUID.randomUUID();
@@ -90,4 +93,6 @@ public class Order {
     public void setIdempotencyKey(String value) { idempotencyKey = value; }
     public String getIdempotencyHash() { return idempotencyHash; }
     public void setIdempotencyHash(String value) { idempotencyHash = value; }
+    public BigDecimal getFeeRate() { return feeRate; }
+    public void setFeeRate(BigDecimal value) { feeRate = value; }
 }
