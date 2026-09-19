@@ -30,6 +30,9 @@ public class CustodyWebhookEvent {
     @Column(name = "deposit_id")
     private UUID depositId;
 
+    @Column(name = "withdrawal_operation_id")
+    private UUID withdrawalOperationId;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -59,6 +62,8 @@ public class CustodyWebhookEvent {
     public void setStatus(CustodyWebhookEventStatus status) { this.status = status; }
     public UUID getDepositId() { return depositId; }
     public void setDepositId(UUID depositId) { this.depositId = depositId; }
+    public UUID getWithdrawalOperationId() { return withdrawalOperationId; }
+    public void setWithdrawalOperationId(UUID withdrawalOperationId) { this.withdrawalOperationId = withdrawalOperationId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
