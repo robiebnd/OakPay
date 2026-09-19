@@ -86,6 +86,16 @@ public class CustodyProviderService {
     }
 
     @Transactional(readOnly = true)
+    public CustodyOperation findWithdrawalByIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency key is required");
+        }
+        return operationRepository
+                .findByOperationTypeAndIdempotencyKey(CustodyOperationType.WITHDRAWAL, idempotencyKey.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Withdrawal custody operation not found"));
+    }
+
+    @Transactional(readOnly = true)
     public CustodyOperation getByProviderReference(String providerName, String providerReference) {
         return operationRepository.findByProviderNameAndProviderReference(providerName, providerReference)
                 .orElseThrow(() -> new IllegalArgumentException("Custody operation not found"));
