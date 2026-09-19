@@ -40,3 +40,7 @@ oakpay:
     base-url: ${OAKPAY_AUTH_URL:http://localhost:8083}
   test-addresses:
     enabled: ${OAKPAY_TEST_ADDRESSES_ENABLED:true}
+  custody:
+    provider-name: ${OAKPAY_CUSTODY_PROVIDER_NAME:}
+    webhook-secret: ${OAKPAY_CUSTODY_WEBHOOK_SECRET:}
+    webhook-tolerance-seconds: ${OAKPAY_CUSTODY_WEBHOOK_TOLERANCE_SECONDS:300}
