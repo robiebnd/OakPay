@@ -122,9 +122,14 @@ public class InternalAdminFinancialController {
     public P2PCommissionDtos.Response collectCommission(
             @PathVariable UUID tradeId,
             @RequestBody P2PCommissionDtos.CollectionRequest request,
-            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret) {
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret,
+            @RequestHeader(value = "X-OakPay-Admin-Actor", required = false) String actor) {
         requireInternalSecret(suppliedSecret);
-        return P2PCommissionDtos.Response.from(commissionService.collect(tradeId, request));
+        var result = commissionService.collect(tradeId, request);
+        UUID actorId = null;
+        if (actor != null && !actor.isBlank()) { try { actorId = UUID.fromString(actor.trim()); } catch (IllegalArgumentException ignored) {} }
+        auditLogClient.record(actorId, "P2P_COMMISSION_COLLECTED", "P2P_COMMISSION", tradeId.toString(), "SUCCESS", null);
+        return P2PCommissionDtos.Response.from(result);
     }
 
     @PatchMapping("/fees/{key}")
