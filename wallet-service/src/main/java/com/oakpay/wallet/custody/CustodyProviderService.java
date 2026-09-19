@@ -42,6 +42,7 @@ public class CustodyProviderService {
                 new CustodyProvider.DepositAddressRequest(userId, normalize(currency), normalize(network), key));
 
         operation.setProviderReference(requireReference(result.providerReference()));
+        operation.setProviderAddress(requireAddress(result.address()));
         operation.setMemoTag(result.memoTag());
         operation.setStatus(CustodyOperationStatus.SUBMITTED);
         return operationRepository.save(operation);
@@ -114,6 +115,11 @@ public class CustodyProviderService {
 
     private String normalizeKey(String value) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException("Idempotency key is required");
+        return value.trim();
+    }
+
+    private String requireAddress(String value) {
+        if (value == null || value.isBlank()) throw new IllegalStateException("Custody provider returned no deposit address");
         return value.trim();
     }
 
