@@ -25,6 +25,9 @@ public class OrderService {
 
     public OrderService(OrderRepository orderRepository, TradeRepository tradeRepository, WalletClient walletClient,
                         @Value("${oakpay.trading.fee-rate:0.001}") BigDecimal feeRate) {
+        if (feeRate.signum() < 0 || feeRate.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("Trading fee rate must be between 0 and 1");
+        }
         this.orderRepository = orderRepository;
         this.tradeRepository = tradeRepository;
         this.walletClient = walletClient;
