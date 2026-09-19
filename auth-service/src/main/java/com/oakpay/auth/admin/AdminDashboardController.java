@@ -1,13 +1,14 @@
 package com.oakpay.auth.admin;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/admin/dashboard")
@@ -25,13 +26,51 @@ public class AdminDashboardController {
         return ResponseEntity.ok(dashboardService.getDashboard());
     }
 
+    @GetMapping("/finance")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
+    public ResponseEntity<AdminFinancialSummary> finance() {
+        return ResponseEntity.ok(dashboardService.getFinancialSummary());
+    }
+
+    @GetMapping("/finance/commissions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
+    public ResponseEntity<List<AdminFinancialSummary.P2PCommissionRecord>> commissions(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "200") int limit) {
+        return ResponseEntity.ok(dashboardService.getCommissionRecords(status, limit));
+    }
+
+    @PatchMapping("/finance/fees/{key}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
+    public ResponseEntity<Map<String, BigDecimal>> updateFee(
+            @PathVariable String key,
+            @RequestParam BigDecimal value,
+            Authentication authentication) {
+        UUID actorId = null;
+        if (authentication != null && authentication.getName() != null) {
+            try {
+                actorId = UUID.fromString(authentication.getName());
+            } catch (IllegalArgumentException ignored) {
+                // Preserve compatibility with non-UUID development principals.
+            }
+        }
+        return ResponseEntity.ok(dashboardService.updateFee(key, value, actorId));
+    }
+
+    @PostMapping("/finance/commissions/{tradeId}/collect")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
+    public ResponseEntity<AdminFinancialSummary.P2PCommissionRecord> collectCommission(
+            @PathVariable UUID tradeId,
+            @RequestBody AdminFinancialSummary.CollectionRequest request) {
+        return ResponseEntity.ok(dashboardService.collectCommission(tradeId, request));
+    }
+
     /**
-     * P2P transactions screen intentionally does not perform an
-     * administrator-role check here. The screen is a read-only
-     * operational view in the local development portal; the data
-     * remains read-only and the trading service is queried server-side.
+     * P2P transactions screen is read-only and the data is queried server-side
+     * from trading-service.
      */
     @GetMapping("/transactions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<List<AdminDashboardService.AdminTransaction>> transactions(
             @RequestParam(defaultValue = "100") int limit) {
         return ResponseEntity.ok(dashboardService.getTransactions(limit));
