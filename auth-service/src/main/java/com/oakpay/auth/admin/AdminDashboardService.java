@@ -132,7 +132,8 @@ public class AdminDashboardService {
                     result.collectionReference(),
                     result.collectionMethod(),
                     result.collectedAt(),
-                    result.createdAt());
+                    result.createdAt(),
+                    result.updatedAt());
         } catch (Exception e) {
             throw new IllegalStateException("Trading service commission collection failed", e);
         }
