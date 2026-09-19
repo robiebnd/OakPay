@@ -53,6 +53,7 @@ export type AdminCommissionRecord = {
   collectionMethod: string | null;
   collectedAt: string | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 
