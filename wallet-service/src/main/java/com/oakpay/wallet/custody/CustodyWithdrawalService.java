@@ -48,8 +48,17 @@ public class CustodyWithdrawalService {
         walletRepository.save(wallet);
 
         try {
-            return custodyProviderService.submitWithdrawal(userId, normalizedCurrency, network, normalizedAmount,
-                    destinationAddress, memoTag, idempotencyKey);
+            CustodyOperation operation = custodyProviderService.submitWithdrawal(userId, normalizedCurrency, network,
+                    normalizedAmount, destinationAddress, memoTag, idempotencyKey);
+            if (operation.getStatus() == CustodyOperationStatus.COMPLETED) {
+                return applyProviderStatus(operation.getProviderName(), operation.getProviderReference(),
+                        CustodyProvider.ProviderTransactionStatus.COMPLETED);
+            }
+            if (operation.getStatus() == CustodyOperationStatus.FAILED) {
+                return applyProviderStatus(operation.getProviderName(), operation.getProviderReference(),
+                        CustodyProvider.ProviderTransactionStatus.FAILED);
+            }
+            return operation;
         } catch (RuntimeException e) {
             wallet.setLockedBalance(wallet.getLockedBalance().subtract(normalizedAmount));
             wallet.setAvailableBalance(wallet.getAvailableBalance().add(normalizedAmount));
