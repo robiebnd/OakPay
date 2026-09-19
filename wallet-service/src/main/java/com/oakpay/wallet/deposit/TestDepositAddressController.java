@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@Profile("!prod")
+@Profile("!prod & !production")
 @RequestMapping("/api/v1/wallets/deposit-addresses")
 public class TestDepositAddressController {
     private final DepositAddressService service;
