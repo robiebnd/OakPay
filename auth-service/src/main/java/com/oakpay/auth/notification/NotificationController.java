@@ -18,17 +18,6 @@ public class NotificationController {
         this.service = service;
     }
 
-    // Development-only endpoint used by the mobile notification test button.
-    // It is still authenticated and creates a real database notification for the current user.
-    @PostMapping("/test")
-    public ResponseEntity<NotificationDtos.NotificationResponse> test(
-            @AuthenticationPrincipal UserPrincipal p) {
-        if (p == null) {
-            return ResponseEntity.status(401).build();
-        }
-        return ResponseEntity.ok(service.createTest(p.getUserId()));
-    }
-
     @GetMapping
     public List<NotificationDtos.NotificationResponse> list(
             @AuthenticationPrincipal UserPrincipal p,
