@@ -52,7 +52,11 @@ public class P2PCommissionController {
         if (!tradeRepository.existsById(tradeId)) {
             throw new IllegalArgumentException("P2P trade not found");
         }
-        var result = commissionService.collect(tradeId, request);\n        UUID actorId = null;\n        if (actor != null && !actor.isBlank()) { try { actorId = UUID.fromString(actor.trim()); } catch (IllegalArgumentException ignored) {} }\n        auditLogClient.record(actorId, "P2P_COMMISSION_COLLECTED", "P2P_COMMISSION", tradeId.toString(), "SUCCESS", null);\n        return P2PCommissionDtos.Response.from(result);
+        var result = commissionService.collect(tradeId, request);
+        UUID actorId = null;
+        if (actor != null && !actor.isBlank()) { try { actorId = UUID.fromString(actor.trim()); } catch (IllegalArgumentException ignored) {} }
+        auditLogClient.record(actorId, "P2P_COMMISSION_COLLECTED", "P2P_COMMISSION", tradeId.toString(), "SUCCESS", null);
+        return P2PCommissionDtos.Response.from(result);
     }
 
     private void requireAdmin(String supplied) {
