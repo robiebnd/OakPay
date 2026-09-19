@@ -30,26 +30,24 @@ public class CustodyWebhookEventService {
         String normalizedEventId = normalize(eventId);
         String payloadHash = sha256(rawBody);
 
-        CustodyWebhookEvent existing = eventRepository
-                .findByProviderNameAndEventId(normalizedProvider, normalizedEventId)
-                .orElse(null);
+        UUID eventUuid = UUID.randomUUID();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        int inserted = eventRepository.insertIfAbsent(eventUuid, normalizedProvider, normalizedEventId,
+                payloadHash, now, now);
 
-        if (existing != null) {
-            if (!existing.getPayloadHash().equals(payloadHash)) {
+        CustodyWebhookEvent event = eventRepository
+                .findByProviderNameAndEventId(normalizedProvider, normalizedEventId)
+                .orElseThrow(() -> new IllegalStateException("Webhook event could not be loaded"));
+
+        if (inserted == 0) {
+            if (!event.getPayloadHash().equals(payloadHash)) {
                 throw new IllegalArgumentException("Webhook event ID was already used with a different payload");
             }
-            if (existing.getDepositId() == null) {
+            if (event.getDepositId() == null) {
                 throw new IllegalStateException("Webhook event is still being processed");
             }
-            return depositService.getById(existing.getDepositId());
+            return depositService.getById(event.getDepositId());
         }
-
-        CustodyWebhookEvent event = new CustodyWebhookEvent();
-        event.setProviderName(normalizedProvider);
-        event.setEventId(normalizedEventId);
-        event.setPayloadHash(payloadHash);
-        event.setStatus(CustodyWebhookEventStatus.PROCESSING);
-        eventRepository.saveAndFlush(event);
 
         try {
             DepositDtos.BlockchainDepositWebhook payload =
