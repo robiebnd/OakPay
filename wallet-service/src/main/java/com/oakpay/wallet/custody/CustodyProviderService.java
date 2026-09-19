@@ -101,6 +101,20 @@ public class CustodyProviderService {
                 .orElseThrow(() -> new IllegalArgumentException("Custody operation not found"));
     }
 
+    @Transactional(readOnly = true)
+    public CustodyProvider.ProviderTransactionStatus getTransactionStatus(String providerName,
+                                                                           String providerReference) {
+        CustodyProvider provider = requireProvider();
+        String normalizedProvider = normalize(providerName);
+        String normalizedReference = requireReference(providerReference);
+
+        if (!provider.providerName().equalsIgnoreCase(normalizedProvider)) {
+            throw new IllegalArgumentException("Custody provider is not configured for " + normalizedProvider);
+        }
+
+        return provider.getTransactionStatus(normalizedReference);
+    }
+
     private CustodyProvider requireProvider() {
         CustodyProvider provider = providerProvider.getIfAvailable();
         if (provider == null) {
