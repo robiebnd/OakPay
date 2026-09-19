@@ -47,6 +47,7 @@ public class ResolutionCentreService {
         var builder = tradingClient.post()
                 .uri("/api/v1/p2p/admin/disputes/" + disputeId + "/resolve")
                 .header("X-OakPay-Admin-Secret", adminSecret)
+                .header("X-OakPay-Admin-Actor", actorId == null ? "" : actorId.toString())
                 .header(HttpHeaders.ACCEPT, "application/json")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request);
