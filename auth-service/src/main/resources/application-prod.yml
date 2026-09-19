@@ -1,0 +1,38 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${OAKPAY_DB_URL}
+    username: ${OAKPAY_DB_USERNAME}
+    password: ${OAKPAY_DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${OAKPAY_REDIS_HOST}
+      port: ${OAKPAY_REDIS_PORT:6379}
+
+  mail:
+    host: ${OAKPAY_SMTP_HOST}
+    port: ${OAKPAY_SMTP_PORT:587}
+    username: ${OAKPAY_SMTP_USERNAME}
+    password: ${OAKPAY_SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+oakpay:
+  jwt:
+    secret: ${OAKPAY_JWT_SECRET}
+  mail:
+    enabled: true
+    from: ${OAKPAY_MAIL_FROM}
+  two-factor:
+    encryption-key: ${OAKPAY_2FA_ENCRYPTION_KEY}
+  internal-secret: ${OAKPAY_INTERNAL_SECRET}
+  admin:
+    dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET}
