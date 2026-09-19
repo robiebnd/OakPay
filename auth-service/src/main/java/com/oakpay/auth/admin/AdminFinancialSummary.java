@@ -12,8 +12,7 @@ public record AdminFinancialSummary(
         long commissionRecords,
         long collectedCommissionRecords,
         List<SpotFeeSummary> spotFees,
-        List<P2PCommissionSummary> p2pCommissions,
-        List<P2PCommissionRecord> commissionRecordsList) {
+        List<P2PCommissionSummary> p2pCommissions) {
 
     public record SpotFeeSummary(
             String quoteCurrency,
