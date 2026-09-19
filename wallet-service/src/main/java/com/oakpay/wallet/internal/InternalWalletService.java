@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Service
 public class InternalWalletService {
@@ -159,10 +161,19 @@ public class InternalWalletService {
     public void settle(InternalWalletDtos.SettlementRequest request) {
         validateSettlement(request);
         String base = normalize(request.baseCurrency()), quote = normalize(request.quoteCurrency());
+        if (base.equals(quote)) throw new IllegalArgumentException("Settlement currencies must be different");
         BigDecimal baseAmount = positive(request.baseAmount()), quoteAmount = positive(request.quoteAmount());
+        // Lock all wallets in a deterministic order before claiming the idempotency key.
+        // This serializes concurrent settlements and prevents duplicate settlement on the same reference.
+        Map<String, Wallet> locked = new TreeMap<>();
+        locked.put(walletKey(request.buyerId(), base), wallet(request.buyerId(), base));
+        locked.put(walletKey(request.buyerId(), quote), wallet(request.buyerId(), quote));
+        locked.put(walletKey(request.sellerId(), base), wallet(request.sellerId(), base));
+        locked.put(walletKey(request.sellerId(), quote), wallet(request.sellerId(), quote));
         if (!walletOperationService.begin("SETTLE", request.reference(), request.buyerId(), base, baseAmount, request.toString())) return;
         BigDecimal buyerFee = nonNegative(request.buyerFee()), sellerFee = nonNegative(request.sellerFee());
-        Wallet buyerBase = wallet(request.buyerId(), base), buyerQuote = wallet(request.buyerId(), quote), sellerBase = wallet(request.sellerId(), base), sellerQuote = wallet(request.sellerId(), quote);
+        Wallet buyerBase = locked.get(walletKey(request.buyerId(), base)), buyerQuote = locked.get(walletKey(request.buyerId(), quote));
+        Wallet sellerBase = locked.get(walletKey(request.sellerId(), base)), sellerQuote = locked.get(walletKey(request.sellerId(), quote));
         if (buyerQuote.getLockedBalance().compareTo(quoteAmount.add(buyerFee)) < 0) throw new IllegalStateException("Buyer locked quote balance is insufficient");
         if (sellerBase.getLockedBalance().compareTo(baseAmount) < 0) throw new IllegalStateException("Seller locked base balance is insufficient");
 
@@ -196,7 +207,7 @@ public class InternalWalletService {
         entry.setWalletId(wallet.getId()); entry.setUserId(userId); entry.setTransactionType(type); entry.setStatus(LedgerStatus.COMPLETED); entry.setCurrency(wallet.getCurrency()); entry.setAmount(amount); entry.setBalanceBefore(before.subtract(amount)); entry.setBalanceAfter(before); entry.setReference(reference); entry.setMetadata(metadata);
         ledgerRepository.save(entry);
     }
-    private Wallet wallet(UUID userId, String currency) {
+    private String walletKey(UUID userId, String currency) { return userId + ":" + currency; }\n    private Wallet wallet(UUID userId, String currency) {
         return walletRepository.findByUserIdAndCurrencyForUpdate(userId, normalize(currency)).orElseThrow(() -> new IllegalArgumentException("Wallet not found for currency " + currency));
     }
     private void validateSettlement(InternalWalletDtos.SettlementRequest r) {
