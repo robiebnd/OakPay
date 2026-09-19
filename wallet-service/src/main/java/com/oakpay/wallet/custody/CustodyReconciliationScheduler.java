@@ -50,7 +50,7 @@ public class CustodyReconciliationScheduler {
 
                 attempted++;
                 try {
-                    reconciliationService.reconcileWithdrawal(operation.getOperationId());
+                    reconciliationService.reconcileWithdrawal(operation.getId());
                 } catch (RuntimeException e) {
                     log.warn("Custody reconciliation failed for operation {}", operation.getOperationId(), e);
                 }
