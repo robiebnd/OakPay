@@ -36,4 +36,20 @@ public class CustodyWebhookController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to read webhook payload", e);
         }
     }
+    @PostMapping("/{provider}/withdrawals")
+    public CustodyWithdrawalDtos.WithdrawalResponse withdrawalWebhook(
+            @PathVariable String provider,
+            @RequestHeader("X-OakPay-Webhook-Id") String eventId,
+            @RequestHeader("X-OakPay-Webhook-Timestamp") String timestamp,
+            @RequestHeader("X-OakPay-Webhook-Signature") String signature,
+            HttpServletRequest request) {
+        try {
+            String rawBody = new String(request.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            verifier.verify(provider, eventId, timestamp, signature, rawBody);
+            return eventService.processWithdrawal(provider, eventId, rawBody);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to read webhook payload", e);
+        }
+    }
+
 }
