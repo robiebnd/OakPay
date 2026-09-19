@@ -31,7 +31,6 @@ export default function NotificationsScreen() {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
-  const [testWorking, setTestWorking] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -50,20 +49,6 @@ export default function NotificationsScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const unread = useMemo(() => items.filter((item) => !item.read).length, [items]);
-
-  async function createTestNotification() {
-    if (!accessToken || testWorking) return;
-    try {
-      setTestWorking(true);
-      setError('');
-      const created = await notificationsApi.createTest(accessToken);
-      setItems((rows) => [created, ...rows.filter((row) => row.id !== created.id)]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to create test notification.');
-    } finally {
-      setTestWorking(false);
-    }
-  }
 
   async function markRead(id: string) {
     if (!accessToken) return;
@@ -116,19 +101,6 @@ export default function NotificationsScreen() {
             </View>
           ) : null}
 
-          {__DEV__ ? (
-            <Pressable
-              style={[styles.testButton, testWorking && styles.disabled]}
-              disabled={testWorking}
-              onPress={createTestNotification}
-            >
-              <Ionicons name="flask-outline" size={17} color={BG} />
-              <Text style={styles.testButtonText}>
-                {testWorking ? 'Creating test notification…' : 'Create test notification'}
-              </Text>
-            </Pressable>
-          ) : null}
-
           {loading ? (
             <View style={styles.loading}><ActivityIndicator color={LIME} /><Text style={styles.muted}>Loading notifications…</Text></View>
           ) : items.length === 0 ? (
@@ -175,8 +147,6 @@ const styles = StyleSheet.create({
   readAll:{backgroundColor:LIME,borderRadius:12,paddingHorizontal:13,paddingVertical:10,marginTop:8},
   readAllText:{color:BG,fontFamily:'Inter_800ExtraBold',fontSize:11},
   disabled:{opacity:.45},
-  testButton:{backgroundColor:LIME,borderRadius:14,paddingVertical:12,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginBottom:16},
-  testButtonText:{color:BG,fontFamily:'Inter_800ExtraBold',fontSize:12},
   error:{backgroundColor:'#24171B',borderColor:'#42272A',borderWidth:1,borderRadius:15,padding:13,flexDirection:'row',alignItems:'center',gap:8,marginBottom:15},
   errorText:{color:RED,fontFamily:'Inter_600SemiBold',fontSize:11,flex:1},
   loading:{height:160,backgroundColor:CARD,borderRadius:19,alignItems:'center',justifyContent:'center',gap:7},
