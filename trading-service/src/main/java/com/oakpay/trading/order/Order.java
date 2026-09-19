@@ -47,6 +47,12 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "idempotency_key", length = 100, updatable = false)
+    private String idempotencyKey;
+
+    @Column(name = "idempotency_hash", length = 64, updatable = false)
+    private String idempotencyHash;
+
     @PrePersist
     void prePersist() {
         if (id == null) id = UUID.randomUUID();
@@ -61,6 +67,7 @@ public class Order {
     void preUpdate() { updatedAt = LocalDateTime.now(); }
 
     public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
     public OrderSide getSide() { return side; }
@@ -79,4 +86,8 @@ public class Order {
     public void setRemainingQuantity(BigDecimal remainingQuantity) { this.remainingQuantity = remainingQuantity; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public void setIdempotencyKey(String value) { idempotencyKey = value; }
+    public String getIdempotencyHash() { return idempotencyHash; }
+    public void setIdempotencyHash(String value) { idempotencyHash = value; }
 }
