@@ -4,6 +4,7 @@ import com.oakpay.trading.api.TradingDtos;
 import com.oakpay.trading.wallet.WalletClient;
 import com.oakpay.trading.security.IdempotencySupport;
 import com.oakpay.trading.notification.NotificationClient;
+import com.oakpay.trading.p2p.PlatformFeeService;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,18 +21,16 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final TradeRepository tradeRepository;
     private final WalletClient walletClient;
-    private final BigDecimal feeRate;
+    private final PlatformFeeService platformFeeService;
     private final NotificationClient notificationClient;
 
     public OrderService(OrderRepository orderRepository, TradeRepository tradeRepository, WalletClient walletClient,
-                        @Value("${oakpay.trading.fee-rate:0.001}") BigDecimal feeRate) {
-        if (feeRate.signum() < 0 || feeRate.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalArgumentException("Trading fee rate must be between 0 and 1");
-        }
+                        PlatformFeeService platformFeeService, NotificationClient notificationClient) {
         this.orderRepository = orderRepository;
         this.tradeRepository = tradeRepository;
         this.walletClient = walletClient;
-        this.feeRate = feeRate;
+        this.platformFeeService = platformFeeService;
+        this.notificationClient = notificationClient;
     }
 
     @Transactional
@@ -53,7 +52,9 @@ public class OrderService {
                 return response(existingOrder);
             }
         }
+        BigDecimal feeRate = platformFeeService.tradingFeeRate();
         Order order = new Order();
+        order.setFeeRate(feeRate);
         if (idempotencyKey != null) {
             order.setId(IdempotencySupport.deterministicId(userId, "ORDER_CREATE", idempotencyKey));
             order.setIdempotencyKey(idempotencyKey);
@@ -70,7 +71,7 @@ public class OrderService {
         order = orderRepository.save(order);
 
         BigDecimal reserve = order.getSide() == OrderSide.BUY
-                ? order.getPrice().multiply(order.getQuantity()).multiply(BigDecimal.ONE.add(feeRate))
+                ? order.getPrice().multiply(order.getQuantity()).multiply(BigDecimal.ONE.add(order.getFeeRate()))
                 : order.getQuantity();
         walletClient.lock(userId, reserveCurrency(order), reserve, order.getId());
         match(order);
@@ -87,7 +88,7 @@ public class OrderService {
         if (order.getStatus() == OrderStatus.FILLED || order.getStatus() == OrderStatus.CANCELLED)
             throw new IllegalStateException("Order cannot be cancelled");
         BigDecimal reserve = order.getSide() == OrderSide.BUY
-                ? order.getPrice().multiply(order.getRemainingQuantity()).multiply(BigDecimal.ONE.add(feeRate))
+                ? order.getPrice().multiply(order.getRemainingQuantity()).multiply(BigDecimal.ONE.add(order.getFeeRate()))
                 : order.getRemainingQuantity();
         if (reserve.signum() > 0) walletClient.unlock(userId, reserveCurrency(order), reserve, order.getId());
         order.setStatus(OrderStatus.CANCELLED);
@@ -134,8 +135,8 @@ public class OrderService {
             BigDecimal fill = incoming.getRemainingQuantity().min(resting.getRemainingQuantity());
             BigDecimal executionPrice = resting.getPrice();
             BigDecimal gross = executionPrice.multiply(fill);
-            BigDecimal buyerFee = gross.multiply(feeRate);
-            BigDecimal sellerFee = gross.multiply(feeRate);
+            BigDecimal buyerFee = gross.multiply(buyOrder.getFeeRate());
+            BigDecimal sellerFee = gross.multiply(sellOrder.getFeeRate());
             UUID buyerId = incoming.getSide() == OrderSide.BUY ? incoming.getUserId() : resting.getUserId();
             UUID sellerId = incoming.getSide() == OrderSide.SELL ? incoming.getUserId() : resting.getUserId();
             Order buyOrder = incoming.getSide() == OrderSide.BUY ? incoming : resting;
