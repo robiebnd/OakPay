@@ -104,10 +104,10 @@ public class P2PDisputeService {
             throw new IllegalStateException("Trade is not in dispute status");
         }
         if (request.resolution() == DisputeResolution.BUYER_WINS) {
-            walletClient.releaseEscrow(trade.getSellerId(), trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
+            walletClient.releaseEscrow(trade.getSellerId(), trade.getBuyerId(), trade.getAsset(), trade.getQuantity(), trade.getId(), adminId);
             trade.setStatus(P2PTradeStatus.COMPLETED);
         } else {
-            walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId());
+            walletClient.unlock(trade.getSellerId(), trade.getAsset(), trade.getQuantity(), trade.getId(), adminId);
             trade.setStatus(P2PTradeStatus.CANCELLED);
             restoreAdvertisement(trade);
         }
