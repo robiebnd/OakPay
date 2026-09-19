@@ -3,6 +3,8 @@ package com.oakpay.wallet.custody;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -17,6 +19,18 @@ public class CustodyReconciliationService {
         this.operationRepository = operationRepository;
         this.providerService = providerService;
         this.withdrawalService = withdrawalService;
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustodyOperation> findPendingWithdrawals(LocalDateTime cutoff) {
+        return operationRepository.findTop100ByOperationTypeAndStatusInAndUpdatedAtBeforeOrderByUpdatedAtAsc(
+                CustodyOperationType.WITHDRAWAL,
+                List.of(
+                        CustodyOperationStatus.SUBMISSION_UNKNOWN,
+                        CustodyOperationStatus.REQUESTED,
+                        CustodyOperationStatus.SUBMITTED,
+                        CustodyOperationStatus.PROCESSING),
+                cutoff);
     }
 
     @Transactional
