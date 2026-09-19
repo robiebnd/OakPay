@@ -28,6 +28,7 @@ public class P2PCommissionController {
         this.tradeRepository = tradeRepository;
         this.commissionService = commissionService;
         this.adminSecret = adminSecret;
+        this.auditLogClient = auditLogClient;
     }
 
     @GetMapping("/{tradeId}/commission")
@@ -45,7 +46,8 @@ public class P2PCommissionController {
     @ResponseStatus(HttpStatus.OK)
     public P2PCommissionDtos.Response collect(@PathVariable UUID tradeId,
                                                 @Valid @RequestBody P2PCommissionDtos.CollectionRequest request,
-                                                @RequestHeader(value = "X-OakPay-Admin-Secret", required = false) String suppliedSecret) {
+                                                @RequestHeader(value = "X-OakPay-Admin-Secret", required = false) String suppliedSecret,
+                                                @RequestHeader(value = "X-OakPay-Admin-Actor", required = false) String actor) {
         requireAdmin(suppliedSecret);
         if (!tradeRepository.existsById(tradeId)) {
             throw new IllegalArgumentException("P2P trade not found");
