@@ -49,9 +49,9 @@ public class BitGoCustodyProvider implements CustodyProvider {
 
         Map<String, AssetConfig> configured = new LinkedHashMap<>();
         configured.put(key("BTC", "BITCOIN"),
-                new AssetConfig("BTC", "BITCOIN", btcCoin.trim(), requireWalletId("BTC", btcWalletId), 8));
+                new AssetConfig("BTC", "BITCOIN", btcCoin.trim(), normalizeWalletId(btcWalletId), 8));
         configured.put(key("USDT", "TRON"),
-                new AssetConfig("USDT", "TRON", usdtTronCoin.trim(), requireWalletId("USDT/TRON", usdtTronWalletId), 6));
+                new AssetConfig("USDT", "TRON", usdtTronCoin.trim(), normalizeWalletId(usdtTronWalletId), 6));
         this.assets = Map.copyOf(configured);
     }
 
@@ -231,7 +231,7 @@ public class BitGoCustodyProvider implements CustodyProvider {
         }
         String normalized = walletId.trim().toLowerCase(Locale.ROOT);
         if (!normalized.matches("^[0-9a-f]{32}$")) {
-            throw new IllegalStateException("Invalid BitGo wallet ID for " + label);
+            throw new IllegalStateException("Invalid BitGo wallet ID");
         }
         return normalized;
     }
