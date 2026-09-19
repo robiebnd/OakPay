@@ -19,8 +19,9 @@ public class TradingController {
     @PostMapping("/orders")
     @ResponseStatus(HttpStatus.CREATED)
     public TradingDtos.OrderResponse place(@Valid @RequestBody TradingDtos.CreateOrderRequest request,
+                                           @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                            Authentication authentication) {
-        return orderService.place(userId(authentication), request);
+        return orderService.place(userId(authentication), request, idempotencyKey);
     }
 
     @DeleteMapping("/orders/{orderId}")
