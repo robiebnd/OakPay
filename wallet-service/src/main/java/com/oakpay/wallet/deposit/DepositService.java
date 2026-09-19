@@ -71,6 +71,13 @@ public class DepositService {
     }
 
     @Transactional(readOnly = true)
+    public DepositDtos.DepositResponse getById(UUID depositId) {
+        return depositRepository.findById(depositId)
+                .map(DepositDtos.DepositResponse::from)
+                .orElseThrow(() -> new IllegalArgumentException("Deposit not found"));
+    }
+
+    @Transactional(readOnly = true)
     public List<DepositDtos.DepositResponse> getUserDeposits(UUID userId) {
         return depositRepository.findTop50ByUserIdOrderByDetectedAtDesc(userId).stream()
                 .map(DepositDtos.DepositResponse::from).toList();
