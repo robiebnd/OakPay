@@ -11,11 +11,14 @@ import java.util.UUID;
 public class CustodyProviderService {
     private final ObjectProvider<CustodyProvider> providerProvider;
     private final CustodyOperationRepository operationRepository;
+    private final CustodyOperationStateService operationStateService;
 
     public CustodyProviderService(ObjectProvider<CustodyProvider> providerProvider,
-                                  CustodyOperationRepository operationRepository) {
+                                  CustodyOperationRepository operationRepository,
+                                  CustodyOperationStateService operationStateService) {
         this.providerProvider = providerProvider;
         this.operationRepository = operationRepository;
+        this.operationStateService = operationStateService;
     }
 
     @Transactional
@@ -76,13 +79,21 @@ public class CustodyProviderService {
         operation.setStatus(CustodyOperationStatus.REQUESTED);
         operationRepository.saveAndFlush(operation);
 
-        CustodyProvider.WithdrawalResult result = provider.submitWithdrawal(
-                new CustodyProvider.WithdrawalRequest(userId, normalize(currency), normalize(network),
-                        amount, destinationAddress.trim(), memoTag, key));
+        try {
+            CustodyProvider.WithdrawalResult result = provider.submitWithdrawal(
+                    new CustodyProvider.WithdrawalRequest(userId, normalize(currency), normalize(network),
+                            amount, destinationAddress.trim(), memoTag, key));
 
-        operation.setProviderReference(requireReference(result.providerReference()));
-        operation.setStatus(mapStatus(result.status()));
-        return operationRepository.save(operation);
+            operation.setProviderReference(requireReference(result.providerReference()));
+            operation.setStatus(mapStatus(result.status()));
+            return operationRepository.save(operation);
+        } catch (RuntimeException e) {
+            // A timeout/network error does not prove that the provider rejected the withdrawal.
+            // Keep the funds locked and persist an explicit recovery state in its own transaction.
+            operationStateService.markSubmissionUnknown(operation);
+            throw new CustodySubmissionUnknownException(
+                    "Custody provider submission outcome is unknown; reconciliation is required", e);
+        }
     }
 
     @Transactional(readOnly = true)
