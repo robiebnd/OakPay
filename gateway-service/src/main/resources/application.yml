@@ -24,6 +24,13 @@ spring:
                   - "*"
                 allowCredentials: true
 
+          default-filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 60
+                redis-rate-limiter.burstCapacity: 120
+                key-resolver: "#{@ipKeyResolver}"
+
           routes:
             - id: auth-service
               uri: http://localhost:8083
@@ -63,6 +70,9 @@ spring:
 
 server:
   port: 8082
+
+  error:
+    include-message: never
 
 management:
   endpoints:
