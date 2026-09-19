@@ -4,6 +4,7 @@ import com.oakpay.trading.asset.AssetStatus;
 import com.oakpay.trading.asset.SupportedAsset;
 import com.oakpay.trading.asset.SupportedAssetRepository;
 import com.oakpay.trading.security.UserStatusClient;
+import com.oakpay.trading.security.IdempotencySupport;
 import com.oakpay.trading.notification.NotificationClient;
 import com.oakpay.trading.wallet.WalletClient;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,6 +44,26 @@ public class P2PTradeService {
 
     @Transactional
     public P2PTradeDtos.TradeResponse create(UUID authenticatedUserId, P2PTradeDtos.CreateRequest request) {
+        return create(authenticatedUserId, request, null);
+    }
+
+    @Transactional
+    public P2PTradeDtos.TradeResponse create(UUID authenticatedUserId, P2PTradeDtos.CreateRequest request, String suppliedIdempotencyKey) {
+        String idempotencyKey = IdempotencySupport.normalizeKey(suppliedIdempotencyKey);
+        String idempotencyHash = idempotencyKey == null ? null : IdempotencySupport.hash(request == null ? "null" : request.toString());
+        if (idempotencyKey != null) {
+            var existing = repository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                P2PTrade trade = existing.get();
+                if (!authenticatedUserId.equals(trade.getBuyerId()) && !authenticatedUserId.equals(trade.getSellerId())) {
+                    throw new IllegalStateException("Idempotency key is already associated with another user");
+                }
+                if (!idempotencyHash.equals(trade.getIdempotencyHash())) {
+                    throw new IllegalStateException("Idempotency key was already used with different request data");
+                }
+                return P2PTradeDtos.TradeResponse.from(trade);
+            }
+        }
         if (!userStatusClient.isActive(authenticatedUserId)) throw new IllegalStateException("User account is inactive");
         if (request == null) throw new IllegalArgumentException("Trade request is required");
         BigDecimal quantity = positive(request.quantity(), "Quantity");
@@ -92,6 +113,11 @@ public class P2PTradeService {
         tradeLimitService.validate(buyerId, fiat, fiatAmount);
 
         P2PTrade trade = new P2PTrade();
+        if (idempotencyKey != null) {
+            trade.setId(IdempotencySupport.deterministicId(authenticatedUserId, "P2P_CREATE", idempotencyKey));
+            trade.setIdempotencyKey(idempotencyKey);
+            trade.setIdempotencyHash(idempotencyHash);
+        }
         trade.setSellerId(sellerId); trade.setBuyerId(buyerId); trade.setAdvertisementId(request.advertisementId());
         trade.setAsset(asset); trade.setFiatCurrency(fiat); trade.setQuantity(quantity); trade.setUnitPrice(price);
         trade.setFiatAmount(fiatAmount); trade.setPaymentMethod(paymentMethod); trade.setExpiresAt(LocalDateTime.now().plusMinutes(expiry));
