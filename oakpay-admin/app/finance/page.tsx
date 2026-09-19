@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckCircle2, CircleDollarSign, Clock3, FileText, Percent, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { Check, CheckCircle2, CircleDollarSign, Clock3, FileText, Percent, RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import { AdminCommissionRecord, AdminFinancialSummary, adminApi } from "../../lib/adminApi";
@@ -192,10 +192,10 @@ export default function FinancePage() {
 
         <section className="overflow-hidden rounded-2xl border border-[#e3e8e5] bg-white shadow-sm">
           <div className="flex flex-col gap-4 border-b border-[#e3e8e5] p-5 lg:flex-row lg:items-center lg:justify-between">
-            <div><h2 className="text-base font-extrabold text-[#111827]">P2P revenue collection</h2><p className="mt-1 text-xs text-[#667085]">Record commission collections with an operational reference and collection method.</p></div>
+            <div><h2 className="text-xl font-extrabold text-[#111827]">Record Collections</h2><p className="mt-1 text-sm text-[#667085]">Select the commission records you want to collect and process.</p></div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98a2b3]" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search trade, payer, reference..." className="rounded-xl border border-[#dce3df] bg-[#fafcfb] py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#397b0a]" /></div>
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl border border-[#dce3df] bg-white px-3 py-2.5 text-sm font-semibold outline-none"><option value="">All statuses</option><option value="ASSESSED">Assessed</option><option value="COLLECTED">Collected</option><option value="WAIVED">Waived</option></select>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl border border-[#dce3df] bg-white px-3 py-2.5 text-sm font-semibold outline-none"><option value="">All statuses</option><option value="ASSESSED">Assessed</option><option value="COLLECTED">Collected</option><option value="WAIVED">Waived</option></select><button type="button" onClick={() => { setSearch(""); setStatusFilter(""); setSelectedIds(new Set()); }} className="rounded-xl border border-transparent bg-[#f7f9f8] px-4 py-2.5 text-sm font-semibold text-[#344054]">Reset</button>
             </div>
           </div>
           <div className="overflow-x-auto">
