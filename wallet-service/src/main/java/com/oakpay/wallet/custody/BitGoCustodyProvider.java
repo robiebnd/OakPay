@@ -139,7 +139,7 @@ public class BitGoCustodyProvider implements CustodyProvider {
 
     private AssetConfig asset(String currency, String network) {
         AssetConfig asset = assets.get(key(currency, network));
-        if (asset == null) {
+        if (asset == null || asset.walletId().isBlank()) {
             throw new IllegalArgumentException("BitGo custody is not configured for "
                     + currency + " on " + network);
         }
@@ -225,10 +225,8 @@ public class BitGoCustodyProvider implements CustodyProvider {
         }
     }
 
-    private String requireWalletId(String label, String walletId) {
-        if (walletId == null || walletId.isBlank()) {
-            throw new IllegalStateException("BitGo wallet ID is not configured for " + label);
-        }
+    private String normalizeWalletId(String walletId) {
+        if (walletId == null || walletId.isBlank()) return "";
         String normalized = walletId.trim().toLowerCase(Locale.ROOT);
         if (!normalized.matches("^[0-9a-f]{32}$")) {
             throw new IllegalStateException("Invalid BitGo wallet ID");
