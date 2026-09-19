@@ -135,12 +135,12 @@ public class OrderService {
             BigDecimal fill = incoming.getRemainingQuantity().min(resting.getRemainingQuantity());
             BigDecimal executionPrice = resting.getPrice();
             BigDecimal gross = executionPrice.multiply(fill);
-            BigDecimal buyerFee = gross.multiply(buyOrder.getFeeRate());
-            BigDecimal sellerFee = gross.multiply(sellOrder.getFeeRate());
             UUID buyerId = incoming.getSide() == OrderSide.BUY ? incoming.getUserId() : resting.getUserId();
             UUID sellerId = incoming.getSide() == OrderSide.SELL ? incoming.getUserId() : resting.getUserId();
             Order buyOrder = incoming.getSide() == OrderSide.BUY ? incoming : resting;
             Order sellOrder = incoming.getSide() == OrderSide.SELL ? incoming : resting;
+            BigDecimal buyerFee = gross.multiply(buyOrder.getFeeRate());
+            BigDecimal sellerFee = gross.multiply(sellOrder.getFeeRate());
 
             walletClient.settle(new WalletClient.Settlement(buyerId, sellerId, incoming.getBaseCurrency(), incoming.getQuoteCurrency(),
                     fill, gross, buyerFee, sellerFee, "TRADE-" + UUID.randomUUID()));
