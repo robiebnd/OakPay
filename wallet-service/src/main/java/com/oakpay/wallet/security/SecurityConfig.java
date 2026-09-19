@@ -18,6 +18,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/wallets/internal/**").permitAll()
                         .requestMatchers("/api/v1/wallets/deposit-addresses/internal/**").permitAll()
                         .requestMatchers("/api/v1/wallets/deposits/internal/**").permitAll()
+                        .requestMatchers("/api/v1/webhooks/custody/**").permitAll()
                         .requestMatchers("/api/v1/wallets/*/lock", "/api/v1/wallets/*/unlock").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
