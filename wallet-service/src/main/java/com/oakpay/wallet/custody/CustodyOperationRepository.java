@@ -15,6 +15,10 @@ public interface CustodyOperationRepository extends JpaRepository<CustodyOperati
     Optional<CustodyOperation> findByProviderNameAndProviderReference(
             String providerName, String providerReference);
 
+    long countByOperationTypeAndStatusIn(
+            CustodyOperationType operationType,
+            Collection<CustodyOperationStatus> statuses);
+
     List<CustodyOperation> findTop100ByOperationTypeAndStatusInAndUpdatedAtBeforeOrderByUpdatedAtAsc(
             CustodyOperationType operationType,
             Collection<CustodyOperationStatus> statuses,
