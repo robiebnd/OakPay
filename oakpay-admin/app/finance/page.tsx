@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleDollarSign, Percent, RefreshCw, Save, Search } from "lucide-react";
+import { Check, CheckCircle2, CircleDollarSign, Clock3, FileText, Percent, RefreshCw, RotateCcw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import { AdminCommissionRecord, AdminFinancialSummary, adminApi } from "../../lib/adminApi";
@@ -23,10 +23,13 @@ export default function FinancePage() {
   const [search, setSearch] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<FeeKey | "">("");
-  const [selected, setSelected] = useState<AdminCommissionRecord | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collectionReference, setCollectionReference] = useState("");
   const [collectionMethod, setCollectionMethod] = useState("");
   const [collecting, setCollecting] = useState(false);
+  const selectedRows = useMemo(() => filtered.filter(row => selectedIds.has(row.id) && row.status === "ASSESSED"), [filtered, selectedIds]);
+  const selectableRows = useMemo(() => filtered.filter(row => row.status === "ASSESSED"), [filtered]);
+  const allVisibleSelected = selectableRows.length > 0 && selectableRows.every(row => selectedIds.has(row.id));
 
   const load = useCallback(async (initial = false) => {
     try {
@@ -211,15 +214,15 @@ export default function FinancePage() {
           </div>
         </section>
 
-        {selected ? <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+        {selectedRows.length ? <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
           <h2 className="text-lg font-extrabold text-[#111827]">Record commission collection</h2>
-          <p className="mt-2 text-sm text-[#667085]">Trade {selected.tradeId} · {Number(selected.commissionAmount).toLocaleString(undefined,{minimumFractionDigits:2})} {selected.fiatCurrency}</p>
+          <p className="mt-2 text-sm text-[#667085]">{selectedRows.length} commission record{selectedRows.length === 1 ? "" : "s"} selected · {selectedRows.reduce((sum,row) => sum + Number(row.commissionAmount), 0).toLocaleString(undefined,{minimumFractionDigits:2})} total</p>
           <div className="mt-5 space-y-4">
             <label className="block"><span className="mb-1.5 block text-xs font-bold text-[#374151]">Collection reference</span><input value={collectionReference} onChange={e => setCollectionReference(e.target.value)} placeholder="e.g. BANK-REF-12345" className="w-full rounded-xl border border-[#dce3df] px-3 py-3 text-sm outline-none focus:border-[#397b0a]" /></label>
             <label className="block"><span className="mb-1.5 block text-xs font-bold text-[#374151]">Collection method</span><input value={collectionMethod} onChange={e => setCollectionMethod(e.target.value)} placeholder="BANK_TRANSFER" className="w-full rounded-xl border border-[#dce3df] px-3 py-3 text-sm outline-none focus:border-[#397b0a]" /></label>
           </div>
-          <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setSelected(null)} disabled={collecting} className="rounded-xl border border-[#dce3df] px-4 py-2.5 text-sm font-bold">Cancel</button><button type="button" onClick={() => void collect()} disabled={collecting} className="rounded-xl bg-[#397b0a] px-4 py-2.5 text-sm font-bold text-white">{collecting ? "Recording..." : "Record collection"}</button></div>
-          <p className="mt-4 text-[11px] leading-5 text-[#667085]">This action records the external collection reference and method. It does not move funds between wallets.</p>
+          <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setSelectedIds(new Set())} disabled={collecting} className="rounded-xl border border-[#dce3df] px-4 py-2.5 text-sm font-bold">Cancel</button><button type="button" onClick={() => void collect()} disabled={collecting} className="rounded-xl bg-[#397b0a] px-4 py-2.5 text-sm font-bold text-white">{collecting ? "Recording..." : "Record collection"}</button></div>
+          <p className="mt-4 text-[11px] leading-5 text-[#667085]">This records the external collection reference and method for the selected commissions. It does not move funds between wallets.</p>
         </div></div> : null}
       </div>
     </AdminShell>
