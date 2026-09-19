@@ -27,9 +27,6 @@ export default function FinancePage() {
   const [collectionReference, setCollectionReference] = useState("");
   const [collectionMethod, setCollectionMethod] = useState("");
   const [collecting, setCollecting] = useState(false);
-  const selectedRows = useMemo(() => filtered.filter(row => selectedIds.has(row.id) && row.status === "ASSESSED"), [filtered, selectedIds]);
-  const selectableRows = useMemo(() => filtered.filter(row => row.status === "ASSESSED"), [filtered]);
-  const allVisibleSelected = selectableRows.length > 0 && selectableRows.every(row => selectedIds.has(row.id));
 
   const load = useCallback(async (initial = false) => {
     try {
@@ -72,6 +69,10 @@ export default function FinancePage() {
     );
   }, [commissions, search]);
 
+  const selectableRows = useMemo(() => filtered.filter(row => row.status === "ASSESSED"), [filtered]);
+  const selectedRows = useMemo(() => selectableRows.filter(row => selectedIds.has(row.id)), [selectableRows, selectedIds]);
+  const allVisibleSelected = selectableRows.length > 0 && selectableRows.every(row => selectedIds.has(row.id));
+
   function displayFee(key: FeeKey, value: number | undefined) {
     if (value == null) return "—";
     if (key.endsWith("_RATE")) return (Number(value) * 100).toFixed(2) + "%";
@@ -99,7 +100,7 @@ export default function FinancePage() {
   }
 
   async function collect() {
-    if (!selected) return;
+    if (!selectedRows.length) return;
     if (!collectionReference.trim() || !collectionMethod.trim()) {
       setError("Collection reference and collection method are required.");
       return;
@@ -107,12 +108,10 @@ export default function FinancePage() {
     try {
       setCollecting(true);
       setError("");
-      await adminApi.finance.collectCommission(
-        selected.tradeId,
-        collectionReference.trim(),
-        collectionMethod.trim(),
-      );
-      setSelected(null);
+      for (const row of selectedRows) {
+        await adminApi.finance.collectCommission(row.tradeId, collectionReference.trim(), collectionMethod.trim());
+      }
+      setSelectedIds(new Set());
       setCollectionReference("");
       setCollectionMethod("");
       await load(false);
@@ -194,37 +193,36 @@ export default function FinancePage() {
           <div className="flex flex-col gap-4 border-b border-[#e3e8e5] p-5 lg:flex-row lg:items-center lg:justify-between">
             <div><h2 className="text-xl font-extrabold text-[#111827]">Record Collections</h2><p className="mt-1 text-sm text-[#667085]">Select the commission records you want to collect and process.</p></div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98a2b3]" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search trade, payer, reference..." className="rounded-xl border border-[#dce3df] bg-[#fafcfb] py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#397b0a]" /></div>
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl border border-[#dce3df] bg-white px-3 py-2.5 text-sm font-semibold outline-none"><option value="">All statuses</option><option value="ASSESSED">Assessed</option><option value="COLLECTED">Collected</option><option value="WAIVED">Waived</option></select><button type="button" onClick={() => { setSearch(""); setStatusFilter(""); setSelectedIds(new Set()); }} className="rounded-xl border border-transparent bg-[#f7f9f8] px-4 py-2.5 text-sm font-semibold text-[#344054]">Reset</button>
+              <select className="rounded-xl border border-[#dce3df] bg-white px-3 py-2.5 text-sm font-semibold outline-none"><option>All categories</option><option>P2P Commissions</option></select>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl border border-[#dce3df] bg-white px-3 py-2.5 text-sm font-semibold outline-none"><option value="">All statuses</option><option value="ASSESSED">Assessed</option><option value="COLLECTED">Collected</option><option value="WAIVED">Waived</option></select>
+              <div className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98a2b3]" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search items..." className="rounded-xl border border-[#dce3df] bg-[#fafcfb] py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#397b0a]" /></div>
+              <button type="button" onClick={() => { setSearch(""); setStatusFilter(""); setSelectedIds(new Set()); }} className="rounded-xl bg-[#f7f9f8] px-4 py-2.5 text-sm font-semibold text-[#344054]">Reset</button>
             </div>
           </div>
           <div className="overflow-x-auto">
             {filtered.length ? (
-              <table className="w-full min-w-[1050px] text-left text-sm">
-                <thead><tr className="border-b bg-[#fafcfb] text-xs text-[#667085]"><th className="px-5 py-3">Trade</th><th className="px-5 py-3">Payer</th><th className="px-5 py-3">Fiat</th><th className="px-5 py-3">Commission</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Collection</th><th className="px-5 py-3"></th></tr></thead>
-                <tbody>{filtered.map(row => <tr key={row.id} className="border-b last:border-0 hover:bg-[#fbfdfc]">
-                  <td className="px-5 py-4"><p className="font-bold">{row.tradeId.slice(0,8)}…</p><p className="mt-1 text-[11px] text-[#98a2b3]">{new Date(row.createdAt).toLocaleString()}</p></td>
-                  <td className="px-5 py-4 text-xs">{row.payerId.slice(0,12)}…</td><td className="px-5 py-4">{row.fiatCurrency}</td><td className="px-5 py-4 font-extrabold">{Number(row.commissionAmount).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-                  <td className="px-5 py-4"><span className={row.status==="COLLECTED" ? "rounded-full bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700" : row.status==="WAIVED" ? "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600" : "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700"}>{row.status}</span></td>
-                  <td className="px-5 py-4">{row.collectionReference ? <><p className="text-xs font-semibold">{row.collectionReference}</p><p className="text-[11px] text-[#667085]">{row.collectionMethod || "—"}</p></> : <span className="text-xs text-[#98a2b3]">Not recorded</span>}</td>
-                  <td className="px-5 py-4 text-right">{row.status==="ASSESSED" ? <button type="button" onClick={() => { setSelected(row); setCollectionReference(""); setCollectionMethod(""); }} className="rounded-xl bg-[#397b0a] px-3 py-2 text-xs font-bold text-white">Record collection</button> : null}</td>
+              <table className="w-full min-w-[1120px] text-left text-sm">
+                <thead><tr className="border-b bg-[#fafcfb] text-xs text-[#667085]"><th className="w-14 px-5 py-3"><input aria-label="Select all visible commission records" type="checkbox" checked={allVisibleSelected} onChange={e => { const next = new Set(selectedIds); if (e.target.checked) selectableRows.forEach(row => next.add(row.id)); else selectableRows.forEach(row => next.delete(row.id)); setSelectedIds(next); }} className="h-5 w-5 accent-[#397b0a]" /></th><th className="px-5 py-3">#</th><th className="px-5 py-3">Item</th><th className="px-5 py-3">Payer</th><th className="px-5 py-3">Fiat</th><th className="px-5 py-3">Commission</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Collection</th><th className="px-5 py-3"></th></tr></thead>
+                <tbody>{filtered.map((row, index) => <tr key={row.id} className="border-b last:border-0 hover:bg-[#fbfdfc]">
+                  <td className="px-5 py-4"><input aria-label={\`Select commission \${row.tradeId}\`} type="checkbox" disabled={row.status !== "ASSESSED"} checked={selectedIds.has(row.id)} onChange={e => { const next = new Set(selectedIds); if (e.target.checked) next.add(row.id); else next.delete(row.id); setSelectedIds(next); }} className="h-5 w-5 accent-[#397b0a] disabled:opacity-30" /></td>
+                  <td className="px-5 py-4 text-xs text-[#667085]">{index + 1}</td><td className="px-5 py-4"><p className="font-bold">{row.tradeId.slice(0,8)}…</p><p className="mt-1 text-[11px] text-[#98a2b3]">{new Date(row.createdAt).toLocaleString()}</p></td><td className="px-5 py-4 text-xs">{row.payerId.slice(0,12)}…</td><td className="px-5 py-4">{row.fiatCurrency}</td><td className="px-5 py-4 font-extrabold">{Number(row.commissionAmount).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                  <td className="px-5 py-4"><span className={row.status==="COLLECTED" ? "inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700" : row.status==="WAIVED" ? "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600" : "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700"}>{row.status==="COLLECTED" ? <CheckCircle2 size={13}/> : row.status==="ASSESSED" ? <Clock3 size={13}/> : null}{row.status}</span></td>
+                  <td className="px-5 py-4">{row.collectionReference ? <><p className="text-xs font-semibold">{row.collectionReference}</p><p className="text-[11px] text-[#667085]">{row.collectionMethod || "—"}</p></> : <span className="text-xs text-[#98a2b3]">Not recorded</span>}</td><td className="px-5 py-4 text-right"><FileText size={19} className="ml-auto text-[#718096]" /></td>
                 </tr>)}</tbody>
               </table>
             ) : <div className="min-h-[220px] flex items-center justify-center text-sm text-[#667085]">No matching commission records.</div>}
           </div>
-        </section>
-
-        {selectedRows.length ? <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="flex flex-col gap-4 border-t border-[#e3e8e5] bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex items-center gap-3 text-sm font-semibold text-[#344054]"><input type="checkbox" checked={allVisibleSelected} onChange={e => { const next = new Set(selectedIds); if (e.target.checked) selectableRows.forEach(row => next.add(row.id)); else selectableRows.forEach(row => next.delete(row.id)); setSelectedIds(next); }} className="h-5 w-5 accent-[#397b0a]" />Select all ({selectableRows.length} items)</label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="text-sm"><p className="font-extrabold text-[#111827]">{selectedRows.length} item{selectedRows.length === 1 ? "" : "s"} selected</p><p className="text-xs text-[#667085]">This will record collections for the selected items.</p></div><button type="button" disabled={!selectedRows.length || collecting} onClick={() => { setCollectionReference(""); setCollectionMethod(""); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#397b0a] px-5 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-40"><CircleDollarSign size={17}/>Record collection</button></div>
+          </div>
+        </section>        {selectedRows.length ? <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
           <h2 className="text-lg font-extrabold text-[#111827]">Record commission collection</h2>
           <p className="mt-2 text-sm text-[#667085]">{selectedRows.length} commission record{selectedRows.length === 1 ? "" : "s"} selected · {selectedRows.reduce((sum,row) => sum + Number(row.commissionAmount), 0).toLocaleString(undefined,{minimumFractionDigits:2})} total</p>
-          <div className="mt-5 space-y-4">
-            <label className="block"><span className="mb-1.5 block text-xs font-bold text-[#374151]">Collection reference</span><input value={collectionReference} onChange={e => setCollectionReference(e.target.value)} placeholder="e.g. BANK-REF-12345" className="w-full rounded-xl border border-[#dce3df] px-3 py-3 text-sm outline-none focus:border-[#397b0a]" /></label>
-            <label className="block"><span className="mb-1.5 block text-xs font-bold text-[#374151]">Collection method</span><input value={collectionMethod} onChange={e => setCollectionMethod(e.target.value)} placeholder="BANK_TRANSFER" className="w-full rounded-xl border border-[#dce3df] px-3 py-3 text-sm outline-none focus:border-[#397b0a]" /></label>
-          </div>
+          <div className="mt-5 space-y-4"><label className="block"><span className="mb-1.5 block text-xs font-bold text-[#374151]">Collection reference</span><input value={collectionReference} onChange={e => setCollectionReference(e.target.value)} placeholder="e.g. BANK-REF-12345" className="w-full rounded-xl border border-[#dce3df] px-3 py-3 text-sm outline-none focus:border-[#397b0a]" /></label><label className="block"><span className="mb-1.5 block text-xs font-bold text-[#374151]">Collection method</span><input value={collectionMethod} onChange={e => setCollectionMethod(e.target.value)} placeholder="BANK_TRANSFER" className="w-full rounded-xl border border-[#dce3df] px-3 py-3 text-sm outline-none focus:border-[#397b0a]" /></label></div>
           <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setSelectedIds(new Set())} disabled={collecting} className="rounded-xl border border-[#dce3df] px-4 py-2.5 text-sm font-bold">Cancel</button><button type="button" onClick={() => void collect()} disabled={collecting} className="rounded-xl bg-[#397b0a] px-4 py-2.5 text-sm font-bold text-white">{collecting ? "Recording..." : "Record collection"}</button></div>
           <p className="mt-4 text-[11px] leading-5 text-[#667085]">This records the external collection reference and method for the selected commissions. It does not move funds between wallets.</p>
-        </div></div> : null}
-      </div>
+        </div></div> : null}      </div>
     </AdminShell>
   );
 }
