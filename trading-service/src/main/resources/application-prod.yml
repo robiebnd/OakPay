@@ -1,0 +1,24 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${OAKPAY_DB_URL}
+    username: ${OAKPAY_DB_USERNAME}
+    password: ${OAKPAY_DB_PASSWORD}
+
+oakpay:
+  jwt:
+    secret: ${OAKPAY_JWT_SECRET}
+  wallet:
+    base-url: ${OAKPAY_WALLET_URL}
+  auth:
+    base-url: ${OAKPAY_AUTH_URL}
+  internal-secret: ${OAKPAY_INTERNAL_SECRET}
+  admin:
+    dispute-secret: ${OAKPAY_ADMIN_DISPUTE_SECRET}
+  trading:
+    fee-rate: ${OAKPAY_TRADING_FEE_RATE}
+  p2p:
+    commission-rate: ${OAKPAY_P2P_COMMISSION_RATE}
+    unverified-usd-limit: ${OAKPAY_P2P_UNVERIFIED_USD_LIMIT:50.00}
