@@ -27,17 +27,21 @@ public class CustodyProviderService {
         if (existing != null) return existing;
 
         CustodyProvider provider = requireProvider();
-        CustodyProvider.DepositAddressResult result = provider.createDepositAddress(
-                new CustodyProvider.DepositAddressRequest(userId, normalize(currency), normalize(network), key));
 
         CustodyOperation operation = new CustodyOperation();
         operation.setOperationType(CustodyOperationType.DEPOSIT_ADDRESS);
         operation.setIdempotencyKey(key);
         operation.setProviderName(provider.providerName());
-        operation.setProviderReference(requireReference(result.providerReference()));
         operation.setUserId(userId);
         operation.setCurrency(normalize(currency));
         operation.setNetwork(normalize(network));
+        operation.setStatus(CustodyOperationStatus.REQUESTED);
+        operationRepository.saveAndFlush(operation);
+
+        CustodyProvider.DepositAddressResult result = provider.createDepositAddress(
+                new CustodyProvider.DepositAddressRequest(userId, normalize(currency), normalize(network), key));
+
+        operation.setProviderReference(requireReference(result.providerReference()));
         operation.setMemoTag(result.memoTag());
         operation.setStatus(CustodyOperationStatus.SUBMITTED);
         return operationRepository.save(operation);
@@ -57,21 +61,25 @@ public class CustodyProviderService {
         if (destinationAddress == null || destinationAddress.isBlank()) throw new IllegalArgumentException("Destination address is required");
 
         CustodyProvider provider = requireProvider();
-        CustodyProvider.WithdrawalResult result = provider.submitWithdrawal(
-                new CustodyProvider.WithdrawalRequest(userId, normalize(currency), normalize(network),
-                        amount, destinationAddress.trim(), memoTag, key));
 
         CustodyOperation operation = new CustodyOperation();
         operation.setOperationType(CustodyOperationType.WITHDRAWAL);
         operation.setIdempotencyKey(key);
         operation.setProviderName(provider.providerName());
-        operation.setProviderReference(requireReference(result.providerReference()));
         operation.setUserId(userId);
         operation.setCurrency(normalize(currency));
         operation.setNetwork(normalize(network));
         operation.setAmount(amount);
         operation.setDestinationAddress(destinationAddress.trim());
         operation.setMemoTag(memoTag);
+        operation.setStatus(CustodyOperationStatus.REQUESTED);
+        operationRepository.saveAndFlush(operation);
+
+        CustodyProvider.WithdrawalResult result = provider.submitWithdrawal(
+                new CustodyProvider.WithdrawalRequest(userId, normalize(currency), normalize(network),
+                        amount, destinationAddress.trim(), memoTag, key));
+
+        operation.setProviderReference(requireReference(result.providerReference()));
         operation.setStatus(mapStatus(result.status()));
         return operationRepository.save(operation);
     }
