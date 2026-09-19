@@ -1,6 +1,7 @@
 package com.oakpay.trading.p2p;
 
 import com.oakpay.trading.asset.SupportedAssetRepository;
+import com.oakpay.trading.notification.NotificationClient;
 import com.oakpay.trading.security.KycStatusClient;
 import com.oakpay.trading.security.UserStatusClient;
 import com.oakpay.trading.wallet.WalletClient;
@@ -33,6 +34,7 @@ class P2PTradeServiceTest {
     @Mock UserStatusClient userStatusClient;
     @Mock KycStatusClient kycStatusClient;
     @Mock TradeLimitService tradeLimitService;
+    @Mock NotificationClient notificationClient;
 
     private P2PTradeService service;
 
@@ -48,7 +50,8 @@ class P2PTradeServiceTest {
                 assetRepository,
                 advertisementRepository,
                 userStatusClient,
-                tradeLimitService
+                tradeLimitService,
+                notificationClient
         );
     }
 
