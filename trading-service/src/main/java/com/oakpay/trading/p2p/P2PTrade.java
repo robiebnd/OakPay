@@ -55,6 +55,12 @@ public class P2PTrade {
     @Column(name = "payment_note", columnDefinition = "TEXT")
     private String paymentNote;
 
+    @Column(name = "idempotency_key", length = 100, updatable = false)
+    private String idempotencyKey;
+
+    @Column(name = "idempotency_hash", length = 64, updatable = false)
+    private String idempotencyHash;
+
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
@@ -81,6 +87,7 @@ public class P2PTrade {
     private void normalize() { quantity = money(quantity); unitPrice = money(unitPrice); fiatAmount = money(fiatAmount); }
 
     public UUID getId() { return id; }
+    public void setId(UUID v) { id = v; }
     public UUID getBuyerId() { return buyerId; }
     public void setBuyerId(UUID v) { buyerId = v; }
     public UUID getSellerId() { return sellerId; }
@@ -105,6 +112,10 @@ public class P2PTrade {
     public void setPaymentReference(String v) { paymentReference = v; }
     public String getPaymentNote() { return paymentNote; }
     public void setPaymentNote(String v) { paymentNote = v; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public void setIdempotencyKey(String v) { idempotencyKey = v; }
+    public String getIdempotencyHash() { return idempotencyHash; }
+    public void setIdempotencyHash(String v) { idempotencyHash = v; }
     public LocalDateTime getExpiresAt() { return expiresAt; }
     public void setExpiresAt(LocalDateTime v) { expiresAt = v; }
     public LocalDateTime getCreatedAt() { return createdAt; }
