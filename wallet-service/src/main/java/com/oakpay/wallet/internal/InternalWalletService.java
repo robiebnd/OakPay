@@ -207,7 +207,8 @@ public class InternalWalletService {
         entry.setWalletId(wallet.getId()); entry.setUserId(userId); entry.setTransactionType(type); entry.setStatus(LedgerStatus.COMPLETED); entry.setCurrency(wallet.getCurrency()); entry.setAmount(amount); entry.setBalanceBefore(before.subtract(amount)); entry.setBalanceAfter(before); entry.setReference(reference); entry.setMetadata(metadata);
         ledgerRepository.save(entry);
     }
-    private String walletKey(UUID userId, String currency) { return userId + ":" + currency; }\n    private Wallet wallet(UUID userId, String currency) {
+    private String walletKey(UUID userId, String currency) { return userId + ":" + currency; }
+    private Wallet wallet(UUID userId, String currency) {
         return walletRepository.findByUserIdAndCurrencyForUpdate(userId, normalize(currency)).orElseThrow(() -> new IllegalArgumentException("Wallet not found for currency " + currency));
     }
     private void validateSettlement(InternalWalletDtos.SettlementRequest r) {
