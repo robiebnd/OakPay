@@ -1,0 +1,59 @@
+name: PayOak Maven Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: oakpay
+          POSTGRES_PASSWORD: oakpay_test_password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oakpay -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build all services
+        env:
+          OAKPAY_DB_USERNAME: oakpay
+          OAKPAY_DB_PASSWORD: oakpay_test_password
+          OAKPAY_JWT_SECRET: oakpay-ci-jwt-secret-change-before-production-2026
+          OAKPAY_INTERNAL_SECRET: oakpay-ci-internal-secret-change-before-production
+          OAKPAY_ADMIN_DISPUTE_SECRET: oakpay-ci-admin-dispute-secret-change-before-production
+          OAKPAY_2FA_ENCRYPTION_KEY: oakpay-ci-2fa-key-change-before-production-2026
+          OAKPAY_RATE_LIMIT_PER_SECOND: '60'
+          OAKPAY_RATE_LIMIT_BURST: '120'
+          OAKPAY_TEST_ADDRESSES_ENABLED: 'true'
+        run: mvn -B -DskipTests package
+
