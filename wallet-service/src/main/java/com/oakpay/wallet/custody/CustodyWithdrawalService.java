@@ -14,13 +14,16 @@ public class CustodyWithdrawalService {
     private final WalletRepository walletRepository;
     private final CustodyProviderService custodyProviderService;
     private final LedgerEntryRepository ledgerRepository;
+    private final CustodyMetrics metrics;
 
     public CustodyWithdrawalService(WalletRepository walletRepository,
                                      CustodyProviderService custodyProviderService,
-                                     LedgerEntryRepository ledgerRepository) {
+                                     LedgerEntryRepository ledgerRepository,
+                                     CustodyMetrics metrics) {
         this.walletRepository = walletRepository;
         this.custodyProviderService = custodyProviderService;
         this.ledgerRepository = ledgerRepository;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -57,6 +60,7 @@ public class CustodyWithdrawalService {
         } catch (CustodySubmissionUnknownException e) {
             // Do not release funds: the provider may have accepted the withdrawal.
             // The operation is persisted as SUBMISSION_UNKNOWN and must be reconciled.
+            metrics.submissionUnknown();
             return custodyProviderService.findWithdrawalByIdempotencyKey(idempotencyKey);
         } catch (RuntimeException e) {
             wallet.setLockedBalance(wallet.getLockedBalance().subtract(normalizedAmount));
@@ -86,6 +90,7 @@ public class CustodyWithdrawalService {
         if (status == CustodyProvider.ProviderTransactionStatus.FAILED) {
             releaseLocked(wallet, operation.getAmount());
             operation.setStatus(CustodyOperationStatus.FAILED);
+            metrics.failed();
             return operation;
         }
 
@@ -97,6 +102,7 @@ public class CustodyWithdrawalService {
             walletRepository.save(wallet);
             createCompletedLedger(operation);
             operation.setStatus(CustodyOperationStatus.COMPLETED);
+            metrics.completed();
             return operation;
         }
 
