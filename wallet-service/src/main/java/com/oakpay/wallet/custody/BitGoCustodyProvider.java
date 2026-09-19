@@ -116,6 +116,20 @@ public class BitGoCustodyProvider implements CustodyProvider {
         return new WithdrawalResult(transferId, mapTransferStatus(textOrNull(transfer, "state")));
     }
 
+    public JsonNode addTransferWebhook(String coin, String walletId, String url, int confirmations) {
+        requireConfigured();
+        if (confirmations < 0) throw new IllegalArgumentException("Webhook confirmations cannot be negative");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("type", "transfer");
+        body.put("url", url);
+        body.put("label", "OakPay custody transfer webhook");
+        body.put("numConfirmations", confirmations);
+        body.put("listenToFailureStates", true);
+        return request("POST",
+                "/api/v2/" + requireText(coin, "coin") + "/wallet/" + requireWalletId(walletId) + "/webhooks",
+                toJson(body));
+    }
+
     public JsonNode getTransfer(String coin, String walletId, String transferId) {
         requireConfigured();
         String normalizedCoin = requireText(coin, "coin");
@@ -174,6 +188,14 @@ public class BitGoCustodyProvider implements CustodyProvider {
                     + currency + " on " + network);
         }
         return asset;
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to serialize BitGo request", e);
+        }
     }
 
     private JsonNode rawTokenRequest(String method, String path, String body) {
