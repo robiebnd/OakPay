@@ -5,6 +5,8 @@ import java.math.RoundingMode;
 import java.util.Map;
 import java.util.UUID;
 
+import com.oakpay.trading.security.AuditLogClient;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,12 +21,14 @@ public class PlatformFeeService {
     private final BigDecimal defaultTradingFee;
     private final BigDecimal defaultP2pCommission;
     private final BigDecimal defaultUnverifiedLimit;
+    private final AuditLogClient auditLogClient;
 
     public PlatformFeeService(
             PlatformFeeSettingRepository repository,
             @Value("${oakpay.trading.fee-rate:0.001}") BigDecimal defaultTradingFee,
             @Value("${oakpay.p2p.commission-rate:0.001}") BigDecimal defaultP2pCommission,
-            @Value("${oakpay.p2p.unverified-usd-limit:50.00}") BigDecimal defaultUnverifiedLimit) {
+            @Value("${oakpay.p2p.unverified-usd-limit:50.00}") BigDecimal defaultUnverifiedLimit,
+            AuditLogClient auditLogClient) {
         validateRate(defaultTradingFee, "Trading fee");
         validateRate(defaultP2pCommission, "P2P commission");
         if (defaultUnverifiedLimit == null || defaultUnverifiedLimit.signum() <= 0) {
@@ -34,6 +38,7 @@ public class PlatformFeeService {
         this.defaultTradingFee = defaultTradingFee;
         this.defaultP2pCommission = defaultP2pCommission;
         this.defaultUnverifiedLimit = defaultUnverifiedLimit.setScale(2, RoundingMode.HALF_UP);
+        this.auditLogClient = auditLogClient;
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +75,9 @@ public class PlatformFeeService {
         setting.setSettingKey(key);
         setting.setSettingValue(value);
         setting.setUpdatedBy(actor);
-        return repository.save(setting).getSettingValue();
+        BigDecimal saved = repository.save(setting).getSettingValue();
+        auditLogClient.record(actor, "PLATFORM_FEE_CHANGED", "PLATFORM_FEE", key, "SUCCESS", "{\"value\":"+saved.toPlainString()+"}");
+        return saved;
     }
 
     private BigDecimal read(String key, BigDecimal fallback) {
