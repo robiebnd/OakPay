@@ -2,6 +2,11 @@ spring:
   application:
     name: gateway-service
 
+  data:
+    redis:
+      host: ${OAKPAY_REDIS_HOST:127.0.0.1}
+      port: ${OAKPAY_REDIS_PORT:6379}
+
   cloud:
     gateway:
       server:
@@ -27,8 +32,8 @@ spring:
           default-filters:
             - name: RequestRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 60
-                redis-rate-limiter.burstCapacity: 120
+                redis-rate-limiter.replenishRate: ${OAKPAY_RATE_LIMIT_PER_SECOND:60}
+                redis-rate-limiter.burstCapacity: ${OAKPAY_RATE_LIMIT_BURST:120}
                 key-resolver: "#{@ipKeyResolver}"
 
           routes:
