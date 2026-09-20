@@ -331,6 +331,21 @@ public class BitGoCustodyProvider implements CustodyProvider {
         return value.asText();
     }
 
+    private String requireText(String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " is required");
+        }
+        return value.trim();
+    }
+
+    private String requireWalletId(String walletId) {
+        String normalized = requireText(walletId, "walletId").toLowerCase(Locale.ROOT);
+        if (!normalized.matches("^[0-9a-f]{32}$")) {
+            throw new IllegalArgumentException("Invalid BitGo wallet ID");
+        }
+        return normalized;
+    }
+
     private String sanitizeError(String body) {
         if (body == null || body.isBlank()) return "empty response";
         return body.length() > 1000 ? body.substring(0, 1000) : body;
