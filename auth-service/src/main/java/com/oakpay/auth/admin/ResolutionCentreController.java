@@ -21,7 +21,7 @@ public class ResolutionCentreController {
     public ResponseEntity<ResolutionCentreService.DisputeResponse> resolve(@PathVariable UUID disputeId,@RequestBody ResolutionCentreService.ResolveRequest request,@RequestHeader(value="Authorization",required=false) String authorization,Authentication authentication){
         UUID actor=UUID.fromString(authentication.getName());
         ResponseEntity<ResolutionCentreService.DisputeResponse> result=ResponseEntity.ok(service.resolve(disputeId,request,authorization,actor));
-        audit.record(actor,"ADMIN","P2P_DISPUTE_RESOLVED","P2P_DISPUTE",disputeId.toString(),"SUCCESS",null,request.resolution().name());
+        audit.record(actor,"ADMIN","P2P_DISPUTE_RESOLVED","P2P_DISPUTE",disputeId.toString(),"SUCCESS",null,request.resolution());
         return result;
     }
 }
