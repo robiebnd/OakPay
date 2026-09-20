@@ -55,15 +55,28 @@ public class BitGoWebhookRegistrationController {
         }
 
         String base = trimTrailingSlash(webhookBaseUrl);
-        JsonResult btc = registerAsset(
-                btcCoin, btcWalletId, base + "/api/v1/webhooks/bitgo/" + btcCoin + "/transfers",
-                btcConfirmations);
-        JsonResult usdt = registerAsset(
-                usdtTronCoin, usdtTronWalletId,
-                base + "/api/v1/webhooks/bitgo/" + usdtTronCoin + "/transfers",
-                usdtTronConfirmations);
+        try {
+            JsonResult btc = registerAsset(
+                    btcCoin, btcWalletId, base + "/api/v1/webhooks/bitgo/" + btcCoin + "/transfers",
+                    btcConfirmations);
+            JsonResult usdt = registerAsset(
+                    usdtTronCoin, usdtTronWalletId,
+                    base + "/api/v1/webhooks/bitgo/" + usdtTronCoin + "/transfers",
+                    usdtTronConfirmations);
 
-        return Map.of("provider", "BITGO", "btc", btc.value(), "usdtTron", usdt.value());
+            return Map.of("provider", "BITGO", "btc", btc.value(), "usdtTron", usdt.value());
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            String message = e.getMessage();
+            if (message == null || message.isBlank()) {
+                message = e.getClass().getSimpleName();
+            }
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "BitGo webhook registration failed: " + sanitizeMessage(message),
+                    e);
+        }
     }
 
     private JsonResult registerAsset(String coin, String walletId, String url, int confirmations) {
@@ -76,6 +89,13 @@ public class BitGoWebhookRegistrationController {
                     "Required confirmations must be at least 1");
         }
         return new JsonResult(bitGo.addTransferWebhook(coin, walletId, url, confirmations));
+    }
+
+    private String sanitizeMessage(String message) {
+        String sanitized = message.replaceAll(
+                "(?i)(authorization|bearer|token|secret|passphrase)\\s*[:=]\\s*[^,; ]+",
+                "$1=[REDACTED]");
+        return sanitized.length() > 1000 ? sanitized.substring(0, 1000) : sanitized;
     }
 
     private String trimTrailingSlash(String value) {
