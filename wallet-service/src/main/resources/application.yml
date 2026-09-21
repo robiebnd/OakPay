@@ -54,7 +54,23 @@ oakpay:
         coin: ${OAKPAY_BITGO_USDT_TRON_COIN:trx:usdt}
         wallet-id: ${OAKPAY_BITGO_USDT_TRON_WALLET_ID:6aaf10cdbc1760e65c6fc420d321e95c}
         required-confirmations: ${OAKPAY_BITGO_USDT_TRON_REQUIRED_CONFIRMATIONS:20}
-    provider-name: ${OAKPAY_CUSTODY_PROVIDER_NAME:}
+    provider-name: ${OAKPAY_CUSTODY_PROVIDER_NAME:TATUM}
+    tatum:
+      api-key: ${OAKPAY_TATUM_API_KEY:}
+      base-url: ${OAKPAY_TATUM_BASE_URL:https://api.tatum.io}
+      testnet: ${OAKPAY_TATUM_TESTNET:true}
+      webhook-base-url: ${OAKPAY_TATUM_WEBHOOK_BASE_URL:}
+      webhook-hmac-secret: ${OAKPAY_TATUM_WEBHOOK_HMAC_SECRET:}
+      btc:
+        xpub: ${OAKPAY_TATUM_BTC_XPUB:}
+        required-confirmations: ${OAKPAY_TATUM_BTC_REQUIRED_CONFIRMATIONS:2}
+        signature-id: ${OAKPAY_TATUM_BTC_SIGNATURE_ID:}
+        source-address: ${OAKPAY_TATUM_BTC_SOURCE_ADDRESS:}
+      usdt-tron:
+        xpub: ${OAKPAY_TATUM_USDT_TRON_XPUB:}
+        required-confirmations: ${OAKPAY_TATUM_USDT_TRON_REQUIRED_CONFIRMATIONS:20}
+        signature-id: ${OAKPAY_TATUM_USDT_TRON_SIGNATURE_ID:}
+        source-address: ${OAKPAY_TATUM_USDT_TRON_SOURCE_ADDRESS:}
     webhook-secret: ${OAKPAY_CUSTODY_WEBHOOK_SECRET:}
     webhook-tolerance-seconds: ${OAKPAY_CUSTODY_WEBHOOK_TOLERANCE_SECONDS:300}
     reconciliation:
