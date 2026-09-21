@@ -2,9 +2,10 @@ package com.oakpay.wallet.custody;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -42,16 +43,15 @@ public class BitGoWebhookRegistrationController {
     }
 
     @PostMapping("/webhooks/register")
-    public Map<String, Object> register(
+    public ResponseEntity<Map<String, Object>> register(
             @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String providedSecret) {
 
         if (internalSecret == null || internalSecret.isBlank()
                 || !internalSecret.equals(providedSecret)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid internal secret");
+            return error(HttpStatus.UNAUTHORIZED, "Invalid internal secret");
         }
         if (webhookBaseUrl.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "OAKPAY_BITGO_WEBHOOK_BASE_URL is not configured");
+            return error(HttpStatus.BAD_REQUEST, "OAKPAY_BITGO_WEBHOOK_BASE_URL is not configured");
         }
 
         String base = trimTrailingSlash(webhookBaseUrl);
@@ -64,31 +64,38 @@ public class BitGoWebhookRegistrationController {
                     base + "/api/v1/webhooks/bitgo/" + usdtTronCoin + "/transfers",
                     usdtTronConfirmations);
 
-            return Map.of("provider", "BITGO", "btc", btc.value(), "usdtTron", usdt.value());
-        } catch (ResponseStatusException e) {
-            throw e;
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("provider", "BITGO");
+            result.put("btc", btc.value());
+            result.put("usdtTron", usdt.value());
+            return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             String message = e.getMessage();
             if (message == null || message.isBlank()) {
                 message = e.getClass().getSimpleName();
             }
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "BitGo webhook registration failed: " + sanitizeMessage(message),
-                    e);
+            return error(HttpStatus.BAD_GATEWAY,
+                    "BitGo webhook registration failed: " + sanitizeMessage(message));
         }
     }
 
     private JsonResult registerAsset(String coin, String walletId, String url, int confirmations) {
         if (walletId == null || walletId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "BitGo wallet ID is not configured for " + coin);
+            throw new IllegalArgumentException("BitGo wallet ID is not configured for " + coin);
         }
         if (confirmations < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Required confirmations must be at least 1");
+            throw new IllegalArgumentException("Required confirmations must be at least 1");
         }
         return new JsonResult(bitGo.addTransferWebhook(coin, walletId, url, confirmations));
+    }
+
+    private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        body.put("provider", "BITGO");
+        return ResponseEntity.status(status).body(body);
     }
 
     private String sanitizeMessage(String message) {
