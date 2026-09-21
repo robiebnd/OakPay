@@ -18,8 +18,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/wallets/internal/**").permitAll()
                         .requestMatchers("/api/v1/wallets/deposit-addresses/internal/**").permitAll()
                         .requestMatchers("/api/v1/wallets/deposits/internal/**").permitAll()
-                        .requestMatchers("/api/v1/webhooks/custody/**", "/api/v1/webhooks/bitgo/**").permitAll()
-                        .requestMatchers("/api/v1/wallets/custody/reconciliation/**", "/api/v1/wallets/custody/bitgo/**").permitAll()
+                        .requestMatchers("/api/v1/webhooks/custody/**", "/api/v1/webhooks/bitgo/**", "/api/v1/webhooks/tatum/**").permitAll()
+                        .requestMatchers("/api/v1/wallets/custody/reconciliation/**", "/api/v1/wallets/custody/bitgo/**", "/api/v1/wallets/custody/tatum/**").permitAll()
                         .requestMatchers("/api/v1/wallets/*/lock", "/api/v1/wallets/*/unlock").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
