@@ -41,19 +41,19 @@ public class TatumCustodyProvider implements CustodyProvider {
     public TatumCustodyProvider(
             ObjectMapper objectMapper,
             TatumAddressIndexRepository indexRepository,
-            @Value("\${oakpay.custody.tatum.api-key:}") String apiKey,
-            @Value("\${oakpay.custody.tatum.base-url:https://api.tatum.io}") String baseUrl,
-            @Value("\${oakpay.custody.tatum.webhook-base-url:}") String webhookBaseUrl,
-            @Value("\${oakpay.custody.tatum.webhook-hmac-secret:}") String webhookHmacSecret,
-            @Value("\${oakpay.custody.tatum.testnet:true}") boolean testnet,
-            @Value("\${oakpay.custody.tatum.btc.xpub:}") String btcXpub,
-            @Value("\${oakpay.custody.tatum.btc.required-confirmations:2}") int btcRequiredConfirmations,
-            @Value("\${oakpay.custody.tatum.btc.signature-id:}") String btcSignatureId,
-            @Value("\${oakpay.custody.tatum.btc.source-address:}") String btcSourceAddress,
-            @Value("\${oakpay.custody.tatum.usdt-tron.xpub:}") String tronXpub,
-            @Value("\${oakpay.custody.tatum.usdt-tron.required-confirmations:20}") int usdtRequiredConfirmations,
-            @Value("\${oakpay.custody.tatum.usdt-tron.signature-id:}") String usdtSignatureId,
-            @Value("\${oakpay.custody.tatum.usdt-tron.source-address:}") String usdtSourceAddress) {
+            @Value("${oakpay.custody.tatum.api-key:}") String apiKey,
+            @Value("${oakpay.custody.tatum.base-url:https://api.tatum.io}") String baseUrl,
+            @Value("${oakpay.custody.tatum.webhook-base-url:}") String webhookBaseUrl,
+            @Value("${oakpay.custody.tatum.webhook-hmac-secret:}") String webhookHmacSecret,
+            @Value("${oakpay.custody.tatum.testnet:true}") boolean testnet,
+            @Value("${oakpay.custody.tatum.btc.xpub:}") String btcXpub,
+            @Value("${oakpay.custody.tatum.btc.required-confirmations:2}") int btcRequiredConfirmations,
+            @Value("${oakpay.custody.tatum.btc.signature-id:}") String btcSignatureId,
+            @Value("${oakpay.custody.tatum.btc.source-address:}") String btcSourceAddress,
+            @Value("${oakpay.custody.tatum.usdt-tron.xpub:}") String tronXpub,
+            @Value("${oakpay.custody.tatum.usdt-tron.required-confirmations:20}") int usdtRequiredConfirmations,
+            @Value("${oakpay.custody.tatum.usdt-tron.signature-id:}") String usdtSignatureId,
+            @Value("${oakpay.custody.tatum.usdt-tron.source-address:}") String usdtSourceAddress) {
         this.objectMapper = objectMapper;
         this.indexRepository = indexRepository;
         this.apiKey = apiKey == null ? "" : apiKey.trim();
