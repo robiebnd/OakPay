@@ -1,7 +1,7 @@
 package com.oakpay.wallet.custody;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/wallets/custody/bitgo")
-@ConditionalOnBean(BitGoCustodyProvider.class)
+@ConditionalOnProperty(name = "oakpay.custody.provider-name", havingValue = "BITGO")
 public class BitGoWebhookRegistrationController {
     private final BitGoCustodyProvider bitGo;
     private final String internalSecret;
