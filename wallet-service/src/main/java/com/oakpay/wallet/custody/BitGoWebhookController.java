@@ -2,7 +2,7 @@ package com.oakpay.wallet.custody;
 
 import com.oakpay.wallet.deposit.DepositDtos;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/v1/webhooks/bitgo")
-@ConditionalOnBean(BitGoWebhookService.class)
+@ConditionalOnProperty(name = "oakpay.custody.provider-name", havingValue = "BITGO")
 public class BitGoWebhookController {
     private final BitGoWebhookService webhookService;
 
