@@ -31,9 +31,9 @@ public class TatumWebhookController {
     public TatumWebhookController(
             ObjectMapper objectMapper,
             CustodyWebhookEventService eventService,
-            @Value("\${oakpay.custody.tatum.webhook-hmac-secret:}") String hmacSecret,
-            @Value("\${oakpay.custody.tatum.btc.required-confirmations:2}") int btcRequiredConfirmations,
-            @Value("\${oakpay.custody.tatum.usdt-tron.required-confirmations:20}") int usdtRequiredConfirmations) {
+            @Value("${oakpay.custody.tatum.webhook-hmac-secret:}") String hmacSecret,
+            @Value("${oakpay.custody.tatum.btc.required-confirmations:2}") int btcRequiredConfirmations,
+            @Value("${oakpay.custody.tatum.usdt-tron.required-confirmations:20}") int usdtRequiredConfirmations) {
         this.objectMapper = objectMapper;
         this.eventService = eventService;
         this.hmacSecret = hmacSecret == null ? "" : hmacSecret.trim();
