@@ -3,6 +3,7 @@ package com.oakpay.wallet.custody;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 
 @Component
+@ConditionalOnProperty(name = "oakpay.custody.provider-name", havingValue = "BITGO")
 public class BitGoCustodyProvider implements CustodyProvider {
 
     private final ObjectMapper objectMapper;
