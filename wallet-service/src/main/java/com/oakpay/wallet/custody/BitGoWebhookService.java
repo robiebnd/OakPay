@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oakpay.wallet.deposit.DepositDtos;
 import com.oakpay.wallet.deposit.DepositService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,7 +14,7 @@ import java.math.RoundingMode;
 import java.util.Locale;
 
 @Service
-@ConditionalOnBean(BitGoCustodyProvider.class)
+@ConditionalOnProperty(name = "oakpay.custody.provider-name", havingValue = "BITGO")
 public class BitGoWebhookService {
     private final BitGoCustodyProvider bitGo;
     private final DepositService depositService;
