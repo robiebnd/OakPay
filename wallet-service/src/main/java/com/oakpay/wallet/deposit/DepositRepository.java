@@ -17,6 +17,17 @@ public interface DepositRepository extends JpaRepository<Deposit, UUID> {
     Optional<Deposit> findByTxHashAndNetwork(String txHash, String network);
     List<Deposit> findTop50ByUserIdOrderByDetectedAtDesc(UUID userId);
 
+    @Query("""
+            select d from Deposit d
+            where d.status in :statuses
+              and d.updatedAt < :cutoff
+            order by d.updatedAt asc
+            """)
+    List<Deposit> findTop100PendingForReconciliation(
+            @Param("statuses") List<DepositStatus> statuses,
+            @Param("cutoff") LocalDateTime cutoff,
+            org.springframework.data.domain.Pageable pageable);
+
     @Modifying
     @Query(value = """
             INSERT INTO deposits (id,user_id,deposit_address_id,currency,network,address,tx_hash,amount,confirmations,required_confirmations,status,failure_reason,detected_at,updated_at)
