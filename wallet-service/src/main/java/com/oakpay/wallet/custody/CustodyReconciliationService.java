@@ -37,6 +37,17 @@ public class CustodyReconciliationService {
     }
 
     @Transactional
+    public DepositDtos.DepositResponse reconcileDeposit(UUID depositId) {
+        Deposit deposit = depositRepository.findById(depositId)
+                .orElseThrow(() -> new IllegalArgumentException("Deposit not found"));
+        CustodyProviderService.DepositStatusResult providerStatus = providerService.getDepositTransactionStatus(
+                "TATUM", deposit.getCurrency(), deposit.getNetwork(), deposit.getTxHash());
+        DepositDtos.DepositResponse result = depositService.reconcileDeposit(depositId, providerStatus.confirmations());
+        if ("COMPLETED".equalsIgnoreCase(result.status())) metrics.reconciliationCompleted();
+        return result;
+    }
+
+    @Transactional
     public CustodyOperation reconcileWithdrawal(UUID operationId) {
         CustodyOperation operation = operationRepository.findById(operationId)
                 .orElseThrow(() -> new IllegalArgumentException("Custody operation not found"));
