@@ -1,5 +1,12 @@
 package com.oakpay.wallet.custody;
 
+import com.oakpay.wallet.deposit.Deposit;
+import com.oakpay.wallet.deposit.DepositDtos;
+import com.oakpay.wallet.deposit.DepositRepository;
+import com.oakpay.wallet.deposit.DepositService;
+import com.oakpay.wallet.deposit.DepositStatus;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,16 +20,23 @@ public class CustodyReconciliationService {
     private final CustodyProviderService providerService;
     private final CustodyWithdrawalService withdrawalService;
     private final CustodyMetrics metrics;
+    private final DepositRepository depositRepository;
+    private final DepositService depositService;
     private final String configuredProvider;
 
     public CustodyReconciliationService(CustodyOperationRepository operationRepository,
                                          CustodyProviderService providerService,
                                          CustodyWithdrawalService withdrawalService,
-                                         CustodyMetrics metrics) {
+                                         CustodyMetrics metrics,
+                                         DepositRepository depositRepository,
+                                         DepositService depositService,
+                                         @Value("${oakpay.custody.provider-name:TATUM}") String configuredProvider) {
         this.operationRepository = operationRepository;
         this.providerService = providerService;
         this.withdrawalService = withdrawalService;
         this.metrics = metrics;
+        this.depositRepository = depositRepository;
+        this.depositService = depositService;
         this.configuredProvider = configuredProvider == null || configuredProvider.isBlank() ? "TATUM" : configuredProvider.trim();
     }
 
@@ -36,6 +50,14 @@ public class CustodyReconciliationService {
                         CustodyOperationStatus.SUBMITTED,
                         CustodyOperationStatus.PROCESSING),
                 cutoff);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Deposit> findPendingDeposits(LocalDateTime cutoff) {
+        return depositRepository.findTop100PendingForReconciliation(
+                List.of(DepositStatus.PENDING, DepositStatus.CONFIRMING),
+                cutoff,
+                PageRequest.of(0, 100));
     }
 
     @Transactional
