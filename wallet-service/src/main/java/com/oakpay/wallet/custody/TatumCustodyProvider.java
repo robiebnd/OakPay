@@ -132,6 +132,43 @@ public class TatumCustodyProvider implements CustodyProvider {
     }
 
     @Override
+    public DepositTransactionStatus getDepositTransactionStatus(String currency, String network, String transactionHash) {
+        requireApiKey();
+        Asset asset = asset(currency, network);
+        String chain = asset.currency().equals("BTC") ? "bitcoin-" + networkName() : "tron-" + networkName();
+        JsonNode transaction = request("GET",
+                "/v4/data/blockchains/transaction?chain=" + chain + "&hash=" + urlEncode(transactionHash), "");
+
+        JsonNode data = transaction.has("data") ? transaction.path("data") : transaction;
+        String state = firstText(data, "status", "state");
+        if (state != null) {
+            String normalized = state.toLowerCase(Locale.ROOT);
+            if (normalized.contains("fail") || normalized.contains("reject")) {
+                return new DepositTransactionStatus(ProviderTransactionStatus.FAILED, 0);
+            }
+        }
+
+        int confirmations = data.path("confirmations").isNumber()
+                ? Math.max(0, data.path("confirmations").asInt()) : 0;
+
+        if (confirmations == 0 && data.has("blockNumber") && !data.path("blockNumber").isNull()) {
+            long transactionBlock = data.path("blockNumber").asLong(-1);
+            if (transactionBlock >= 0) {
+                JsonNode current = request("GET",
+                        "/v4/data/blockchains/block/current?chain=" + chain, "");
+                long currentBlock = extractBlockHeight(current);
+                if (currentBlock >= transactionBlock) {
+                    confirmations = (int) Math.min(Integer.MAX_VALUE, currentBlock - transactionBlock + 1);
+                }
+            }
+        }
+
+        return new DepositTransactionStatus(
+                confirmations > 0 ? ProviderTransactionStatus.COMPLETED : ProviderTransactionStatus.PROCESSING,
+                confirmations);
+    }
+
+    @Override
     public ProviderTransactionStatus getTransactionStatus(String providerReference) {
         requireApiKey();
         for (String candidate : new String[]{"bitcoin-" + networkName(), "tron-" + networkName()}) {
@@ -169,6 +206,16 @@ public class TatumCustodyProvider implements CustodyProvider {
         body.put("attr", attr);
 
         return request("POST", "/v4/subscription?type=" + networkName(), toJson(body));
+    }
+
+    private long extractBlockHeight(JsonNode response) {
+        if (response.isNumber()) return response.asLong(-1);
+        JsonNode data = response.has("data") ? response.path("data") : response;
+        for (String field : new String[]{"height", "blockNumber", "number"}) {
+            JsonNode value = data.path(field);
+            if (value.isNumber()) return value.asLong(-1);
+        }
+        return -1;
     }
 
     private ProviderTransactionStatus statusFrom(JsonNode response) {
