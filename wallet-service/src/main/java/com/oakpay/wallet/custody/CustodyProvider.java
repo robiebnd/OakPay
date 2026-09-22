@@ -15,6 +15,10 @@ public interface CustodyProvider {
         throw new UnsupportedOperationException("Transaction status lookup is not implemented by " + providerName());
     }
 
+    default DepositTransactionStatus getDepositTransactionStatus(String currency, String network, String transactionHash) {
+        throw new UnsupportedOperationException("Deposit transaction status lookup is not implemented by " + providerName());
+    }
+
     record DepositAddressRequest(
             UUID userId,
             String currency,
@@ -38,6 +42,14 @@ public interface CustodyProvider {
     record WithdrawalResult(
             String providerReference,
             ProviderTransactionStatus status) {}
+
+    record DepositTransactionStatus(
+            ProviderTransactionStatus status,
+            int confirmations) {
+        public DepositTransactionStatus {
+            confirmations = Math.max(0, confirmations);
+        }
+    }
 
     enum ProviderTransactionStatus {
         SUBMITTED,
