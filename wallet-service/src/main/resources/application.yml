@@ -23,6 +23,11 @@ spring:
 server:
   port: 8084
 
+logging:
+  level:
+    com.oakpay.wallet: DEBUG
+    org.springframework.web: DEBUG
+
 management:
   endpoints:
     web:
@@ -69,8 +74,8 @@ oakpay:
       usdt-tron:
         xpub: ${OAKPAY_TATUM_USDT_TRON_XPUB:}
         required-confirmations: ${OAKPAY_TATUM_USDT_TRON_REQUIRED_CONFIRMATIONS:20}
-        signature-id: ${OAKPAY_TATUM_USDT_TRON_SIGNATURE_ID:}
-        source-address: ${OAKPAY_TATUM_USDT_TRON_SOURCE_ADDRESS:}
+        signature-id: ${OAKPAY_TATUM_USDT_SIGNATURE_ID:}
+        source-address: ${OAKPAY_TATUM_USDT_SOURCE_ADDRESS:}
     webhook-secret: ${OAKPAY_CUSTODY_WEBHOOK_SECRET:}
     webhook-tolerance-seconds: ${OAKPAY_CUSTODY_WEBHOOK_TOLERANCE_SECONDS:300}
     reconciliation:
