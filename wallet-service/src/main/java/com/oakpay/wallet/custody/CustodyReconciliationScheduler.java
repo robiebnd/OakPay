@@ -56,9 +56,20 @@ public class CustodyReconciliationScheduler {
                 }
             }
 
-            if (!pending.isEmpty()) {
-                log.info("Custody reconciliation cycle completed: pending={}, attempted={}, skipped={}",
-                        pending.size(), attempted, skipped);
+            var pendingDeposits = reconciliationService.findPendingDeposits(cutoff);
+            int depositAttempted = 0;
+            for (var deposit : pendingDeposits) {
+                depositAttempted++;
+                try {
+                    reconciliationService.reconcileDeposit(deposit.getId());
+                } catch (RuntimeException e) {
+                    log.warn("Deposit reconciliation failed for deposit {}", deposit.getId(), e);
+                }
+            }
+
+            if (!pending.isEmpty() || !pendingDeposits.isEmpty()) {
+                log.info("Custody reconciliation cycle completed: withdrawals={}, withdrawalAttempted={}, withdrawalSkipped={}, deposits={}, depositAttempted={}",
+                        pending.size(), attempted, skipped, pendingDeposits.size(), depositAttempted);
             }
         } finally {
             running.set(false);
