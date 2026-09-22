@@ -61,13 +61,30 @@ public class DepositService {
         deposit.setRequiredConfirmations(Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
         deposit.setStatus(statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
 
-        if (deposit.getStatus() == DepositStatus.COMPLETED) {
-            String reference = "CHAIN-DEPOSIT:" + deposit.getNetwork() + ":" + deposit.getTxHash();
-            ledgerService.creditExternalDeposit(deposit.getUserId(), deposit.getCurrency(), deposit.getAmount(),
-                    reference, "onchain tx=" + deposit.getTxHash() + ";network=" + deposit.getNetwork());
-        }
+        if (deposit.getStatus() == DepositStatus.COMPLETED) creditCompletedDeposit(deposit);
 
         return DepositDtos.DepositResponse.from(depositRepository.save(deposit));
+    }
+
+    @Transactional
+    public DepositDtos.DepositResponse reconcileDeposit(UUID depositId, int confirmations) {
+        Deposit deposit = depositRepository.findById(depositId)
+                .orElseThrow(() -> new IllegalArgumentException("Deposit not found"));
+        Deposit locked = depositRepository.findWithLockByTxHashAndNetwork(deposit.getTxHash(), deposit.getNetwork())
+                .orElseThrow(() -> new IllegalStateException("Deposit disappeared during reconciliation"));
+        if (locked.getStatus() == DepositStatus.COMPLETED) return DepositDtos.DepositResponse.from(locked);
+
+        int nextConfirmations = Math.max(locked.getConfirmations(), Math.max(0, confirmations));
+        locked.setConfirmations(nextConfirmations);
+        locked.setStatus(statusFor(nextConfirmations, locked.getRequiredConfirmations()));
+        if (locked.getStatus() == DepositStatus.COMPLETED) creditCompletedDeposit(locked);
+        return DepositDtos.DepositResponse.from(depositRepository.save(locked));
+    }
+
+    private void creditCompletedDeposit(Deposit deposit) {
+        String reference = "CHAIN-DEPOSIT:" + deposit.getNetwork() + ":" + deposit.getTxHash();
+        ledgerService.creditExternalDeposit(deposit.getUserId(), deposit.getCurrency(), deposit.getAmount(),
+                reference, "onchain tx=" + deposit.getTxHash() + ";network=" + deposit.getNetwork());
     }
 
     @Transactional(readOnly = true)
