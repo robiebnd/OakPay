@@ -84,6 +84,10 @@ public class TatumWebhookController {
 
             String eventId = sha256(rawBody);
             return eventService.processDeposit("TATUM", eventId, objectMapper.writeValueAsString(payload));
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to read Tatum webhook payload", e);
         }
