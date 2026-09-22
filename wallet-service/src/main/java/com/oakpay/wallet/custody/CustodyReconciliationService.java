@@ -13,6 +13,7 @@ public class CustodyReconciliationService {
     private final CustodyProviderService providerService;
     private final CustodyWithdrawalService withdrawalService;
     private final CustodyMetrics metrics;
+    private final String configuredProvider;
 
     public CustodyReconciliationService(CustodyOperationRepository operationRepository,
                                          CustodyProviderService providerService,
@@ -22,6 +23,7 @@ public class CustodyReconciliationService {
         this.providerService = providerService;
         this.withdrawalService = withdrawalService;
         this.metrics = metrics;
+        this.configuredProvider = configuredProvider == null || configuredProvider.isBlank() ? "TATUM" : configuredProvider.trim();
     }
 
     @Transactional(readOnly = true)
@@ -41,7 +43,7 @@ public class CustodyReconciliationService {
         Deposit deposit = depositRepository.findById(depositId)
                 .orElseThrow(() -> new IllegalArgumentException("Deposit not found"));
         CustodyProviderService.DepositStatusResult providerStatus = providerService.getDepositTransactionStatus(
-                "TATUM", deposit.getCurrency(), deposit.getNetwork(), deposit.getTxHash());
+                configuredProvider, deposit.getCurrency(), deposit.getNetwork(), deposit.getTxHash());
         DepositDtos.DepositResponse result = depositService.reconcileDeposit(depositId, providerStatus.confirmations());
         if ("COMPLETED".equalsIgnoreCase(result.status())) metrics.reconciliationCompleted();
         return result;
