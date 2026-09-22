@@ -97,6 +97,20 @@ public class CustodyProviderService {
     }
 
     @Transactional(readOnly = true)
+    public DepositStatusResult getDepositTransactionStatus(String providerName, String currency, String network, String transactionHash) {
+        CustodyProvider provider = requireProvider();
+        String normalizedProvider = normalize(providerName);
+        if (!provider.providerName().equalsIgnoreCase(normalizedProvider)) {
+            throw new IllegalArgumentException("Custody provider is not configured for " + normalizedProvider);
+        }
+        CustodyProvider.DepositTransactionStatus result = provider.getDepositTransactionStatus(
+                normalize(currency), normalize(network), requireReference(transactionHash));
+        return new DepositStatusResult(result.status(), result.confirmations());
+    }
+
+    public record DepositStatusResult(CustodyProvider.ProviderTransactionStatus status, int confirmations) {}
+
+    @Transactional(readOnly = true)
     public CustodyOperation findWithdrawalByIdempotencyKeyOrNull(String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("Idempotency key is required");
