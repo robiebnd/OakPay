@@ -158,6 +158,9 @@ public class TatumWebhookController {
             String expected = Base64.getEncoder().encodeToString(
                     mac.doFinal(rawBody.getBytes(StandardCharsets.UTF_8)));
 
+            log.debug("Tatum webhook HMAC comparison suppliedHash={} expectedHash={} bodyLength={}",
+                    supplied, expected, rawBody.length());
+
             if (!MessageDigest.isEqual(
                     expected.getBytes(StandardCharsets.UTF_8),
                     supplied.getBytes(StandardCharsets.UTF_8))) {
