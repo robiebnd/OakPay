@@ -54,6 +54,29 @@ public class TatumWebhookController {
         );
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<Map<String, Object>> handleResponseStatusException(
+            ResponseStatusException exception,
+            HttpServletRequest request) {
+        int status = exception.getStatusCode().value();
+        String message = exception.getReason() == null
+                ? exception.getStatusCode().toString()
+                : exception.getReason();
+
+        log.warn("Tatum webhook rejected status={} path={} message={}",
+                status, request.getRequestURI(), message);
+
+        return org.springframework.http.ResponseEntity
+                .status(exception.getStatusCode())
+                .body(Map.of(
+                        "timestamp", java.time.Instant.now().toString(),
+                        "status", status,
+                        "error", exception.getStatusCode().toString(),
+                        "message", message,
+                        "path", request.getRequestURI()
+                ));
+    }
+
     @PostMapping("/{asset}")
     public DepositDtos.DepositResponse receive(
             @PathVariable String asset,
