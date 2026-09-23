@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Locale;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/webhooks/tatum")
@@ -44,11 +45,21 @@ public class TatumWebhookController {
         this.usdtRequiredConfirmations = Math.max(1, usdtRequiredConfirmations);
     }
 
+    @GetMapping("/diagnostic")
+    public Map<String, Object> diagnostic() {
+        return Map.of(
+                "status", "OK",
+                "controller", "TatumWebhookController",
+                "timestamp", java.time.Instant.now().toString()
+        );
+    }
+
     @PostMapping("/{asset}")
     public DepositDtos.DepositResponse receive(
             @PathVariable String asset,
             @RequestHeader(value = "x-payload-hash", required = false) String payloadHash,
             HttpServletRequest request) {
+        System.err.println("=== TATUM WEBHOOK CONTROLLER REACHED ===");
         String eventId = "unknown";
         try {
             String rawBody = new String(request.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
