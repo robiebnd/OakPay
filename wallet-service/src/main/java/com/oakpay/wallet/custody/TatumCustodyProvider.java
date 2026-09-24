@@ -169,6 +169,51 @@ public class TatumCustodyProvider implements CustodyProvider {
     }
 
     @Override
+    public java.util.List<DiscoveredDeposit> findIncomingDeposits(String currency, String network, String address) {
+        requireApiKey();
+        Asset asset = asset(currency, network);
+        if (!asset.currency().equals("BTC")) {
+            throw new UnsupportedOperationException("Tatum address polling is currently implemented for BTC only");
+        }
+        if (address == null || address.isBlank()) {
+            throw new IllegalArgumentException("Deposit address is required");
+        }
+
+        String path = "/v4/data/blockchains/transaction/history/utxos?chain=bitcoin-"
+                + networkName()
+                + "&address=" + urlEncode(address.trim())
+                + "&pageSize=50&offset=0&txType=incoming";
+        JsonNode response = request("GET", path, "");
+        JsonNode items = response.isArray() ? response : response.path("data");
+        if (!items.isArray()) {
+            items = response.path("transactions");
+        }
+        if (!items.isArray()) {
+            throw new IllegalStateException("Tatum UTXO transaction history response did not contain an array");
+        }
+
+        java.util.List<DiscoveredDeposit> result = new java.util.ArrayList<>();
+        for (JsonNode item : items) {
+            String txHash = firstText(item, "txHash", "hash", "transactionHash");
+            String itemAddress = firstText(item, "address");
+            JsonNode valueNode = item.path("value");
+            if (txHash == null || !address.trim().equals(itemAddress) || valueNode.isMissingNode() || valueNode.isNull()) {
+                continue;
+            }
+            BigDecimal amount;
+            try {
+                amount = new BigDecimal(valueNode.asText());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if (amount.signum() <= 0) continue;
+            int outputIndex = item.path("index").asInt(item.path("outputIndex").asInt(-1));
+            result.add(new DiscoveredDeposit(txHash, itemAddress, amount, outputIndex));
+        }
+        return result;
+    }
+
+    @Override
     public ProviderTransactionStatus getTransactionStatus(String providerReference) {
         requireApiKey();
         for (String candidate : new String[]{"bitcoin-" + networkName(), "tron-" + networkName()}) {
