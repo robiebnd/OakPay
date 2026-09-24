@@ -23,6 +23,19 @@ public class CustodyDepositReconciliationController {
         this.internalSecret = internalSecret;
     }
 
+    @PostMapping("/deposits/discover")
+    public java.util.List<DepositDtos.DepositResponse> discoverDeposits(
+            @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret,
+            @RequestParam String currency,
+            @RequestParam String network,
+            @RequestParam String address) {
+
+        if (suppliedSecret == null || !suppliedSecret.equals(internalSecret)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid internal secret");
+        }
+        return reconciliationService.discoverDeposits(currency, network, address);
+    }
+
     @PostMapping("/deposits/{depositId}")
     public DepositDtos.DepositResponse reconcileDeposit(
             @RequestHeader(value = "X-OakPay-Internal-Secret", required = false) String suppliedSecret,
