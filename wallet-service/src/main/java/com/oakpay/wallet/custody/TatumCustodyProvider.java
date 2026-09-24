@@ -208,7 +208,8 @@ public class TatumCustodyProvider implements CustodyProvider {
             }
             if (amount.signum() <= 0) continue;
             int outputIndex = item.path("index").asInt(item.path("outputIndex").asInt(-1));
-            result.add(new DiscoveredDeposit(txHash, itemAddress, amount, outputIndex));
+            result.add(new DiscoveredDeposit(txHash, itemAddress, amount, outputIndex,
+                    asset.currency().equals("BTC") ? btcRequiredConfirmations : usdtRequiredConfirmations));
         }
         return result;
     }
