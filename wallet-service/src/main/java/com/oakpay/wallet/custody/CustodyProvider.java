@@ -51,7 +51,8 @@ public interface CustodyProvider {
             String transactionHash,
             String address,
             BigDecimal amount,
-            int outputIndex) {}
+            int outputIndex,
+            int requiredConfirmations) {}
 
     record DepositTransactionStatus(
             ProviderTransactionStatus status,
