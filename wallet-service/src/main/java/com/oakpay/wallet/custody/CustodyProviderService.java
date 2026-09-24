@@ -97,6 +97,17 @@ public class CustodyProviderService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.List<CustodyProvider.DiscoveredDeposit> findIncomingDeposits(
+            String providerName, String currency, String network, String address) {
+        CustodyProvider provider = requireProvider();
+        String normalizedProvider = normalize(providerName);
+        if (!provider.providerName().equalsIgnoreCase(normalizedProvider)) {
+            throw new IllegalArgumentException("Custody provider is not configured for " + normalizedProvider);
+        }
+        return provider.findIncomingDeposits(normalize(currency), normalize(network), address);
+    }
+
+    @Transactional(readOnly = true)
     public DepositStatusResult getDepositTransactionStatus(String providerName, String currency, String network, String transactionHash) {
         CustodyProvider provider = requireProvider();
         String normalizedProvider = normalize(providerName);
