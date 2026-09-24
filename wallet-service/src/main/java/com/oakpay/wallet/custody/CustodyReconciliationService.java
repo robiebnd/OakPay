@@ -3,6 +3,8 @@ package com.oakpay.wallet.custody;
 import com.oakpay.wallet.deposit.Deposit;
 import com.oakpay.wallet.deposit.DepositDtos;
 import com.oakpay.wallet.deposit.DepositRepository;
+import com.oakpay.wallet.deposit.DepositAddressRepository;
+import com.oakpay.wallet.deposit.DepositAddressStatus;
 import com.oakpay.wallet.deposit.DepositService;
 import com.oakpay.wallet.deposit.DepositStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,7 @@ public class CustodyReconciliationService {
     private final CustodyWithdrawalService withdrawalService;
     private final CustodyMetrics metrics;
     private final DepositRepository depositRepository;
+    private final DepositAddressRepository depositAddressRepository;
     private final DepositService depositService;
     private final String configuredProvider;
 
@@ -29,6 +32,7 @@ public class CustodyReconciliationService {
                                          CustodyWithdrawalService withdrawalService,
                                          CustodyMetrics metrics,
                                          DepositRepository depositRepository,
+                                         DepositAddressRepository depositAddressRepository,
                                          DepositService depositService,
                                          @Value("${oakpay.custody.provider-name:TATUM}") String configuredProvider) {
         this.operationRepository = operationRepository;
@@ -36,6 +40,7 @@ public class CustodyReconciliationService {
         this.withdrawalService = withdrawalService;
         this.metrics = metrics;
         this.depositRepository = depositRepository;
+        this.depositAddressRepository = depositAddressRepository;
         this.depositService = depositService;
         this.configuredProvider = configuredProvider == null || configuredProvider.isBlank() ? "TATUM" : configuredProvider.trim();
     }
@@ -58,6 +63,36 @@ public class CustodyReconciliationService {
                 List.of(DepositStatus.PENDING, DepositStatus.CONFIRMING),
                 cutoff,
                 PageRequest.of(0, 100));
+    }
+
+    @Transactional
+    public List<DepositDtos.DepositResponse> discoverDeposits(String currency, String network, String address) {
+        String normalizedCurrency = currency == null ? "" : currency.trim().toUpperCase();
+        String normalizedNetwork = network == null ? "" : network.trim().toUpperCase();
+        var assigned = depositAddressRepository
+                .findByAddressAndNetworkAndStatus(address, normalizedNetwork, DepositAddressStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("Deposit address is not assigned to an active OakPay wallet"));
+        if (!assigned.getCurrency().equals(normalizedCurrency)) {
+            throw new IllegalArgumentException("Deposit currency does not match the assigned address");
+        }
+
+        List<DepositDtos.DepositResponse> results = new java.util.ArrayList<>();
+        var discovered = providerService.findIncomingDeposits(
+                configuredProvider, normalizedCurrency, normalizedNetwork, assigned.getAddress());
+        for (var candidate : discovered) {
+            var status = providerService.getDepositTransactionStatus(
+                    configuredProvider, normalizedCurrency, normalizedNetwork, candidate.transactionHash());
+            var request = new DepositDtos.BlockchainDepositWebhook(
+                    normalizedNetwork,
+                    assigned.getAddress(),
+                    candidate.transactionHash(),
+                    normalizedCurrency,
+                    candidate.amount(),
+                    status.confirmations(),
+                    candidate.requiredConfirmations());
+            results.add(depositService.processWebhook(request));
+        }
+        return results;
     }
 
     @Transactional
