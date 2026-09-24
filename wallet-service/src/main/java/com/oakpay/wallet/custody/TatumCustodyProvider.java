@@ -182,6 +182,19 @@ public class TatumCustodyProvider implements CustodyProvider {
         return ProviderTransactionStatus.PROCESSING;
     }
 
+    public void updateWebhookUrl(String subscriptionId, String webhookUrl) {
+        requireApiKey();
+        if (subscriptionId == null || subscriptionId.isBlank()) {
+            throw new IllegalArgumentException("Tatum subscription ID is required");
+        }
+        if (webhookUrl == null || webhookUrl.isBlank()) {
+            throw new IllegalArgumentException("Tatum webhook URL is required");
+        }
+
+        request("PUT", "/v4/subscription/" + urlEncode(subscriptionId.trim()),
+                toJson(Map.of("url", webhookUrl.trim())));
+    }
+
     public void enableWebhookHmac() {
         requireApiKey();
         if (webhookHmacSecret.isBlank()) throw new IllegalStateException("OAKPAY_TATUM_WEBHOOK_HMAC_SECRET is not configured");
