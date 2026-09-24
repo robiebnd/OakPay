@@ -19,6 +19,10 @@ public interface CustodyProvider {
         throw new UnsupportedOperationException("Deposit transaction status lookup is not implemented by " + providerName());
     }
 
+    default java.util.List<DiscoveredDeposit> findIncomingDeposits(String currency, String network, String address) {
+        throw new UnsupportedOperationException("Incoming deposit discovery is not implemented by " + providerName());
+    }
+
     record DepositAddressRequest(
             UUID userId,
             String currency,
@@ -42,6 +46,12 @@ public interface CustodyProvider {
     record WithdrawalResult(
             String providerReference,
             ProviderTransactionStatus status) {}
+
+    record DiscoveredDeposit(
+            String transactionHash,
+            String address,
+            BigDecimal amount,
+            int outputIndex) {}
 
     record DepositTransactionStatus(
             ProviderTransactionStatus status,
