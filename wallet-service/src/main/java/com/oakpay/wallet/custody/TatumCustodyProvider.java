@@ -179,9 +179,10 @@ public class TatumCustodyProvider implements CustodyProvider {
             throw new IllegalArgumentException("Deposit address is required");
         }
 
+        String normalizedAddress = address.trim();
         String path = "/v4/data/blockchains/transaction/history/utxos?chain=bitcoin-"
                 + networkName()
-                + "&address=" + urlEncode(address.trim())
+                + "&address=" + urlEncode(normalizedAddress)
                 + "&pageSize=50&offset=0&txType=incoming";
         JsonNode response = request("GET", path, "");
         JsonNode items = response.isArray() ? response : response.path("data");
@@ -194,22 +195,48 @@ public class TatumCustodyProvider implements CustodyProvider {
 
         java.util.List<DiscoveredDeposit> result = new java.util.ArrayList<>();
         for (JsonNode item : items) {
-            String txHash = firstText(item, "txHash", "hash", "transactionHash");
-            String itemAddress = firstText(item, "address");
-            JsonNode valueNode = item.path("value");
-            if (txHash == null || !address.trim().equals(itemAddress) || valueNode.isMissingNode() || valueNode.isNull()) {
+            String txHash = firstText(item, "hash", "txHash", "transactionHash");
+            if (txHash == null) {
                 continue;
             }
-            BigDecimal amount;
-            try {
-                amount = new BigDecimal(valueNode.asText());
-            } catch (NumberFormatException e) {
+
+            JsonNode outputs = item.path("outputs");
+            if (!outputs.isArray()) {
                 continue;
             }
-            if (amount.signum() <= 0) continue;
-            int outputIndex = item.path("index").asInt(item.path("outputIndex").asInt(-1));
-            result.add(new DiscoveredDeposit(txHash, itemAddress, amount, outputIndex,
-                    asset.currency().equals("BTC") ? btcRequiredConfirmations : usdtRequiredConfirmations));
+
+            for (JsonNode output : outputs) {
+                String outputAddress = firstText(output, "address");
+                JsonNode valueNode = output.path("value");
+                if (!normalizedAddress.equals(outputAddress)
+                        || valueNode.isMissingNode()
+                        || valueNode.isNull()) {
+                    continue;
+                }
+
+                BigDecimal satoshis;
+                try {
+                    satoshis = new BigDecimal(valueNode.asText());
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                if (satoshis.signum() <= 0) {
+                    continue;
+                }
+
+                BigDecimal amount = satoshis.movePointLeft(8);
+                int outputIndex = output.path("index").asInt(-1);
+                if (outputIndex < 0) {
+                    outputIndex = item.path("index").asInt(-1);
+                }
+
+                result.add(new DiscoveredDeposit(
+                        txHash,
+                        outputAddress,
+                        amount,
+                        outputIndex,
+                        btcRequiredConfirmations));
+            }
         }
         return result;
     }
