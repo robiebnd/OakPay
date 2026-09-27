@@ -29,6 +29,7 @@ public class TatumWebhookController {
     private final ObjectMapper objectMapper;
     private final CustodyWebhookEventService eventService;
     private final String hmacSecret;
+    private final boolean hmacRequired;
     private final int btcRequiredConfirmations;
     private final int usdtRequiredConfirmations;
 
@@ -36,11 +37,13 @@ public class TatumWebhookController {
             ObjectMapper objectMapper,
             CustodyWebhookEventService eventService,
             @Value("${oakpay.custody.tatum.webhook-hmac-secret:}") String hmacSecret,
+            @Value("${oakpay.custody.tatum.webhook-hmac-required:false}") boolean hmacRequired,
             @Value("${oakpay.custody.tatum.btc.required-confirmations:2}") int btcRequiredConfirmations,
             @Value("${oakpay.custody.tatum.usdt-tron.required-confirmations:20}") int usdtRequiredConfirmations) {
         this.objectMapper = objectMapper;
         this.eventService = eventService;
         this.hmacSecret = hmacSecret == null ? "" : hmacSecret.trim();
+        this.hmacRequired = hmacRequired;
         this.btcRequiredConfirmations = Math.max(1, btcRequiredConfirmations);
         this.usdtRequiredConfirmations = Math.max(1, usdtRequiredConfirmations);
     }
@@ -142,13 +145,23 @@ public class TatumWebhookController {
     }
 
     private void verify(String supplied, String rawBody) {
+        if (supplied == null || supplied.isBlank()) {
+            if (hmacRequired) {
+                if (hmacSecret.isBlank()) {
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                            "Tatum webhook HMAC secret is not configured");
+                }
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Missing x-payload-hash");
+            }
+
+            log.warn("Accepting unsigned Tatum webhook because oakpay.custody.tatum.webhook-hmac-required=false");
+            return;
+        }
+
         if (hmacSecret.isBlank()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "Tatum webhook HMAC secret is not configured");
-        }
-        if (supplied == null || supplied.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Missing x-payload-hash");
         }
 
         try {
