@@ -19,6 +19,19 @@ public class TatumWebhookRegistrationController {
         this.provider = provider;
     }
 
+    @GetMapping("/diagnostic")
+    public ResponseEntity<Map<String, Object>> diagnostic(
+            @RequestHeader("X-OakPay-Internal-Secret") String internalSecret,
+            @Value("${oakpay.internal-secret}") String configuredSecret) {
+
+        if (!configuredSecret.equals(internalSecret)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("status", 401, "message", "Unauthorized"));
+        }
+
+        return ResponseEntity.ok(provider.configurationStatus());
+    }
+
     @PostMapping("/webhooks/url")
     public ResponseEntity<Map<String, Object>> updateWebhookUrl(
             @RequestHeader("X-OakPay-Internal-Secret") String internalSecret,
