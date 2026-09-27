@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -30,6 +31,64 @@ public class TatumDepositAddressController {
         this.custodyProviderService = custodyProviderService;
         this.depositAddressService = depositAddressService;
         this.internalSecret = internalSecret;
+    }
+
+    @PostMapping("/deposit-addresses/user")
+    public ResponseEntity<?> createForAuthenticatedUser(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestParam String network,
+            Authentication authentication) {
+
+        try {
+            UUID userId = UUID.fromString(authentication.getName());
+            String normalizedNetwork = network == null ? "" : network.trim().toUpperCase();
+            String currency = currencyForNetwork(normalizedNetwork);
+            String key = idempotencyKey == null || idempotencyKey.isBlank()
+                    ? "TATUM-USER-DEP-" + userId + "-" + currency + "-" + normalizedNetwork
+                    : idempotencyKey.trim();
+
+            DepositAddressDtos.DepositAddressResponse existing =
+                    depositAddressService.getAddressIfExists(userId, currency, normalizedNetwork);
+            if (existing != null) {
+                return ResponseEntity.ok(Map.of(
+                        "status", 200,
+                        "provider", "TATUM",
+                        "depositAddress", existing));
+            }
+
+            CustodyOperation operation = custodyProviderService.requestDepositAddress(
+                    userId, currency, normalizedNetwork, key);
+
+            DepositAddressDtos.DepositAddressResponse address = depositAddressService.assign(
+                    new DepositAddressDtos.AssignAddressRequest(
+                            userId.toString(),
+                            currency,
+                            normalizedNetwork,
+                            operation.getProviderAddress(),
+                            operation.getMemoTag()));
+
+            return ResponseEntity.ok(Map.of(
+                    "status", 200,
+                    "provider", "TATUM",
+                    "operationId", operation.getId(),
+                    "providerReference", operation.getProviderReference(),
+                    "depositAddress", address));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of(
+                            "status", 502,
+                            "error", "Bad Gateway",
+                            "provider", "TATUM",
+                            "message", sanitize(e.getMessage())));
+        }
+    }
+
+    private String currencyForNetwork(String network) {
+        return switch (network) {
+            case "BITCOIN" -> "BTC";
+            case "TRON" -> "USDT";
+            default -> throw new IllegalArgumentException("Unsupported Tatum deposit network: " + network);
+        };
     }
 
     @PostMapping("/deposit-addresses")

@@ -15,6 +15,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/api/v1/wallets/custody/tatum/deposit-addresses/user").authenticated()
                         .requestMatchers("/api/v1/wallets/internal/**").permitAll()
                         .requestMatchers("/api/v1/wallets/deposit-addresses/internal/**").permitAll()
                         .requestMatchers("/api/v1/wallets/deposits/internal/**").permitAll()
