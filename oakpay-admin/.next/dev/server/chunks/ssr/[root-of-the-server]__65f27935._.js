@@ -320,6 +320,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$activity$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Activity$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/activity.js [app-ssr] (ecmascript) <export default as Activity>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chart-column.js [app-ssr] (ecmascript) <export default as BarChart3>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$dollar$2d$sign$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CircleDollarSign$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/circle-dollar-sign.js [app-ssr] (ecmascript) <export default as CircleDollarSign>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$file$2d$check$2d$2$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__FileCheck2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/file-check-2.js [app-ssr] (ecmascript) <export default as FileCheck2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layout$2d$dashboard$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__LayoutDashboard$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/layout-dashboard.js [app-ssr] (ecmascript) <export default as LayoutDashboard>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/log-out.js [app-ssr] (ecmascript) <export default as LogOut>");
@@ -364,6 +365,11 @@ const mainNavigation = [
         label: "Reports",
         href: "/reports",
         icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"]
+    },
+    {
+        label: "Fees & Revenue",
+        href: "/finance",
+        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$dollar$2d$sign$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CircleDollarSign$3e$__["CircleDollarSign"]
     }
 ];
 const administrationNavigation = [
@@ -417,14 +423,14 @@ function AdminSidebar() {
                         className: active ? "text-white" : "text-white/45 group-hover:text-white/80"
                     }, void 0, false, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 31,
+                        lineNumber: 32,
                         columnNumber: 402
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                         children: item.label
                     }, void 0, false, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 31,
+                        lineNumber: 32,
                         columnNumber: 520
                     }, this),
                     item.label === "Client Queries" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -435,13 +441,13 @@ function AdminSidebar() {
                         children: "LIVE"
                     }, void 0, false, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 31,
+                        lineNumber: 32,
                         columnNumber: 577
                     }, this)
                 ]
             }, item.href, true, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 31,
+                lineNumber: 32,
                 columnNumber: 126
             }, this);
         });
@@ -456,12 +462,12 @@ function AdminSidebar() {
                     size: 20
                 }, void 0, false, {
                     fileName: "[project]/components/AdminSidebar.tsx",
-                    lineNumber: 32,
+                    lineNumber: 33,
                     columnNumber: 254
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 32,
+                lineNumber: 33,
                 columnNumber: 12
             }, this),
             mobileOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -471,7 +477,7 @@ function AdminSidebar() {
                 className: "fixed inset-0 z-40 bg-black/40 lg:hidden"
             }, void 0, false, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 32,
+                lineNumber: 33,
                 columnNumber: 302
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("aside", {
@@ -494,12 +500,12 @@ function AdminSidebar() {
                                             size: 23
                                         }, void 0, false, {
                                             fileName: "[project]/components/AdminSidebar.tsx",
-                                            lineNumber: 32,
+                                            lineNumber: 33,
                                             columnNumber: 904
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 32,
+                                        lineNumber: 33,
                                         columnNumber: 810
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -509,7 +515,7 @@ function AdminSidebar() {
                                                 children: "PayOak"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 32,
+                                                lineNumber: 33,
                                                 columnNumber: 939
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -517,19 +523,19 @@ function AdminSidebar() {
                                                 children: "Admin Portal"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 32,
+                                                lineNumber: 33,
                                                 columnNumber: 1010
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 32,
+                                        lineNumber: 33,
                                         columnNumber: 934
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 733
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -541,18 +547,18 @@ function AdminSidebar() {
                                     size: 19
                                 }, void 0, false, {
                                     fileName: "[project]/components/AdminSidebar.tsx",
-                                    lineNumber: 32,
+                                    lineNumber: 33,
                                     columnNumber: 1299
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 1133
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 32,
+                        lineNumber: 33,
                         columnNumber: 647
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -563,7 +569,7 @@ function AdminSidebar() {
                                 children: "Operations"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 1378
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
@@ -571,7 +577,7 @@ function AdminSidebar() {
                                 children: renderNav(mainNavigation)
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 1485
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -579,7 +585,7 @@ function AdminSidebar() {
                                 children: "Administration"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 1545
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
@@ -587,13 +593,13 @@ function AdminSidebar() {
                                 children: renderNav(administrationNavigation)
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 1661
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 32,
+                        lineNumber: 33,
                         columnNumber: 1328
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -607,7 +613,7 @@ function AdminSidebar() {
                                         className: "text-[#f5c400]"
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 32,
+                                        lineNumber: 33,
                                         columnNumber: 1861
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -617,7 +623,7 @@ function AdminSidebar() {
                                                 children: "Secure Session"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 32,
+                                                lineNumber: 33,
                                                 columnNumber: 1917
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -625,19 +631,19 @@ function AdminSidebar() {
                                                 children: "Administrator access"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                                lineNumber: 32,
+                                                lineNumber: 33,
                                                 columnNumber: 1983
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 32,
+                                        lineNumber: 33,
                                         columnNumber: 1912
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 1783
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -650,20 +656,20 @@ function AdminSidebar() {
                                         size: 18
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 32,
+                                        lineNumber: 33,
                                         columnNumber: 2276
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: loggingOut ? "Signing out..." : "Sign out"
                                     }, void 0, false, {
                                         fileName: "[project]/components/AdminSidebar.tsx",
-                                        lineNumber: 32,
+                                        lineNumber: 33,
                                         columnNumber: 2295
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 2060
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -671,19 +677,19 @@ function AdminSidebar() {
                                 children: "PayOak Admin • Operations"
                             }, void 0, false, {
                                 fileName: "[project]/components/AdminSidebar.tsx",
-                                lineNumber: 32,
+                                lineNumber: 33,
                                 columnNumber: 2357
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/AdminSidebar.tsx",
-                        lineNumber: 32,
+                        lineNumber: 33,
                         columnNumber: 1737
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/AdminSidebar.tsx",
-                lineNumber: 32,
+                lineNumber: 33,
                 columnNumber: 435
             }, this)
         ]
@@ -795,9 +801,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chart-column.js [app-ssr] (ecmascript) <export default as BarChart3>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/circle-check.js [app-ssr] (ecmascript) <export default as CheckCircle2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$clock$2d$3$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Clock3$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/clock-3.js [app-ssr] (ecmascript) <export default as Clock3>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$copy$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Copy$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/copy.js [app-ssr] (ecmascript) <export default as Copy>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/eye.js [app-ssr] (ecmascript) <export default as Eye>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/refresh-cw.js [app-ssr] (ecmascript) <export default as RefreshCw>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/search.js [app-ssr] (ecmascript) <export default as Search>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$wallet$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Wallet$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/wallet.js [app-ssr] (ecmascript) <export default as Wallet>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/x.js [app-ssr] (ecmascript) <export default as X>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminShell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/AdminShell.tsx [app-ssr] (ecmascript)");
 "use client";
@@ -805,13 +814,16 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$AdminShell$2e$
 ;
 ;
 ;
-const FEED_URL = `${("TURBOPACK compile-time value", "http://localhost:8082") || "http://localhost:8082"}/api/v1/p2p/reporting/transactions?limit=200`;
+const FEED_URL = "/api/p2p-transactions?limit=200";
 function TransactionsPage() {
     const [items, setItems] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
     const [search, setSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
     const [refreshing, setRefreshing] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [feedHealthy, setFeedHealthy] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [loadError, setLoadError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [selectedTransaction, setSelectedTransaction] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [copiedField, setCopiedField] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const load = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async (initial = false)=>{
         try {
             if (initial) setLoading(true);
@@ -823,14 +835,26 @@ function TransactionsPage() {
                 },
                 cache: "no-store"
             });
-            if (!response.ok) throw new Error("LIVE_FEED_UNAVAILABLE");
+            if (!response.ok) {
+                let detail = "";
+                try {
+                    const payload = await response.json();
+                    detail = payload.message || payload.detail || "";
+                } catch  {}
+                throw new Error(detail || "Unable to load live P2P transactions.");
+            }
             const data = await response.json();
             if (!Array.isArray(data)) throw new Error("INVALID_LIVE_FEED");
             setItems(data);
             setFeedHealthy(true);
-        } catch  {
+            setLoadError("");
+        } catch (error) {
             setFeedHealthy(false);
-        // Keep the last known records visible during transient failures.
+            // Keep the last known records visible during transient failures.
+            if (initial && items.length === 0) {
+                const message = error instanceof Error ? error.message : "Unable to load live P2P transactions.";
+                setLoadError(message);
+            }
         } finally{
             setLoading(false);
             setRefreshing(false);
@@ -872,6 +896,15 @@ function TransactionsPage() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 8
         });
+    const copyValue = async (value, field)=>{
+        try {
+            await navigator.clipboard.writeText(value);
+            setCopiedField(field);
+            window.setTimeout(()=>setCopiedField(""), 1500);
+        } catch  {
+            setCopiedField("");
+        }
+    };
     const formatDate = (value)=>{
         const parsed = new Date(value);
         if (Number.isNaN(parsed.getTime())) return "—";
@@ -897,7 +930,7 @@ function TransactionsPage() {
                                     children: "Administration"
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 134,
+                                    lineNumber: 163,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -905,7 +938,7 @@ function TransactionsPage() {
                                     children: "P2P & Transactions"
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 137,
+                                    lineNumber: 166,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -913,7 +946,7 @@ function TransactionsPage() {
                                     children: "Monitor live PayOak trades, payment progress and transaction activity."
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 140,
+                                    lineNumber: 169,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -923,20 +956,20 @@ function TransactionsPage() {
                                             className: feedHealthy ? "h-2 w-2 rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-amber-500"
                                         }, void 0, false, {
                                             fileName: "[project]/app/transactions/page.tsx",
-                                            lineNumber: 145,
+                                            lineNumber: 174,
                                             columnNumber: 15
                                         }, this),
                                         feedHealthy ? "Live trade feed" : "Last known data shown"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 144,
+                                    lineNumber: 173,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 133,
+                            lineNumber: 162,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -950,22 +983,30 @@ function TransactionsPage() {
                                     className: refreshing ? "animate-spin" : ""
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 162,
+                                    lineNumber: 191,
                                     columnNumber: 13
                                 }, this),
                                 "Refresh"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 156,
+                            lineNumber: 185,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 132,
+                    lineNumber: 161,
                     columnNumber: 9
                 }, this),
+                loadError ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800",
+                    children: loadError
+                }, void 0, false, {
+                    fileName: "[project]/app/transactions/page.tsx",
+                    lineNumber: 197,
+                    columnNumber: 11
+                }, this) : null,
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
                     children: [
@@ -977,12 +1018,12 @@ function TransactionsPage() {
                                 size: 21
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 172,
+                                lineNumber: 207,
                                 columnNumber: 19
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 168,
+                            lineNumber: 203,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(MetricCard, {
@@ -993,12 +1034,12 @@ function TransactionsPage() {
                                 size: 21
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 178,
+                                lineNumber: 213,
                                 columnNumber: 19
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 174,
+                            lineNumber: 209,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(MetricCard, {
@@ -1009,12 +1050,12 @@ function TransactionsPage() {
                                 size: 21
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 184,
+                                lineNumber: 219,
                                 columnNumber: 19
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 180,
+                            lineNumber: 215,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(MetricCard, {
@@ -1025,18 +1066,18 @@ function TransactionsPage() {
                                 size: 21
                             }, void 0, false, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 190,
+                                lineNumber: 225,
                                 columnNumber: 19
                             }, void 0)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 186,
+                            lineNumber: 221,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 167,
+                    lineNumber: 202,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -1053,7 +1094,7 @@ function TransactionsPage() {
                                             className: "absolute left-4 top-1/2 -translate-y-1/2 text-[#98a2b3]"
                                         }, void 0, false, {
                                             fileName: "[project]/app/transactions/page.tsx",
-                                            lineNumber: 197,
+                                            lineNumber: 232,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1063,13 +1104,13 @@ function TransactionsPage() {
                                             className: "w-full rounded-xl border border-[#dce3df] bg-[#fafcfb] py-3.5 pl-11 pr-4 text-sm outline-none transition focus:border-[#397b0a] focus:ring-2 focus:ring-[#397b0a]/10"
                                         }, void 0, false, {
                                             fileName: "[project]/app/transactions/page.tsx",
-                                            lineNumber: 201,
+                                            lineNumber: 236,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 196,
+                                    lineNumber: 231,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1077,13 +1118,13 @@ function TransactionsPage() {
                                     children: refreshing ? "Updating live data…" : filtered.length + " transaction" + (filtered.length === 1 ? "" : "s")
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 209,
+                                    lineNumber: 244,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 195,
+                            lineNumber: 230,
                             columnNumber: 11
                         }, this),
                         loading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1091,7 +1132,7 @@ function TransactionsPage() {
                             children: "Loading live transaction data…"
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 217,
+                            lineNumber: 252,
                             columnNumber: 13
                         }, this) : filtered.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex min-h-[360px] flex-col items-center justify-center px-6 text-center",
@@ -1102,12 +1143,12 @@ function TransactionsPage() {
                                         size: 28
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 223,
+                                        lineNumber: 258,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 222,
+                                    lineNumber: 257,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1115,7 +1156,7 @@ function TransactionsPage() {
                                     children: items.length === 0 ? "No P2P transactions yet" : "No matching transactions"
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 225,
+                                    lineNumber: 260,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1123,13 +1164,13 @@ function TransactionsPage() {
                                     children: items.length === 0 ? "New trades will appear here automatically when they are created." : "Try a different transaction ID, user, asset or payment reference."
                                 }, void 0, false, {
                                     fileName: "[project]/app/transactions/page.tsx",
-                                    lineNumber: 230,
+                                    lineNumber: 265,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 221,
+                            lineNumber: 256,
                             columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "overflow-x-auto",
@@ -1144,67 +1185,74 @@ function TransactionsPage() {
                                                     children: "Transaction"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 241,
+                                                    lineNumber: 276,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Participants"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 242,
+                                                    lineNumber: 277,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Asset"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 243,
+                                                    lineNumber: 278,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Amount"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 244,
+                                                    lineNumber: 279,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Fiat total"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 245,
+                                                    lineNumber: 280,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Payment"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 246,
+                                                    lineNumber: 281,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Status"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 247,
+                                                    lineNumber: 282,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
                                                     children: "Created"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/transactions/page.tsx",
-                                                    lineNumber: 248,
+                                                    lineNumber: 283,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Th, {
+                                                    children: " "
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/transactions/page.tsx",
+                                                    lineNumber: 284,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/transactions/page.tsx",
-                                            lineNumber: 240,
+                                            lineNumber: 275,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 239,
+                                        lineNumber: 274,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -1222,7 +1270,7 @@ function TransactionsPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 258,
+                                                                lineNumber: 294,
                                                                 columnNumber: 25
                                                             }, this),
                                                             trade.paymentReference ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1233,13 +1281,13 @@ function TransactionsPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 262,
+                                                                lineNumber: 298,
                                                                 columnNumber: 27
                                                             }, this) : null
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 257,
+                                                        lineNumber: 293,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1250,7 +1298,7 @@ function TransactionsPage() {
                                                                 children: "Buyer"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 269,
+                                                                lineNumber: 305,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1261,7 +1309,7 @@ function TransactionsPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 270,
+                                                                lineNumber: 306,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1269,7 +1317,7 @@ function TransactionsPage() {
                                                                 children: "Seller"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 273,
+                                                                lineNumber: 309,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1280,13 +1328,13 @@ function TransactionsPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 276,
+                                                                lineNumber: 312,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 268,
+                                                        lineNumber: 304,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1297,7 +1345,7 @@ function TransactionsPage() {
                                                                 children: trade.asset
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 282,
+                                                                lineNumber: 318,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1311,13 +1359,13 @@ function TransactionsPage() {
                                                                 }, void 0, true) : "—"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                                lineNumber: 285,
+                                                                lineNumber: 321,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 281,
+                                                        lineNumber: 317,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1329,7 +1377,7 @@ function TransactionsPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 296,
+                                                        lineNumber: 332,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1341,7 +1389,7 @@ function TransactionsPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 300,
+                                                        lineNumber: 336,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1349,7 +1397,7 @@ function TransactionsPage() {
                                                         children: trade.paymentMethod || "—"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 304,
+                                                        lineNumber: 340,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1358,12 +1406,12 @@ function TransactionsPage() {
                                                             status: trade.status
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/transactions/page.tsx",
-                                                            lineNumber: 309,
+                                                            lineNumber: 345,
                                                             columnNumber: 25
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 308,
+                                                        lineNumber: 344,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -1371,54 +1419,495 @@ function TransactionsPage() {
                                                         children: formatDate(trade.createdAt)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/transactions/page.tsx",
-                                                        lineNumber: 312,
+                                                        lineNumber: 348,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                        className: "px-5 py-4 text-right",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            type: "button",
+                                                            onClick: ()=>setSelectedTransaction(trade),
+                                                            className: "inline-flex items-center gap-2 rounded-lg border border-[#dce3df] bg-white px-3 py-2 text-xs font-bold text-[#082d16] transition hover:border-[#397b0a] hover:bg-[#f7fbf7]",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__["Eye"], {
+                                                                    size: 15
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/transactions/page.tsx",
+                                                                    lineNumber: 358,
+                                                                    columnNumber: 27
+                                                                }, this),
+                                                                "View"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/app/transactions/page.tsx",
+                                                            lineNumber: 353,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/transactions/page.tsx",
+                                                        lineNumber: 352,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, trade.id, true, {
                                                 fileName: "[project]/app/transactions/page.tsx",
-                                                lineNumber: 253,
+                                                lineNumber: 289,
                                                 columnNumber: 21
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/app/transactions/page.tsx",
-                                        lineNumber: 251,
+                                        lineNumber: 287,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/transactions/page.tsx",
-                                lineNumber: 238,
+                                lineNumber: 273,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 237,
+                            lineNumber: 272,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 194,
+                    lineNumber: 229,
                     columnNumber: 9
                 }, this),
+                selectedTransaction ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "fixed inset-0 z-50 flex items-center justify-center bg-[#07120b]/45 p-4 backdrop-blur-[2px]",
+                    onMouseDown: (event)=>{
+                        if (event.target === event.currentTarget) setSelectedTransaction(null);
+                    },
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        role: "dialog",
+                        "aria-modal": "true",
+                        "aria-labelledby": "transaction-details-title",
+                        className: "max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-[#dce3df] bg-white shadow-2xl",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-start justify-between border-b border-[#e3e8e5] p-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-xs font-bold uppercase tracking-[0.14em] text-[#397b0a]",
+                                                children: "Transaction details"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 386,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                                id: "transaction-details-title",
+                                                className: "mt-1 text-2xl font-extrabold text-[#0b1628]",
+                                                children: [
+                                                    selectedTransaction.asset,
+                                                    " P2P Trade"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 389,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mt-3 flex flex-wrap items-center gap-2",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "rounded-full bg-[#f5f8f6] px-3 py-1 text-xs font-semibold text-[#475467]",
+                                                        children: selectedTransaction.id
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/transactions/page.tsx",
+                                                        lineNumber: 393,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>void copyValue(selectedTransaction.id, "transaction"),
+                                                        className: "inline-flex items-center gap-1.5 rounded-lg border border-[#dce3df] px-2.5 py-1 text-xs font-bold text-[#397b0a] hover:bg-[#f7fbf7]",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$copy$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Copy$3e$__["Copy"], {
+                                                                size: 13
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/transactions/page.tsx",
+                                                                lineNumber: 401,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            copiedField === "transaction" ? "Copied" : "Copy ID"
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/transactions/page.tsx",
+                                                        lineNumber: 396,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 392,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/transactions/page.tsx",
+                                        lineNumber: 385,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        type: "button",
+                                        onClick: ()=>setSelectedTransaction(null),
+                                        "aria-label": "Close transaction details",
+                                        className: "rounded-xl p-2 text-[#667085] hover:bg-[#f5f7f6] hover:text-[#111827]",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                            size: 22
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/transactions/page.tsx",
+                                            lineNumber: 412,
+                                            columnNumber: 19
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/transactions/page.tsx",
+                                        lineNumber: 406,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/transactions/page.tsx",
+                                lineNumber: 384,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "max-h-[calc(90vh-120px)] overflow-y-auto p-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "grid gap-4 sm:grid-cols-2",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Status",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(StatusBadge, {
+                                                    status: selectedTransaction.status
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/transactions/page.tsx",
+                                                    lineNumber: 418,
+                                                    columnNumber: 42
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 418,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Created",
+                                                children: formatDate(selectedTransaction.createdAt)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 419,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Last updated",
+                                                children: formatDate(selectedTransaction.updatedAt)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 420,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Expires",
+                                                children: formatDate(selectedTransaction.expiresAt)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 421,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Asset",
+                                                children: selectedTransaction.asset
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 422,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Fiat currency",
+                                                children: selectedTransaction.fiatCurrency
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 423,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Quantity",
+                                                children: [
+                                                    fmt(selectedTransaction.quantity),
+                                                    " ",
+                                                    selectedTransaction.asset
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 424,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Unit price",
+                                                children: [
+                                                    fmt(selectedTransaction.unitPrice),
+                                                    " / ",
+                                                    selectedTransaction.asset
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 425,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Fiat total",
+                                                children: [
+                                                    fmt(selectedTransaction.fiatAmount),
+                                                    " ",
+                                                    selectedTransaction.fiatCurrency
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 426,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Payment method",
+                                                children: selectedTransaction.paymentMethod || "—"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 427,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Payment reference",
+                                                children: selectedTransaction.paymentReference ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            children: selectedTransaction.paymentReference
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/transactions/page.tsx",
+                                                            lineNumber: 431,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            type: "button",
+                                                            onClick: ()=>void copyValue(selectedTransaction.paymentReference || "", "payment"),
+                                                            className: "text-[#397b0a] hover:underline",
+                                                            children: copiedField === "payment" ? "Copied" : "Copy"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/transactions/page.tsx",
+                                                            lineNumber: 432,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/transactions/page.tsx",
+                                                    lineNumber: 430,
+                                                    columnNumber: 23
+                                                }, this) : "—"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 428,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Payment note",
+                                                children: selectedTransaction.paymentNote || "—"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 442,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Detail, {
+                                                label: "Advertisement ID",
+                                                children: selectedTransaction.advertisementId ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    type: "button",
+                                                    onClick: ()=>void copyValue(selectedTransaction.advertisementId || "", "ad"),
+                                                    className: "text-left text-[#397b0a] hover:underline",
+                                                    children: copiedField === "ad" ? "Copied" : selectedTransaction.advertisementId
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/transactions/page.tsx",
+                                                    lineNumber: 445,
+                                                    columnNumber: 23
+                                                }, this) : "—"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 443,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/transactions/page.tsx",
+                                        lineNumber: 417,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "mt-6 grid gap-4 sm:grid-cols-2",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(IdentityCard, {
+                                                label: "Buyer",
+                                                id: selectedTransaction.buyerId,
+                                                field: "buyer",
+                                                copiedField: copiedField,
+                                                onCopy: copyValue
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 457,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(IdentityCard, {
+                                                label: "Seller",
+                                                id: selectedTransaction.sellerId,
+                                                field: "seller",
+                                                copiedField: copiedField,
+                                                onCopy: copyValue
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 464,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/transactions/page.tsx",
+                                        lineNumber: 456,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "mt-6 rounded-xl border border-[#e3e8e5] bg-[#fafcfb] p-4",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-xs font-bold uppercase tracking-[0.1em] text-[#667085]",
+                                                children: "Transaction reference"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 474,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mt-2 break-all font-mono text-sm text-[#111827]",
+                                                children: selectedTransaction.id
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/transactions/page.tsx",
+                                                lineNumber: 477,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/transactions/page.tsx",
+                                        lineNumber: 473,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/app/transactions/page.tsx",
+                                lineNumber: 416,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/transactions/page.tsx",
+                        lineNumber: 378,
+                        columnNumber: 13
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/app/transactions/page.tsx",
+                    lineNumber: 372,
+                    columnNumber: 11
+                }, this) : null,
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                     className: "text-xs text-[#98a2b3]",
                     children: "Live data refreshes every 15 seconds. Existing records remain visible while an update is in progress."
                 }, void 0, false, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 323,
+                    lineNumber: 486,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/transactions/page.tsx",
-            lineNumber: 131,
+            lineNumber: 160,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/transactions/page.tsx",
-        lineNumber: 130,
+        lineNumber: 159,
+        columnNumber: 5
+    }, this);
+}
+function Detail({ label, children }) {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "rounded-xl border border-[#e3e8e5] bg-[#fafcfb] p-4",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-[11px] font-bold uppercase tracking-[0.08em] text-[#667085]",
+                children: label
+            }, void 0, false, {
+                fileName: "[project]/app/transactions/page.tsx",
+                lineNumber: 499,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "mt-2 break-words text-sm font-semibold text-[#111827]",
+                children: children
+            }, void 0, false, {
+                fileName: "[project]/app/transactions/page.tsx",
+                lineNumber: 502,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/transactions/page.tsx",
+        lineNumber: 498,
+        columnNumber: 5
+    }, this);
+}
+function IdentityCard({ label, id, field, copiedField, onCopy }) {
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "rounded-xl border border-[#e3e8e5] bg-white p-4",
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-[11px] font-bold uppercase tracking-[0.08em] text-[#667085]",
+                children: label
+            }, void 0, false, {
+                fileName: "[project]/app/transactions/page.tsx",
+                lineNumber: 524,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "mt-2 break-all font-mono text-sm text-[#111827]",
+                children: id
+            }, void 0, false, {
+                fileName: "[project]/app/transactions/page.tsx",
+                lineNumber: 527,
+                columnNumber: 7
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                type: "button",
+                onClick: ()=>void onCopy(id, field),
+                className: "mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#397b0a] hover:underline",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$copy$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Copy$3e$__["Copy"], {
+                        size: 13
+                    }, void 0, false, {
+                        fileName: "[project]/app/transactions/page.tsx",
+                        lineNumber: 533,
+                        columnNumber: 9
+                    }, this),
+                    copiedField === field ? "Copied" : "Copy ID"
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/transactions/page.tsx",
+                lineNumber: 528,
+                columnNumber: 7
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/app/transactions/page.tsx",
+        lineNumber: 523,
         columnNumber: 5
     }, this);
 }
@@ -1435,7 +1924,7 @@ function MetricCard({ label, value, helper, icon }) {
                             children: label
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 347,
+                            lineNumber: 555,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1443,7 +1932,7 @@ function MetricCard({ label, value, helper, icon }) {
                             children: value
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 350,
+                            lineNumber: 558,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1451,13 +1940,13 @@ function MetricCard({ label, value, helper, icon }) {
                             children: helper
                         }, void 0, false, {
                             fileName: "[project]/app/transactions/page.tsx",
-                            lineNumber: 353,
+                            lineNumber: 561,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 346,
+                    lineNumber: 554,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1465,18 +1954,18 @@ function MetricCard({ label, value, helper, icon }) {
                     children: icon
                 }, void 0, false, {
                     fileName: "[project]/app/transactions/page.tsx",
-                    lineNumber: 355,
+                    lineNumber: 563,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/transactions/page.tsx",
-            lineNumber: 345,
+            lineNumber: 553,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/transactions/page.tsx",
-        lineNumber: 344,
+        lineNumber: 552,
         columnNumber: 5
     }, this);
 }
@@ -1486,7 +1975,7 @@ function Th({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/app/transactions/page.tsx",
-        lineNumber: 363,
+        lineNumber: 571,
         columnNumber: 5
     }, this);
 }
@@ -1505,7 +1994,7 @@ function StatusBadge({ status }) {
         children: status.replaceAll("_", " ")
     }, void 0, false, {
         fileName: "[project]/app/transactions/page.tsx",
-        lineNumber: 381,
+        lineNumber: 589,
         columnNumber: 5
     }, this);
 }
