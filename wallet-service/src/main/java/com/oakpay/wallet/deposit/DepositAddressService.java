@@ -13,6 +13,14 @@ public class DepositAddressService {
     public DepositAddressService(DepositAddressRepository repository) { this.repository = repository; }
 
     @Transactional(readOnly = true)
+    public DepositAddressDtos.DepositAddressResponse getAddressIfExists(UUID userId, String currency, String network) {
+        return repository.findByUserIdAndCurrencyAndNetworkAndStatus(
+                        userId, normalize(currency), normalize(network), DepositAddressStatus.ACTIVE)
+                .map(DepositAddressDtos.DepositAddressResponse::from)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public List<DepositAddressDtos.DepositAddressResponse> getActiveAddresses(UUID userId) {
         return repository.findAllByUserIdAndStatusOrderByCurrencyAscNetworkAsc(userId, DepositAddressStatus.ACTIVE)
                 .stream().map(DepositAddressDtos.DepositAddressResponse::from).toList();
