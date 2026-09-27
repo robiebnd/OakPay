@@ -75,7 +75,7 @@ oakpay:
       testnet: ${OAKPAY_TATUM_TESTNET:true}
       webhook-base-url: ${OAKPAY_TATUM_WEBHOOK_BASE_URL:}
       webhook-hmac-secret: ${OAKPAY_TATUM_WEBHOOK_HMAC_SECRET:}
-      webhook-hmac-required: ${OAKPAY_TATUM_WEBHOOK_HMAC_REQUIRED:false}
+      webhook-hmac-required: ${OAKPAY_TATUM_WEBHOOK_HMAC_REQUIRED:true}
       btc:
         xpub: ${OAKPAY_TATUM_BTC_XPUB:}
         required-confirmations: ${OAKPAY_TATUM_BTC_REQUIRED_CONFIRMATIONS:2}
