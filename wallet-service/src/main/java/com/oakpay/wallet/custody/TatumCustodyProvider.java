@@ -77,6 +77,20 @@ public class TatumCustodyProvider implements CustodyProvider {
         return "TATUM";
     }
 
+    public Map<String, Object> configurationStatus() {
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("provider", providerName());
+        status.put("apiKeyConfigured", !apiKey.isBlank());
+        status.put("apiKeyLength", apiKey.length());
+        status.put("baseUrl", baseUrl);
+        status.put("testnet", testnet);
+        status.put("btcXpubConfigured", !btcXpub.isBlank());
+        status.put("tronXpubConfigured", !tronXpub.isBlank());
+        status.put("webhookBaseUrlConfigured", !webhookBaseUrl.isBlank());
+        status.put("webhookHmacConfigured", !webhookHmacSecret.isBlank());
+        return status;
+    }
+
     @Override
     public DepositAddressResult createDepositAddress(DepositAddressRequest request) {
         requireApiKey();
