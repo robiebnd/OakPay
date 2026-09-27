@@ -56,12 +56,17 @@ public class DepositService {
                 || deposit.getAmount().compareTo(amount) != 0) {
             throw new IllegalArgumentException("Blockchain transaction conflicts with the original deposit record");
         }
-        if (deposit.getStatus() == DepositStatus.COMPLETED) return DepositDtos.DepositResponse.from(deposit);
+
         deposit.setConfirmations(Math.max(deposit.getConfirmations(), request.confirmations()));
         deposit.setRequiredConfirmations(Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
-        deposit.setStatus(statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
 
-        if (deposit.getStatus() == DepositStatus.COMPLETED) creditCompletedDeposit(deposit);
+        if (deposit.getStatus() != DepositStatus.COMPLETED) {
+            deposit.setStatus(statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
+        }
+
+        if (deposit.getStatus() == DepositStatus.COMPLETED) {
+            creditCompletedDeposit(deposit);
+        }
 
         return DepositDtos.DepositResponse.from(depositRepository.save(deposit));
     }
