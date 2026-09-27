@@ -1,4 +1,8 @@
 spring:
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:./wallet-service/.env[.properties]
   application:
     name: wallet-service
 
