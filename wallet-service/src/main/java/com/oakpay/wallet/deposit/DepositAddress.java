@@ -24,10 +24,15 @@ public class DepositAddress {
     @Column(nullable = false, length = 30, updatable = false)
     private String network;
 
-    @Column(nullable = false, length = 255, updatable = false)
+    /*
+     * A custody-backed deposit address may need to replace a development/test
+     * address or be rotated by the provider. Keep the ownership tuple
+     * immutable, but allow the actual blockchain address to be updated.
+     */
+    @Column(nullable = false, length = 255)
     private String address;
 
-    @Column(length = 100, updatable = false)
+    @Column(length = 100)
     private String memoTag;
 
     @Column(nullable = false, length = 20)
