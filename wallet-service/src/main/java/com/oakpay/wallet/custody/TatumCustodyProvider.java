@@ -186,23 +186,29 @@ public class TatumCustodyProvider implements CustodyProvider {
     public java.util.List<DiscoveredDeposit> findIncomingDeposits(String currency, String network, String address) {
         requireApiKey();
         Asset asset = asset(currency, network);
-        if (!asset.currency().equals("BTC")) {
-            throw new UnsupportedOperationException("Tatum address polling is currently implemented for BTC only");
-        }
         if (address == null || address.isBlank()) {
             throw new IllegalArgumentException("Deposit address is required");
         }
 
         String normalizedAddress = address.trim();
+        if ("BTC".equals(asset.currency())) {
+            return findBitcoinIncomingDeposits(normalizedAddress);
+        }
+        if ("USDT".equals(asset.currency()) && "TRON".equals(asset.network())) {
+            return findTronUsdtIncomingDeposits(normalizedAddress);
+        }
+        throw new IllegalArgumentException("Tatum custody deposit discovery is not configured for "
+                + asset.currency() + " on " + asset.network());
+    }
+
+    private java.util.List<DiscoveredDeposit> findBitcoinIncomingDeposits(String normalizedAddress) {
         String path = "/v4/data/blockchains/transaction/history/utxos?chain=bitcoin-"
                 + networkName()
                 + "&address=" + urlEncode(normalizedAddress)
                 + "&pageSize=50&offset=0&txType=incoming";
         JsonNode response = request("GET", path, "");
         JsonNode items = response.isArray() ? response : response.path("data");
-        if (!items.isArray()) {
-            items = response.path("transactions");
-        }
+        if (!items.isArray()) items = response.path("transactions");
         if (!items.isArray()) {
             throw new IllegalStateException("Tatum UTXO transaction history response did not contain an array");
         }
@@ -210,23 +216,17 @@ public class TatumCustodyProvider implements CustodyProvider {
         java.util.List<DiscoveredDeposit> result = new java.util.ArrayList<>();
         for (JsonNode item : items) {
             String txHash = firstText(item, "hash", "txHash", "transactionHash");
-            if (txHash == null) {
-                continue;
-            }
+            if (txHash == null) continue;
 
             JsonNode outputs = item.path("outputs");
-            if (!outputs.isArray()) {
-                continue;
-            }
+            if (!outputs.isArray()) continue;
 
             for (JsonNode output : outputs) {
                 String outputAddress = firstText(output, "address");
                 JsonNode valueNode = output.path("value");
                 if (!normalizedAddress.equals(outputAddress)
                         || valueNode.isMissingNode()
-                        || valueNode.isNull()) {
-                    continue;
-                }
+                        || valueNode.isNull()) continue;
 
                 BigDecimal satoshis;
                 try {
@@ -234,15 +234,11 @@ public class TatumCustodyProvider implements CustodyProvider {
                 } catch (NumberFormatException e) {
                     continue;
                 }
-                if (satoshis.signum() <= 0) {
-                    continue;
-                }
+                if (satoshis.signum() <= 0) continue;
 
                 BigDecimal amount = satoshis.movePointLeft(8);
                 int outputIndex = output.path("index").asInt(-1);
-                if (outputIndex < 0) {
-                    outputIndex = item.path("index").asInt(-1);
-                }
+                if (outputIndex < 0) outputIndex = item.path("index").asInt(-1);
 
                 result.add(new DiscoveredDeposit(
                         txHash,
@@ -253,6 +249,76 @@ public class TatumCustodyProvider implements CustodyProvider {
             }
         }
         return result;
+    }
+
+    private java.util.List<DiscoveredDeposit> findTronUsdtIncomingDeposits(String normalizedAddress) {
+        String path = "/v3/tron/transaction/account/"
+                + urlEncode(normalizedAddress)
+                + "/trc20?onlyTo=true&orderBy=block_timestamp,desc"
+                + "&contractAddress=" + urlEncode(tronUsdtContractAddress());
+
+        JsonNode response = request("GET", path, "");
+        JsonNode items = response.isArray() ? response : response.path("transactions");
+        if (!items.isArray()) items = response.path("data");
+        if (!items.isArray()) {
+            throw new IllegalStateException("Tatum TRC-20 transaction history response did not contain an array");
+        }
+
+        java.util.List<DiscoveredDeposit> result = new java.util.ArrayList<>();
+        for (JsonNode item : items) {
+            String txHash = firstText(item, "txID", "txId", "txHash", "hash", "transactionHash");
+            String to = firstText(item, "to", "destination", "address");
+            if (txHash == null || to == null || !normalizedAddress.equalsIgnoreCase(to)) continue;
+
+            String symbol = firstText(item.path("tokenInfo"), "symbol", "tokenSymbol", "name");
+            String contractAddress = firstText(item, "contractAddress", "tokenAddress");
+            if (!"USDT".equalsIgnoreCase(symbol)
+                    && !tronUsdtContractAddress().equalsIgnoreCase(contractAddress)) {
+                continue;
+            }
+
+            JsonNode valueNode = item.path("value");
+            if (valueNode.isMissingNode() || valueNode.isNull()) {
+                valueNode = item.path("amount");
+            }
+            if (valueNode.isMissingNode() || valueNode.isNull()) continue;
+
+            BigDecimal rawAmount;
+            try {
+                rawAmount = new BigDecimal(valueNode.asText());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if (rawAmount.signum() <= 0) continue;
+
+            int decimals = intValue(item.path("tokenInfo"), "decimals", 6);
+            if (decimals < 0 || decimals > 18) decimals = 6;
+
+            BigDecimal amount = rawAmount.movePointLeft(decimals);
+            if (amount.signum() <= 0) continue;
+
+            result.add(new DiscoveredDeposit(
+                    txHash,
+                    normalizedAddress,
+                    amount,
+                    -1,
+                    usdtRequiredConfirmations));
+        }
+        return result;
+    }
+
+    private String tronUsdtContractAddress() {
+        return testnet
+                ? "TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs"
+                : "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+    }
+
+    private int intValue(JsonNode node, String field, int fallback) {
+        if (node == null || node.isMissingNode() || node.isNull()) return fallback;
+        JsonNode value = node.path(field);
+        return value.isInt() || value.isLong() || value.isNumber()
+                ? value.asInt(fallback)
+                : fallback;
     }
 
     @Override
