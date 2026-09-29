@@ -57,12 +57,24 @@ public class DepositService {
             throw new IllegalArgumentException("Blockchain transaction conflicts with the original deposit record");
         }
 
-        deposit.setConfirmations(Math.max(deposit.getConfirmations(), request.confirmations()));
-        deposit.setRequiredConfirmations(Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
-
-        if (deposit.getStatus() != DepositStatus.COMPLETED) {
-            deposit.setStatus(statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
+        // Completed deposits are immutable from the crediting perspective.
+        // Replayed webhooks/discovery calls must not re-enter the ledger or
+        // notification path. Only advance confirmations if the provider reports more.
+        if (deposit.getStatus() == DepositStatus.COMPLETED) {
+            if (request.confirmations() > deposit.getConfirmations()) {
+                deposit.setConfirmations(request.confirmations());
+                deposit.setRequiredConfirmations(
+                        Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
+                deposit = depositRepository.save(deposit);
+            }
+            return DepositDtos.DepositResponse.from(deposit);
         }
+
+        deposit.setConfirmations(Math.max(deposit.getConfirmations(), request.confirmations()));
+        deposit.setRequiredConfirmations(
+                Math.max(deposit.getRequiredConfirmations(), request.requiredConfirmations()));
+        deposit.setStatus(
+                statusFor(deposit.getConfirmations(), deposit.getRequiredConfirmations()));
 
         if (deposit.getStatus() == DepositStatus.COMPLETED) {
             creditCompletedDeposit(deposit);
